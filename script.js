@@ -1,11 +1,10 @@
-// script.js (Smart & Draggable Sticky Notes)
+// script.js (Clean Pop-Up Window Version)
 
 // --- CONFIGURATION ---
 const SUPABASE_URL = 'https://egnyblflgppsosunnilq.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVnbnlibGZsZ3Bwc29zdW5uaWxxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY0OTYzMjksImV4cCI6MjA4MjA3MjMyOX0.HR9lt4oHuFjGcjwsF_fLoJMuG2OI8aCIoRCSyyu0zVE';
 
-// Check Libraries
-if (typeof window.supabase === 'undefined') alert('Error: Supabase not loaded.');
+if (typeof window.supabase === 'undefined') alert('Error: Supabase not loaded. Check internet.');
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // DOM Elements
@@ -58,10 +57,12 @@ function copyToClipboard(text) {
 }
 
 // --- INITIAL LOAD ---
-fetchMembers();
-fetchNotes(); 
+document.addEventListener("DOMContentLoaded", () => {
+    fetchMembers();
+    fetchNotes(); 
+});
 
-// --- APP LOGIC ---
+// --- AUTH LOGIC ---
 
 toggleAuth.addEventListener('click', () => {
     isLoginMode = !isLoginMode;
@@ -155,7 +156,8 @@ function showStudentPanel(name, code) {
     studentCodeDisplay.innerText = code;
 }
 
-// --- ADMIN FETCH ---
+// --- ADMIN FEATURES ---
+
 async function fetchStudents() {
     const { data, error } = await supabaseClient
         .from('students')
@@ -188,7 +190,35 @@ async function fetchStudents() {
     });
 }
 
-// --- PUBLIC MEMBER LIST ---
+async function deleteStudent(id) {
+    if(!confirm('Scratch this person out specifically?')) return;
+    const { error } = await supabaseClient.from('students').delete().eq('id', id);
+    if (error) showToast('Could not delete.', 'error');
+    else {
+        showToast('Scratched out successfully.');
+        fetchStudents();
+        fetchMembers(); 
+    }
+}
+
+// --- PORTAL POP-UP LOGIC ---
+
+function openPortalWindow() {
+    // Calculates the center of the screen
+    const width = 1000;
+    const height = 800;
+    const left = (window.screen.width - width) / 2;
+    const top = (window.screen.height - height) / 2;
+
+    window.open(
+        "https://dione.batstate-u.edu.ph/student/#/", 
+        "BatStatePortal", 
+        `width=${width},height=${height},top=${top},left=${left},resizable=yes,scrollbars=yes,status=yes`
+    );
+}
+
+// --- PUBLIC LIST ---
+
 async function fetchMembers() {
     const { data, error } = await supabaseClient
         .from('students')
@@ -211,46 +241,26 @@ async function fetchMembers() {
     });
 }
 
-async function deleteStudent(id) {
-    if(!confirm('Scratch this person out specifically?')) return;
-    const { error } = await supabaseClient.from('students').delete().eq('id', id);
-    if (error) showToast('Could not delete.', 'error');
-    else {
-        showToast('Scratched out successfully.');
-        fetchStudents();
-        fetchMembers(); 
-    }
-}
-
-// --- SMART STICKY NOTES LOGIC ---
+// --- DRAGGABLE STICKY NOTES ---
 
 async function postNote() {
     const text = noteInput.value.trim();
     if (!text) return showToast('Please write something!', 'error');
 
-    // Smart Scatter: Position away from center
     let randomX;
     if (Math.random() > 0.5) {
-        randomX = Math.floor(Math.random() * 20) + 2; // Left side
+        randomX = Math.floor(Math.random() * 20) + 2; 
     } else {
-        randomX = Math.floor(Math.random() * 20) + 75; // Right side
+        randomX = Math.floor(Math.random() * 20) + 75; 
     }
-    
     const randomY = Math.floor(Math.random() * 90) + 5; 
     const rotation = Math.floor(Math.random() * 20) - 10;
-    
     const colors = ['#fff740', '#ff7eb9', '#7afcff', '#98ff98'];
     const randomColor = colors[Math.floor(Math.random() * colors.length)];
 
     const { error } = await supabaseClient
         .from('notes')
-        .insert([{ 
-            content: text, 
-            x_pos: randomX, 
-            y_pos: randomY, 
-            rotation: rotation,
-            color: randomColor
-        }]);
+        .insert([{ content: text, x_pos: randomX, y_pos: randomY, rotation: rotation, color: randomColor }]);
 
     if (error) {
         showToast('Failed to stick note.', 'error');
@@ -280,24 +290,20 @@ async function fetchNotes() {
         div.style.transform = `rotate(${note.rotation}deg)`;
         div.style.backgroundColor = note.color;
 
-        makeDraggable(div, note.id); // Add drag powers
+        makeDraggable(div, note.id);
 
         noteLayer.appendChild(div);
     });
 }
 
-// --- DRAG WITH COLLISION DETECTION ---
 function makeDraggable(element, noteId) {
     let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-
     element.onmousedown = dragMouseDown;
     element.ontouchstart = dragMouseDown;
 
     function dragMouseDown(e) {
         e = e || window.event;
-        // Don't prevent default on touch to allow scrolling if not grabbing
         if (e.type !== 'touchstart') e.preventDefault();
-        
         pos3 = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
         pos4 = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
         
@@ -309,7 +315,6 @@ function makeDraggable(element, noteId) {
 
     function elementDrag(e) {
         e = e || window.event;
-        // Calculate new cursor position:
         let clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
         let clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
 
@@ -318,7 +323,6 @@ function makeDraggable(element, noteId) {
         pos3 = clientX;
         pos4 = clientY;
 
-        // Set element's new position
         element.style.top = (element.offsetTop - pos2) + "px";
         element.style.left = (element.offsetLeft - pos1) + "px";
     }
@@ -329,57 +333,35 @@ function makeDraggable(element, noteId) {
         document.ontouchend = null;
         document.ontouchmove = null;
 
-        // --- COLLISION DETECTION & SNAP AWAY ---
-        // Find the CURRENTLY VISIBLE sketch box
-        const visibleBox = Array.from(document.querySelectorAll('.sketch-box'))
-            .find(box => !box.classList.contains('hidden'));
-
+        const visibleBox = Array.from(document.querySelectorAll('.sketch-box')).find(box => !box.classList.contains('hidden'));
         if (visibleBox) {
             const boxRect = visibleBox.getBoundingClientRect();
             const noteRect = element.getBoundingClientRect();
-
-            // Check if they overlap
-            const overlap = !(
-                noteRect.right < boxRect.left || 
-                noteRect.left > boxRect.right || 
-                noteRect.bottom < boxRect.top || 
-                noteRect.top > boxRect.bottom
-            );
+            
+            const overlap = !(noteRect.right < boxRect.left || noteRect.left > boxRect.right || noteRect.bottom < boxRect.top || noteRect.top > boxRect.bottom);
 
             if (overlap) {
-                // Determine centers
                 const noteCX = noteRect.left + noteRect.width / 2;
                 const boxCX = boxRect.left + boxRect.width / 2;
-
-                // Push Left or Right based on where the note is relative to box center
                 let newLeft;
                 const padding = 20;
 
                 if (noteCX < boxCX) {
-                    // Push Left
                     newLeft = (boxRect.left + window.scrollX) - noteRect.width - padding;
-                    // Prevent going off-screen left
                     if (newLeft < 10) newLeft = 10;
                 } else {
-                    // Push Right
                     newLeft = (boxRect.right + window.scrollX) + padding;
-                    // Prevent going off-screen right
-                    if (newLeft + noteRect.width > window.innerWidth) {
-                        newLeft = window.innerWidth - noteRect.width - 10;
-                    }
+                    if (newLeft + noteRect.width > window.innerWidth) newLeft = window.innerWidth - noteRect.width - 10;
                 }
                 
-                // If the screen is too narrow (mobile) and horizontal push puts it off screen, push down instead
                 if (window.innerWidth < 600 && (newLeft < 10 || newLeft > window.innerWidth - 100)) {
-                     const newTop = (boxRect.bottom + window.scrollY) + padding;
-                     element.style.top = newTop + "px";
+                     element.style.top = ((boxRect.bottom + window.scrollY) + padding) + "px";
                 } else {
                      element.style.left = newLeft + "px";
                 }
             }
         }
 
-        // Save final position to DB
         const xPercent = (element.offsetLeft / window.innerWidth) * 100;
         const yPercent = (element.offsetTop / window.innerHeight) * 100;
         updateNotePosition(noteId, xPercent, yPercent);
@@ -387,14 +369,9 @@ function makeDraggable(element, noteId) {
 }
 
 async function updateNotePosition(id, x, y) {
-    // Clamp values between 0 and 100 to avoid losing notes
     x = Math.max(0, Math.min(x, 95));
     y = Math.max(0, Math.min(y, 95));
-    
-    await supabaseClient
-        .from('notes')
-        .update({ x_pos: x, y_pos: y })
-        .eq('id', id);
+    await supabaseClient.from('notes').update({ x_pos: x, y_pos: y }).eq('id', id);
 }
 
 function logout() {

@@ -21,18 +21,17 @@
             min-height: 100vh;
         }
 
-        /* Container for the notes */
+        /* --- STICKY NOTES LAYER --- */
         #note-layer {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 50; /* Base level for notes */
-            pointer-events: none; /* Let clicks pass through empty areas */
+            z-index: 50; 
+            pointer-events: none; 
         }
 
-        /* The Sticky Note Look */
         .sticky-note {
             position: absolute;
             width: 150px;
@@ -41,21 +40,19 @@
             color: #000;
             box-shadow: 5px 5px 7px rgba(0,0,0,0.2);
             font-weight: bold;
-            pointer-events: auto; /* Enable clicking/dragging */
+            pointer-events: auto; 
             transition: transform 0.1s, box-shadow 0.1s;
-            cursor: grab; /* Show grab hand */
-            user-select: none; /* Prevent text selection while dragging */
-            /* Random rotation handled in JS */
+            cursor: grab;
+            user-select: none;
         }
 
         .sticky-note:active {
             cursor: grabbing;
             transform: scale(1.05);
             box-shadow: 10px 10px 15px rgba(0,0,0,0.3);
-            z-index: 1000 !important; /* Bring to very front when dragging */
+            z-index: 1000 !important; 
         }
 
-        /* Tape effect on note */
         .sticky-note::after {
             content: '';
             position: absolute;
@@ -68,7 +65,7 @@
             transform: rotate(-3deg);
         }
 
-        /* Main App Box */
+        /* --- MAIN APP BOX --- */
         .sketch-box {
             background: white;
             max-width: 650px;
@@ -79,20 +76,7 @@
             box-shadow: 10px 10px 0px rgba(0,0,0,0.1);
             position: relative;
             animation: slideUp 0.6s ease-out;
-            z-index: 100; /* Main box stays prominent */
-        }
-        
-        /* Mobile Responsiveness for Main Box */
-        @media (max-width: 600px) {
-            .sketch-box {
-                margin: 10px auto;
-                padding: 15px;
-                width: 90%;
-            }
-            h2 { font-size: 1.8rem; }
-            .sketch-face { height: 50px; }
-            /* Hide notes on very small screens if they block view, or scale them down */
-            .sticky-note { width: 120px; font-size: 0.9rem; }
+            z-index: 100; 
         }
 
         .sketch-box::before {
@@ -121,9 +105,9 @@
             font-size: 1.2rem;
             outline: none;
             transition: border-color 0.3s;
-            box-sizing: border-box; /* Fix padding issues */
+            box-sizing: border-box;
         }
-        input:focus, textarea:focus { border-bottom: 3px solid #000; }
+        input:focus { border-bottom: 3px solid #000; }
 
         button {
             width: 100%;
@@ -166,13 +150,11 @@
             background: #fff;
             box-shadow: 5px 5px 0px rgba(0,0,0,0.1);
         }
-
         .sketch-face-container {
             display: inline-block;
             margin-bottom: 10px;
             animation: float 3s ease-in-out infinite;
         }
-
         .sketch-face { 
             height: 70px;
             width: auto;
@@ -188,7 +170,7 @@
 
         .note-input-area { margin-top: 20px; border-top: 2px dashed #000; padding-top: 15px; }
 
-        #toast-container { position: fixed; top: 20px; right: 20px; z-index: 2000; } /* Highest Z-index */
+        #toast-container { position: fixed; top: 20px; right: 20px; z-index: 2000; }
         .toast {
             background: #fff740;
             color: #000;
@@ -203,10 +185,16 @@
             animation: toastIn 0.5s forwards;
         }
 
+        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
         @keyframes toastIn { from { transform: translateX(100%) rotate(0deg); opacity: 0; } to { transform: translateX(0) rotate(-2deg); opacity: 1; } }
         @keyframes toastOut { from { opacity: 1; } to { opacity: 0; transform: translateY(-20px); } }
+
+        @media (max-width: 600px) {
+            .sketch-box { width: 90%; margin: 10px auto; padding: 15px; }
+            .sticky-note { width: 120px; font-size: 0.9rem; }
+        }
     </style>
 </head>
 <body>
@@ -234,9 +222,16 @@
 
     <div class="sketch-box hidden" id="adminDashboard">
         <h2>THE BLACK LIST</h2>
-        <p>Current Admin: <b id="adminNameDisplay">Greg</b> <button onclick="logout()" style="width:auto; float:right; font-size:1rem;">EXIT</button></p>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <p style="margin:0;">Current Admin: <b id="adminNameDisplay">Greg</b></p>
+            <div>
+                <button onclick="openPortalWindow()" style="width:auto; font-size:1rem; background:#4CAF50; border-color:green; color:white; padding:5px 10px; margin:0;">🌍 OPEN PORTAL</button>
+                <button onclick="logout()" style="width:auto; font-size:1rem; padding:5px 10px; margin:0;">EXIT</button>
+            </div>
+        </div>
         
-        <div style="overflow-x:auto;"> <table>
+        <div style="overflow-x:auto;">
+            <table>
                 <thead>
                     <tr>
                         <th>Name</th>
@@ -246,7 +241,7 @@
                     </tr>
                 </thead>
                 <tbody id="studentTableBody">
-                </tbody>
+                    </tbody>
             </table>
         </div>
     </div>
@@ -277,17 +272,10 @@
 
     <script src="script.js"></script>
     <script>
-        // Animation for Pat's face
         const faceElement = document.querySelector('.sketch-face');
-        const faceFrames = ['pat.png', 'pat2.png', 'pat3.png'];
-        // Safe check if images exist before loading to avoid errors
+        const faceFrames = ['pat.png']; 
         if(faceElement) {
             faceFrames.forEach(src => new Image().src = src);
-            let currentFaceIndex = 0;
-            setInterval(() => {
-                currentFaceIndex = (currentFaceIndex + 1) % faceFrames.length;
-                faceElement.src = faceFrames[currentFaceIndex];
-            }, 500);
         }
     </script>
 </body>
