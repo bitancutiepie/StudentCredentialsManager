@@ -68,7 +68,7 @@ This project was primarily built for a specific personal use case. As such, cont
 ## 📄 License
 This project is licensed under the MIT License - see the `LICENSE` file for details (if you choose to add one).
 
-## �‍💻 Author
+## 👨‍💻 Author
 Built with 🖤 by **Joshua Vincent Bitancor** *aka "The Enrollment Savior"*
 
 ---
