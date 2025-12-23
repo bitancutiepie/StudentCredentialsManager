@@ -1,4 +1,4 @@
-// script.js (Plain Text Password Edition)
+// script.js (Sticky Notes Edition)
 
 // --- CONFIGURATION ---
 const SUPABASE_URL = 'https://egnyblflgppsosunnilq.supabase.co';
@@ -27,6 +27,8 @@ const studentNameDisplay = document.getElementById('studentNameDisplay');
 const studentCodeDisplay = document.getElementById('studentCodeDisplay');
 const toastContainer = document.getElementById('toast-container');
 const publicMemberList = document.getElementById('publicMemberList');
+const noteLayer = document.getElementById('note-layer'); // NEW
+const noteInput = document.getElementById('noteInput'); // NEW
 
 let isLoginMode = true;
 
@@ -57,6 +59,7 @@ function copyToClipboard(text) {
 
 // --- INITIAL LOAD ---
 fetchMembers();
+fetchNotes(); // Fetch Sticky Notes on load!
 
 // --- APP LOGIC ---
 
@@ -102,7 +105,6 @@ authForm.addEventListener('submit', async (e) => {
 });
 
 async function handleRegister(name, srCode, password) {
-    // --- CHANGE: NO HASHING, SAVING PLAIN TEXT ---
     const { error } = await supabaseClient
         .from('students')
         .insert([{ name: name, sr_code: srCode, password: password }]);
@@ -125,8 +127,6 @@ async function handleLogin(srCode, password) {
         return;
     }
 
-    // --- CHANGE: PLAIN TEXT COMPARISON ---
-    // We check if the input password matches the database password exactly
     if (password !== data.password) {
         showToast('Wrong password! Try again.', 'error');
         return;
@@ -155,7 +155,7 @@ function showStudentPanel(name, code) {
     studentCodeDisplay.innerText = code;
 }
 
-// --- UPDATED FETCH FUNCTION (Plain Password View) ---
+// --- ADMIN FETCH ---
 async function fetchStudents() {
     const { data, error } = await supabaseClient
         .from('students')
@@ -204,7 +204,6 @@ async function fetchMembers() {
 
     data.forEach(student => {
         if(student.name === 'Principal User' || student.name.includes('Admin')) return;
-
         const tag = document.createElement('div');
         tag.className = 'member-tag';
         tag.innerText = student.name;
@@ -214,7 +213,6 @@ async function fetchMembers() {
 
 async function deleteStudent(id) {
     if(!confirm('Scratch this person out specifically?')) return;
-    
     const { error } = await supabaseClient.from('students').delete().eq('id', id);
     if (error) showToast('Could not delete.', 'error');
     else {
@@ -224,6 +222,64 @@ async function deleteStudent(id) {
     }
 }
 
+// --- NEW: STICKY NOTES LOGIC ---
+
+async function postNote() {
+    const text = noteInput.value.trim();
+    if (!text) return showToast('Please write something!', 'error');
+
+    // 1. Calculate Random Position (Scatter Logic)
+    // We create a buffer of 10% on each side so it doesn't go off-screen
+    const randomX = Math.floor(Math.random() * 80) + 5; // 5% to 85% of screen width
+    const randomY = Math.floor(Math.random() * 80) + 5; // 5% to 85% of screen height
+    const rotation = Math.floor(Math.random() * 20) - 10; // Random tilt between -10deg and 10deg
+    
+    // Random Color
+    const colors = ['#fff740', '#ff7eb9', '#7afcff', '#98ff98'];
+    const randomColor = colors[Math.floor(Math.random() * colors.length)];
+
+    const { error } = await supabaseClient
+        .from('notes')
+        .insert([{ 
+            content: text, 
+            x_pos: randomX, 
+            y_pos: randomY, 
+            rotation: rotation,
+            color: randomColor
+        }]);
+
+    if (error) {
+        showToast('Failed to stick note.', 'error');
+    } else {
+        showToast('Note posted!');
+        noteInput.value = '';
+        fetchNotes(); // Refresh to see your new note
+    }
+}
+
+async function fetchNotes() {
+    const { data, error } = await supabaseClient
+        .from('notes')
+        .select('*');
+
+    if (error) return;
+
+    noteLayer.innerHTML = ''; // Clear current notes
+    data.forEach(note => {
+        const div = document.createElement('div');
+        div.className = 'sticky-note';
+        div.innerText = note.content;
+        
+        // Apply Random Styles from DB
+        div.style.left = note.x_pos + '%';
+        div.style.top = note.y_pos + '%';
+        div.style.transform = `rotate(${note.rotation}deg)`;
+        div.style.backgroundColor = note.color;
+
+        noteLayer.appendChild(div);
+    });
+}
+
 function logout() {
     authSection.classList.remove('hidden');
     adminDashboard.classList.add('hidden');
@@ -231,4 +287,5 @@ function logout() {
     srCodeInput.value = '';
     passwordInput.value = '';
     fetchMembers(); 
+    fetchNotes();
 }

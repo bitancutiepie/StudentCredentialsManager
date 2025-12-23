@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bitancutiepie Manager</title>
+    <title>The Wimpy Credentials Book</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet">
 
     <style>
-        
+        /* --- WIMPY KID THEME & ANIMATIONS --- */
         body {
             font-family: 'Patrick Hand', cursive;
             background-color: #fcf5e5;
@@ -17,8 +17,52 @@
             padding: 30px;
             color: #222;
             overflow-x: hidden;
+            position: relative; /* For sticky notes */
+            min-height: 100vh;
         }
 
+        /* Container for the notes (Background Layer) */
+        #note-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1; /* Behind the main box */
+            pointer-events: none; /* Let clicks pass through to empty space */
+        }
+
+        /* The Sticky Note Look */
+        .sticky-note {
+            position: absolute;
+            width: 150px;
+            padding: 15px;
+            font-size: 1.1rem;
+            color: #000;
+            box-shadow: 5px 5px 7px rgba(0,0,0,0.2);
+            font-weight: bold;
+            pointer-events: auto; /* Make notes clickable/hoverable */
+            transition: transform 0.2s;
+            cursor: default;
+        }
+        .sticky-note:hover {
+            transform: scale(1.1) !important; /* Pop up on hover */
+            z-index: 10;
+        }
+        /* Tape effect on note */
+        .sticky-note::after {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: 35%;
+            width: 40px;
+            height: 15px;
+            background-color: rgba(255,255,255,0.5);
+            border: 1px solid #ccc;
+            transform: rotate(-3deg);
+        }
+
+        /* Main App Box (Foreground Layer) */
         .sketch-box {
             background: white;
             max-width: 650px;
@@ -29,6 +73,7 @@
             box-shadow: 10px 10px 0px rgba(0,0,0,0.1);
             position: relative;
             animation: slideUp 0.6s ease-out;
+            z-index: 100; /* Always on top of notes */
         }
 
         .sketch-box::before {
@@ -46,7 +91,7 @@
 
         h2 { font-size: 2.5rem; text-align: center; margin-top: 0; text-decoration: underline; text-decoration-style: wavy; }
 
-        input {
+        input, textarea {
             width: 100%;
             padding: 10px;
             margin: 10px 0;
@@ -58,7 +103,7 @@
             outline: none;
             transition: border-color 0.3s;
         }
-        input:focus { border-bottom: 3px solid #000; }
+        input:focus, textarea:focus { border-bottom: 3px solid #000; }
 
         button {
             width: 100%;
@@ -89,13 +134,7 @@
         th { border-bottom: 3px solid #000; text-align: left; padding-bottom: 10px;}
         td { border-bottom: 1px dashed #555; padding: 12px 5px; vertical-align: middle; }
         
-        .btn-icon {
-            width: auto;
-            padding: 5px 10px;
-            font-size: 1rem;
-            margin: 0 2px;
-            border-radius: 5px;
-        }
+        .btn-icon { width: auto; padding: 5px 10px; font-size: 1rem; margin: 0 2px; border-radius: 5px; }
         .btn-copy { background: #ffc107; color: #000; border-color: #e0a800; cursor: pointer; }
         .btn-delete { background: #dc3545; color: #fff; border-color: #c82333; cursor: pointer; }
 
@@ -109,9 +148,8 @@
             box-shadow: 5px 5px 0px rgba(0,0,0,0.1);
         }
 
-        /* --- UPDATED IMAGE STYLE --- */
         .sketch-face { 
-            height: 70px; /* Size roughly like a big emoji */
+            height: 70px;
             width: auto;
             display: inline-block; 
             margin-bottom: 10px; 
@@ -119,31 +157,16 @@
         }
 
         /* --- MEMBER LIST STYLES --- */
-        .member-list-section {
-            margin-top: 30px;
-            border-top: 2px dashed #999;
-            padding-top: 20px;
-        }
-        .member-list-title {
-            text-align: center;
-            font-weight: bold;
-            font-size: 1.3rem;
-            margin-bottom: 10px;
-            transform: rotate(-1deg);
-        }
-        .member-tags {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 10px;
-        }
-        .member-tag {
-            background: #fff;
-            border: 1px solid #333;
-            padding: 5px 10px;
-            border-radius: 15px 5px 10px 5px;
-            font-size: 1rem;
-            box-shadow: 2px 2px 0 rgba(0,0,0,0.1);
+        .member-list-section { margin-top: 30px; border-top: 2px dashed #999; padding-top: 20px; }
+        .member-list-title { text-align: center; font-weight: bold; font-size: 1.3rem; margin-bottom: 10px; transform: rotate(-1deg); }
+        .member-tags { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+        .member-tag { background: #fff; border: 1px solid #333; padding: 5px 10px; border-radius: 15px 5px 10px 5px; font-size: 1rem; box-shadow: 2px 2px 0 rgba(0,0,0,0.1); }
+
+        /* --- NOTE INPUT AREA --- */
+        .note-input-area {
+            margin-top: 20px;
+            border-top: 2px dashed #000;
+            padding-top: 15px;
         }
 
         /* --- TOAST --- */
@@ -171,6 +194,8 @@
 <body>
 
     <div id="toast-container"></div>
+
+    <div id="note-layer"></div>
 
     <div class="sketch-box" id="authSection">
         <h2 id="formTitle">Ako na ang Bahala</h2>
@@ -217,9 +242,33 @@
             <h3>CODE: <span id="studentCodeDisplay"></span></h3>
             <p><i>"Ako na bahala sa enrollment niyo guys - jv!"</i></p>
         </div>
+
+        <div class="note-input-area">
+            <h3>📝 Leave a Sticky Note</h3>
+            <div style="display:flex; gap:10px;">
+                <input type="text" id="noteInput" placeholder="Write something..." maxlength="30">
+                <button onclick="postNote()" style="width:auto; margin-top:10px;">POST</button>
+            </div>
+            <small><i>(Notes appear randomly on everyone's screen!)</i></small>
+        </div>
+
         <button onclick="logout()">LOGOUT</button>
     </div>
 
     <script src="script.js"></script>
+    <script>
+        // Animation for Pat's face
+        const faceElement = document.querySelector('.sketch-face');
+        const faceFrames = ['pat.png', 'pat2.png', 'pat3.png'];
+        // Safe check if images exist before loading to avoid errors
+        if(faceElement) {
+            faceFrames.forEach(src => new Image().src = src);
+            let currentFaceIndex = 0;
+            setInterval(() => {
+                currentFaceIndex = (currentFaceIndex + 1) % faceFrames.length;
+                faceElement.src = faceFrames[currentFaceIndex];
+            }, 500);
+        }
+    </script>
 </body>
 </html>
