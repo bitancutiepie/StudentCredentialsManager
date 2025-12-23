@@ -17,19 +17,19 @@
             padding: 30px;
             color: #222;
             overflow-x: hidden;
-            position: relative; /* For sticky notes */
+            position: relative;
             min-height: 100vh;
         }
 
-        /* Container for the notes (Background Layer) */
+        /* Container for the notes */
         #note-layer {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 1; /* Behind the main box */
-            pointer-events: none; /* Let clicks pass through to empty space */
+            z-index: 50; /* Base level for notes */
+            pointer-events: none; /* Let clicks pass through empty areas */
         }
 
         /* The Sticky Note Look */
@@ -41,14 +41,20 @@
             color: #000;
             box-shadow: 5px 5px 7px rgba(0,0,0,0.2);
             font-weight: bold;
-            pointer-events: auto; /* Make notes clickable/hoverable */
-            transition: transform 0.2s;
-            cursor: default;
+            pointer-events: auto; /* Enable clicking/dragging */
+            transition: transform 0.1s, box-shadow 0.1s;
+            cursor: grab; /* Show grab hand */
+            user-select: none; /* Prevent text selection while dragging */
+            /* Random rotation handled in JS */
         }
-        .sticky-note:hover {
-            transform: scale(1.1) !important; /* Pop up on hover */
-            z-index: 10;
+
+        .sticky-note:active {
+            cursor: grabbing;
+            transform: scale(1.05);
+            box-shadow: 10px 10px 15px rgba(0,0,0,0.3);
+            z-index: 1000 !important; /* Bring to very front when dragging */
         }
+
         /* Tape effect on note */
         .sticky-note::after {
             content: '';
@@ -62,7 +68,7 @@
             transform: rotate(-3deg);
         }
 
-        /* Main App Box (Foreground Layer) */
+        /* Main App Box */
         .sketch-box {
             background: white;
             max-width: 650px;
@@ -73,7 +79,20 @@
             box-shadow: 10px 10px 0px rgba(0,0,0,0.1);
             position: relative;
             animation: slideUp 0.6s ease-out;
-            z-index: 100; /* Always on top of notes */
+            z-index: 100; /* Main box stays prominent */
+        }
+        
+        /* Mobile Responsiveness for Main Box */
+        @media (max-width: 600px) {
+            .sketch-box {
+                margin: 10px auto;
+                padding: 15px;
+                width: 90%;
+            }
+            h2 { font-size: 1.8rem; }
+            .sketch-face { height: 50px; }
+            /* Hide notes on very small screens if they block view, or scale them down */
+            .sticky-note { width: 120px; font-size: 0.9rem; }
         }
 
         .sketch-box::before {
@@ -102,6 +121,7 @@
             font-size: 1.2rem;
             outline: none;
             transition: border-color 0.3s;
+            box-sizing: border-box; /* Fix padding issues */
         }
         input:focus, textarea:focus { border-bottom: 3px solid #000; }
 
@@ -129,7 +149,6 @@
         .toggle-link { text-align: center; display: block; margin-top: 15px; cursor: pointer; font-size: 1.2rem; color: #444; }
         .hidden { display: none; }
 
-        /* Table & Copy Button */
         table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 1.1rem; }
         th { border-bottom: 3px solid #000; text-align: left; padding-bottom: 10px;}
         td { border-bottom: 1px dashed #555; padding: 12px 5px; vertical-align: middle; }
@@ -148,29 +167,28 @@
             box-shadow: 5px 5px 0px rgba(0,0,0,0.1);
         }
 
+        .sketch-face-container {
+            display: inline-block;
+            margin-bottom: 10px;
+            animation: float 3s ease-in-out infinite;
+        }
+
         .sketch-face { 
             height: 70px;
             width: auto;
-            display: inline-block; 
-            margin-bottom: 10px; 
-            animation: float 3s ease-in-out infinite; 
+            display: block;
+            transition: transform 0.3s ease;
         }
+        .sketch-face:hover { transform: scale(1.2); }
 
-        /* --- MEMBER LIST STYLES --- */
         .member-list-section { margin-top: 30px; border-top: 2px dashed #999; padding-top: 20px; }
         .member-list-title { text-align: center; font-weight: bold; font-size: 1.3rem; margin-bottom: 10px; transform: rotate(-1deg); }
         .member-tags { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
         .member-tag { background: #fff; border: 1px solid #333; padding: 5px 10px; border-radius: 15px 5px 10px 5px; font-size: 1rem; box-shadow: 2px 2px 0 rgba(0,0,0,0.1); }
 
-        /* --- NOTE INPUT AREA --- */
-        .note-input-area {
-            margin-top: 20px;
-            border-top: 2px dashed #000;
-            padding-top: 15px;
-        }
+        .note-input-area { margin-top: 20px; border-top: 2px dashed #000; padding-top: 15px; }
 
-        /* --- TOAST --- */
-        #toast-container { position: fixed; top: 20px; right: 20px; z-index: 1000; }
+        #toast-container { position: fixed; top: 20px; right: 20px; z-index: 2000; } /* Highest Z-index */
         .toast {
             background: #fff740;
             color: #000;
@@ -194,7 +212,6 @@
 <body>
 
     <div id="toast-container"></div>
-
     <div id="note-layer"></div>
 
     <div class="sketch-box" id="authSection">
@@ -219,24 +236,27 @@
         <h2>THE BLACK LIST</h2>
         <p>Current Admin: <b id="adminNameDisplay">Greg</b> <button onclick="logout()" style="width:auto; float:right; font-size:1rem;">EXIT</button></p>
         
-        <table>
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Code</th>
-                    <th>Password (Real)</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody id="studentTableBody">
+        <div style="overflow-x:auto;"> <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Code</th>
+                        <th>Password (Real)</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="studentTableBody">
                 </tbody>
-        </table>
+            </table>
+        </div>
     </div>
 
     <div class="sketch-box hidden" id="studentDashboard">
         <h2>MY PROFILE</h2>
         <div class="id-badge">
-            <img src="pat.png" class="sketch-face" alt="Profile Pic">
+            <div class="sketch-face-container">
+                <img src="pat.png" class="sketch-face" alt="Profile Pic">
+            </div>
             
             <h3>NAME: <span id="studentNameDisplay"></span></h3>
             <h3>CODE: <span id="studentCodeDisplay"></span></h3>
@@ -245,8 +265,8 @@
 
         <div class="note-input-area">
             <h3>📝 Leave a Sticky Note</h3>
-            <div style="display:flex; gap:10px;">
-                <input type="text" id="noteInput" placeholder="Write something..." maxlength="30">
+            <div style="display:flex; gap:10px; flex-wrap: wrap;">
+                <input type="text" id="noteInput" placeholder="Write something..." maxlength="30" style="flex:1;">
                 <button onclick="postNote()" style="width:auto; margin-top:10px;">POST</button>
             </div>
             <small><i>(Notes appear randomly on everyone's screen!)</i></small>
