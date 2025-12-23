@@ -5,9 +5,7 @@
 
 ![Project Banner](https://img.shields.io/badge/Status-Active-success?style=for-the-badge) ![Vibe-Sketchbook](https://img.shields.io/badge/Vibe-Sketchbook-orange?style=for-the-badge) ![Tech-Supabase](https://img.shields.io/badge/Backend-Supabase-green?style=for-the-badge)
 
-## 📖 About The Project
-
-## 📝 Table of Contents
+##  Table of Contents
 - [📖 About The Project](#-about-the-project)
 - [✨ Key Features](#-key-features)
   - [🎨 UI/UX Design](#-uiux-design)
@@ -18,7 +16,9 @@
 - [⚠️ Note on Security](#-note-on-security)
 - [🤝 Contributing](#-contributing)
 - [📄 License](#-license)
-- [👨‍💻 Author](#-author)
+- [👨‍💻 Author](#author)
+
+## 📖 About The Project
 The **Wimpy Credentials Book** is a web-based Student Credentials Manager built to solve a specific problem: simplifying the enrollment process for a group of friends ("Mga Kosa"). 
 
 Instead of a boring corporate interface, this project utilizes a **hand-drawn, sketchbook aesthetic** inspired by the *Diary of a Wimpy Kid* series. It features custom CSS animations, wobbly borders, and a paper-texture feel, proving that utility apps can still be fun.
@@ -29,12 +29,12 @@ Instead of a boring corporate interface, this project utilizes a **hand-drawn, s
 | <img src="screenshot1.png" width="250"> | <img src="screenshot2.png" width="250"> | <img src="screenshot3.png" width="250"> |
 ## ✨ Key Features
 
-### 🎨 **UI/UX Design**
+### 🎨 UI/UX Design
 * **Sketchbook Theme:** Uses the *Patrick Hand* font and CSS gradients to simulate lined paper.
 * **Interactive Animations:** Buttons "wiggle" on hover; pages "slide up" like turning a page.
 * **Sticky Note Toasts:** Custom notifications that look like yellow sticky notes instead of standard browser alerts.
 
-### 🔐 **Core Functionality**
+### 🔐 Core Functionality
 * **Secret Admin Backdoor:** Login with special admin credentials to access "The Black List."
 * **Public Class List:** Automatically fetches and displays names of enrolled members on the login screen.
 * **One-Click Copy:** Admin can instantly copy SR Codes and Passwords to the clipboard for fast enrollment processing.
@@ -68,7 +68,7 @@ This project was primarily built for a specific personal use case. As such, cont
 ## 📄 License
 This project is licensed under the MIT License - see the `LICENSE` file for details (if you choose to add one).
 
-## 👨‍💻 Author
+## Author
 Built with 🖤 by **Joshua Vincent Bitancor** *aka "The Enrollment Savior"*
 
 ---
