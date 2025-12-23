@@ -46,7 +46,8 @@ This project uses a Serverless architecture (Supabase), so no local backend serv
 * **Best Practice:** In a standard public production environment, I would utilize `Bcrypt` (which was implemented in earlier versions) to salt and hash all sensitive data.
 
 ## 👨‍💻 Author
-Built with 🖤 by **[Your Name]** *aka "The Enrollment Savior"*
+Built with 🖤 by **[Joshua Vincent Bitancor]** *aka "The Enrollment Savior"*
 
 ---
 *Inspired by Jeff Kinney's Diary of a Wimpy Kid.*
+
