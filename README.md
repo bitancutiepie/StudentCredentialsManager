@@ -1,5 +1,7 @@
 # 📓 The Wimpy Credentials Book (Sistema ni JV)
 
+![Project Logo](logo.png)
+
 ![Project Status](https://img.shields.io/badge/Status-Active-success?style=for-the-badge)
 ![Tech Stack](https://img.shields.io/badge/Stack-HTML%20%7C%20JS%20%7C%20Supabase-blue?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-orange?style=for-the-badge)
