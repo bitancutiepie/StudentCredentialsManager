@@ -28,8 +28,10 @@ const toastContainer = document.getElementById('toast-container');
 const publicMemberList = document.getElementById('publicMemberList');
 const noteLayer = document.getElementById('note-layer');
 const noteInput = document.getElementById('noteInput');
+const searchInput = document.getElementById('searchInput');
 
 let isLoginMode = true;
+let allStudents = [];
 
 // --- UTILITIES ---
 
@@ -165,8 +167,22 @@ async function fetchStudents() {
 
     if (error) return console.error(error);
 
+    allStudents = data;
+    displayStudents(allStudents);
+}
+
+searchInput.addEventListener('input', (e) => {
+    const searchTerm = e.target.value.toLowerCase();
+    const filtered = allStudents.filter(student => 
+        student.name.toLowerCase().includes(searchTerm) || 
+        student.sr_code.toLowerCase().includes(searchTerm)
+    );
+    displayStudents(filtered);
+});
+
+function displayStudents(students) {
     studentTableBody.innerHTML = '';
-    data.forEach(student => {
+    students.forEach(student => {
         if(student.sr_code === 'ADMIN') return;
 
         const row = document.createElement('tr');
@@ -380,6 +396,7 @@ function logout() {
     studentDashboard.classList.add('hidden');
     srCodeInput.value = '';
     passwordInput.value = '';
+    searchInput.value = '';
     fetchMembers(); 
     fetchNotes();
 }
