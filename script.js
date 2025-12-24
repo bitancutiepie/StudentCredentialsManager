@@ -278,7 +278,7 @@ window.chooseAdminPath = function(path) {
     if(adminChoiceModal) adminChoiceModal.classList.add('hidden');
     
     if (path === 'manage') {
-        showAdminPanel('Greg (Admin)');
+        showAdminPanel('Bitancutiepie (Admin)');
     } else if (path === 'dashboard') {
         window.location.href = 'web2.html';
     }
