@@ -73,7 +73,7 @@ function copyToClipboard(text) {
 }
 
 // --- INITIAL LOAD ---
-document.addEventListener("DOMContentLoaded", () => {
+const initApp = () => {
     // 1. Force Inject Admin Modal if missing (Fixes GitHub Pages Sync Issues)
     injectAdminModal();
 
@@ -118,7 +118,13 @@ document.addEventListener("DOMContentLoaded", () => {
     fetchNotes(); 
     fetchRecentLogins();
     showWelcomeNote();
-});
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener("DOMContentLoaded", initApp);
+} else {
+    initApp();
+}
 
 // --- SELF-HEALING MODAL INJECTOR ---
 function injectAdminModal() {
@@ -585,25 +591,55 @@ function showWelcomeNote() {
     // if (localStorage.getItem('wimpy_update_seen_v2')) return;
 
     const modal = document.createElement('div');
-    modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:9999; display:flex; justify-content:center; align-items:center; overflow-y: auto; padding: 20px;';
+    modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; display:flex; justify-content:center; align-items:flex-start; overflow-y: auto; padding: 20px; box-sizing: border-box;';
     const note = document.createElement('div');
     note.className = 'sketch-box';
-    note.style.width = '100%';
-    note.style.maxWidth = '550px';
-    note.style.margin = 'auto'; 
-    note.style.textAlign = 'center';
-    note.style.transform = 'rotate(-1deg)';
+    note.style.cssText = 'width:100%; max-width:600px; margin: 40px auto; text-align:center; transform:rotate(-1deg); background:#fdfbf7; border:3px solid #000; padding:20px; box-shadow:10px 10px 0 rgba(0,0,0,0.2); position:relative;';
     note.innerHTML = `
+        <style>
+            .update-flex {
+                display: flex;
+                gap: 20px;
+                justify-content: center;
+                align-items: center;
+                margin: 25px 0 15px 0;
+                flex-wrap: wrap;
+            }
+            .update-arrow {
+                font-size: 2rem;
+                font-weight: bold;
+                transition: transform 0.3s;
+            }
+            .update-img-container {
+                flex: 1;
+                min-width: 200px;
+                position: relative;
+                cursor: zoom-in;
+            }
+            @media (max-width: 600px) {
+                .update-flex {
+                    flex-direction: column;
+                    gap: 30px;
+                }
+                .update-arrow {
+                    transform: rotate(90deg);
+                }
+                .update-img-container {
+                    width: 100%;
+                    min-width: unset;
+                }
+            }
+        </style>
         <h2 style="margin-top:0; text-decoration: underline wavy #000;">✨ SYSTEM UPDATE</h2>
         <p style="font-size:1.1rem; margin: 10px 0;">"Look at the upgrade guys! (Click pics to zoom)"</p>
-        <div style="display: flex; gap: 15px; justify-content: center; align-items: center; margin: 25px 0 15px 0; flex-wrap: wrap;">
-            <div style="flex: 1; min-width: 180px; position: relative; cursor: zoom-in;" onclick="viewFullImage('Beforeimg.png')">
-                <div style="font-weight: bold; background: #bdc3c7; color: #000; display: inline-block; padding: 2px 10px; transform: rotate(-3deg); border: 2px solid #000; position: absolute; top: -12px; left: -5px; z-index: 2;">BEFORE:</div>
+        <div class="update-flex">
+            <div class="update-img-container" onclick="viewFullImage('Beforeimg.png')">
+                <div style="font-weight: bold; background: #bdc3c7; color: #000; display: inline-block; padding: 2px 10px; transform: rotate(-3deg); border: 2px solid #000; position: absolute; top: -12px; left: -5px; z-index: 2; font-size: 0.8rem;">BEFORE:</div>
                 <img src="Beforeimg.png" alt="Old Website" style="width: 100%; height: auto; border: 3px solid #000; box-shadow: 4px 4px 0 rgba(0,0,0,0.2); background: #fff; transition: transform 0.2s;">
             </div>
-            <div style="font-size: 2rem; font-weight: bold;">→</div>
-            <div style="flex: 1; min-width: 180px; position: relative; cursor: zoom-in;" onclick="viewFullImage('Afterimg.png')">
-                <div style="font-weight: bold; background: #ffee58; color: #000; display: inline-block; padding: 2px 10px; transform: rotate(3deg); border: 2px solid #000; position: absolute; top: -12px; right: -5px; z-index: 2;">NOW:</div>
+            <div class="update-arrow">→</div>
+            <div class="update-img-container" onclick="viewFullImage('Afterimg.png')">
+                <div style="font-weight: bold; background: #ffee58; color: #000; display: inline-block; padding: 2px 10px; transform: rotate(3deg); border: 2px solid #000; position: absolute; top: -12px; right: -5px; z-index: 2; font-size: 0.8rem;">NOW:</div>
                 <img src="Afterimg.png" alt="New Website" style="width: 100%; height: auto; border: 3px solid #000; box-shadow: 4px 4px 0 rgba(0,0,0,0.2); background: #fff; transition: transform 0.2s;">
             </div>
         </div>
