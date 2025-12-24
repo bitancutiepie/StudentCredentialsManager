@@ -1,4 +1,4 @@
-// script.js (Admin Choice Menu Added)
+// script.js (Self-Healing Admin Menu Version)
 
 // --- CONFIGURATION ---
 const SUPABASE_URL = 'https://egnyblflgppsosunnilq.supabase.co';
@@ -20,7 +20,9 @@ const keepLoggedInContainer = document.getElementById('keepLoggedInContainer');
 const authSection = document.getElementById('authSection');
 const adminDashboard = document.getElementById('adminDashboard');
 const studentDashboard = document.getElementById('studentDashboard');
-const adminChoiceModal = document.getElementById('adminChoiceModal'); // NEW
+
+// -- DYNAMIC ELEMENT REFERENCES --
+let adminChoiceModal = document.getElementById('adminChoiceModal');
 
 const adminNameDisplay = document.getElementById('adminNameDisplay');
 const studentTableBody = document.getElementById('studentTableBody');
@@ -64,12 +66,16 @@ function copyToClipboard(text) {
 
 // --- INITIAL LOAD ---
 document.addEventListener("DOMContentLoaded", () => {
+    // 1. Force Inject Admin Modal if missing (Fixes GitHub Pages Sync Issues)
+    injectAdminModal();
+
+    // 2. Check Session
     const storedUser = localStorage.getItem('wimpy_user') || sessionStorage.getItem('wimpy_user');
     
     if (storedUser) {
         const user = JSON.parse(storedUser);
         
-        // IF ADMIN: Show the choice menu again
+        // IF ADMIN: Show the choice menu
         if (user.sr_code === 'ADMIN') {
             authSection.classList.add('hidden');
             if(adminChoiceModal) adminChoiceModal.classList.remove('hidden');
@@ -106,6 +112,36 @@ document.addEventListener("DOMContentLoaded", () => {
     showWelcomeNote();
 });
 
+// --- SELF-HEALING MODAL INJECTOR ---
+function injectAdminModal() {
+    if (document.getElementById('adminChoiceModal')) {
+        adminChoiceModal = document.getElementById('adminChoiceModal');
+        return;
+    }
+
+    const modalHTML = `
+        <div id="adminChoiceModal" class="sketch-box hidden" style="text-align: center;">
+            <h2>🔐 ADMIN ACCESS GRANTED</h2>
+            <p>"Where do you want to go, Boss?"</p>
+            <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 20px;">
+                <button onclick="chooseAdminPath('manage')" style="background: #2d3436; color: white;">
+                    📋 MANAGE USERS (Black List)
+                </button>
+                <button onclick="chooseAdminPath('dashboard')" style="background: #d63031; color: white;">
+                    📒 GO TO BINDER (As Admin)
+                </button>
+            </div>
+            <p style="font-size: 0.9rem; margin-top: 15px;">(As Admin in Binder, you can add classes & events)</p>
+        </div>
+    `;
+    
+    // Insert after authSection
+    if(authSection) {
+        authSection.insertAdjacentHTML('afterend', modalHTML);
+        adminChoiceModal = document.getElementById('adminChoiceModal'); // Re-assign global
+    }
+}
+
 // --- AUTH LOGIC ---
 
 toggleAuth.addEventListener('click', () => {
@@ -113,7 +149,6 @@ toggleAuth.addEventListener('click', () => {
     authForm.reset();
     
     if (isLoginMode) {
-        // LOGIN
         formTitle.innerText = 'Ako na ang Bahala';
         submitBtn.innerText = 'ENTER →';
         nameInput.classList.add('hidden');
@@ -127,10 +162,8 @@ toggleAuth.addEventListener('click', () => {
             keepLoggedInContainer.classList.remove('hidden');
             keepLoggedInContainer.style.display = 'flex'; 
         }
-
         toggleAuth.innerHTML = "Magpapalista? <b>Come here mga kosa click this</b>";
     } else {
-        // REGISTER
         formTitle.innerText = 'Palista na';
         submitBtn.innerText = 'SIGN UP';
         nameInput.classList.remove('hidden');
@@ -144,14 +177,13 @@ toggleAuth.addEventListener('click', () => {
             keepLoggedInContainer.classList.add('hidden');
             keepLoggedInContainer.style.display = 'none'; 
         }
-
         toggleAuth.innerHTML = "Already a member? <b>Login</b>";
     }
 });
 
 authForm.addEventListener('submit', async (e) => {
     e.preventDefault(); 
-    const srCode = srCodeInput.value.toUpperCase();
+    const srCode = srCodeInput.value.toUpperCase().trim(); // Added trim for safety
     const password = passwordInput.value;
     const name = nameInput.value;
     const avatarFile = avatarInput ? avatarInput.files[0] : null;
@@ -180,17 +212,14 @@ async function handleRegister(name, srCode, password, file) {
         const { error: uploadError } = await supabaseClient.storage
             .from('avatars')
             .upload(fileName, file);
-        
         if (!uploadError) {
             const { data } = supabaseClient.storage.from('avatars').getPublicUrl(fileName);
             avatarUrl = data.publicUrl;
         }
     }
-
     const { error } = await supabaseClient
         .from('students')
         .insert([{ name: name, sr_code: srCode, password: password, avatar_url: avatarUrl }]);
-
     if (error) throw error;
     showToast('Success! You are in.');
     fetchMembers(); 
@@ -222,7 +251,6 @@ async function handleLogin(srCode, password) {
     });
 
     const keepLoggedIn = document.getElementById('keepLoggedIn').checked;
-
     if (keepLoggedIn) {
         localStorage.setItem('wimpy_user', userPayload);
     } else {
@@ -234,9 +262,10 @@ async function handleLogin(srCode, password) {
         .update({ last_login: new Date().toISOString() })
         .eq('id', data.id);
 
-    // === NEW ADMIN LOGIC ===
+    // === ADMIN CHECK ===
     if (data.sr_code === 'ADMIN') {
-        // HIDE LOGIN, SHOW CHOICE MODAL
+        // Ensure modal exists before showing
+        injectAdminModal();
         authSection.classList.add('hidden');
         if(adminChoiceModal) adminChoiceModal.classList.remove('hidden');
     } else {
@@ -244,15 +273,13 @@ async function handleLogin(srCode, password) {
     }
 }
 
-// --- NEW FUNCTION: Handle Admin Choice ---
-function chooseAdminPath(path) {
+// --- ADMIN CHOICE HANDLING ---
+window.chooseAdminPath = function(path) {
     if(adminChoiceModal) adminChoiceModal.classList.add('hidden');
     
     if (path === 'manage') {
-        // Show the Black List / User Management
         showAdminPanel('Greg (Admin)');
     } else if (path === 'dashboard') {
-        // Go to Web2.html AS ADMIN (Enables editing)
         window.location.href = 'web2.html';
     }
 }
@@ -265,25 +292,13 @@ function showAdminPanel(name) {
     fetchStudents(); 
 }
 
-function showStudentPanel(name, code, avatarUrl, id) {
-    currentStudentId = id;
-    authSection.classList.add('hidden');
-    adminDashboard.classList.add('hidden');
-    studentDashboard.classList.remove('hidden');
-    studentNameDisplay.innerText = name;
-    studentCodeDisplay.innerText = code;
-    setupAvatarUpdate(name, avatarUrl);
-}
-
 // --- ADMIN FEATURES (Black List) ---
 
 async function fetchStudents() {
     const { data, error } = await supabaseClient
         .from('students')
         .select('id, name, sr_code, password, avatar_url');
-
     if (error) return console.error(error);
-
     allStudents = data;
     displayStudents(allStudents);
 }
@@ -348,24 +363,17 @@ async function deleteStudent(id) {
     }
 }
 
-// IMPERSONATION LOGIC (Rocket Button)
+// IMPERSONATION LOGIC
 function loginAsUser(name, code, avatarUrl, id) {
     if(!confirm('Switch view to ' + name + '?')) return;
-    
-    // Create payload for the TARGET user
     const targetUserPayload = JSON.stringify({
         id: id,
         name: name,
         sr_code: code,
         avatar_url: avatarUrl
     });
-
-    // Clear Admin session
     localStorage.removeItem('wimpy_user');
-    
-    // Set Student session
     sessionStorage.setItem('wimpy_user', targetUserPayload);
-
     showToast('Switching to ' + name + '...');
     setTimeout(() => {
         window.location.href = 'web2.html';
@@ -378,7 +386,6 @@ function openPortalWindow() {
     const height = Math.min(800, window.screen.height);
     const left = (window.screen.width - width) / 2;
     const top = (window.screen.height - height) / 2;
-
     window.open(
         "https://dione.batstate-u.edu.ph/student/#/", 
         "BatStatePortal", 
@@ -386,20 +393,15 @@ function openPortalWindow() {
     );
 }
 
-// --- PUBLIC LIST ---
+// --- OTHER FEATURES ---
 async function fetchMembers() {
-    const { data, error } = await supabaseClient
-        .from('students')
-        .select('name, avatar_url');
-
+    const { data, error } = await supabaseClient.from('students').select('name, avatar_url');
     if (error) return;
-
     publicMemberList.innerHTML = '';
     if (data.length === 0) {
         publicMemberList.innerHTML = '<span style="font-style:italic">No members yet...</span>';
         return;
     }
-
     data.forEach(student => {
         if(student.name === 'Principal User' || student.name.includes('Admin')) return;
         const tag = document.createElement('div');
@@ -409,7 +411,6 @@ async function fetchMembers() {
         tag.style.gap = '5px';
         tag.style.cursor = 'pointer';
         tag.onclick = () => showPublicProfile(student.name, student.avatar_url);
-        
         const img = document.createElement('img');
         img.src = student.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random`;
         img.style.width = '20px';
@@ -449,18 +450,9 @@ function showPublicProfile(name, avatarUrl) {
 async function fetchRecentLogins() {
     const container = document.getElementById('recentLoginsList');
     if(!container) return;
-
-    const { data, error } = await supabaseClient
-        .from('students')
-        .select('name, avatar_url, last_login')
-        .neq('sr_code', 'ADMIN')
-        .not('last_login', 'is', null)
-        .order('last_login', { ascending: false })
-        .limit(5);
-
+    const { data, error } = await supabaseClient.from('students').select('name, avatar_url, last_login').neq('sr_code', 'ADMIN').not('last_login', 'is', null).order('last_login', { ascending: false }).limit(5);
     if (error) return;
     if (!data || data.length === 0) return;
-
     container.innerHTML = '';
     data.forEach(student => {
         const row = document.createElement('div');
@@ -494,33 +486,22 @@ function timeAgo(dateString) {
     return "Just now";
 }
 
-// --- DRAGGABLE STICKY NOTES ---
+// --- DRAGGABLE NOTES ---
 async function postNote() {
     const text = noteInput.value.trim();
     if (!text) return showToast('Please write something!', 'error');
-
     let randomX;
     if (window.innerWidth < 600) randomX = Math.floor(Math.random() * 80) + 5; 
     else if (Math.random() > 0.5) randomX = Math.floor(Math.random() * 20) + 2; 
     else randomX = Math.floor(Math.random() * 20) + 75; 
-    
     const randomY = Math.floor(Math.random() * 90) + 5; 
     const rotation = Math.floor(Math.random() * 20) - 10;
     const colors = ['#fff740', '#ff7eb9', '#7afcff', '#98ff98'];
     const randomColor = colors[Math.floor(Math.random() * colors.length)];
-
-    const { error } = await supabaseClient
-        .from('notes')
-        .insert([{ content: text, x_pos: randomX, y_pos: randomY, rotation: rotation, color: randomColor }]);
-
+    const { error } = await supabaseClient.from('notes').insert([{ content: text, x_pos: randomX, y_pos: randomY, rotation: rotation, color: randomColor }]);
     if (error) showToast('Failed to stick note.', 'error');
-    else {
-        showToast('Note posted!');
-        noteInput.value = '';
-        fetchNotes();
-    }
+    else { showToast('Note posted!'); noteInput.value = ''; fetchNotes(); }
 }
-
 async function fetchNotes() {
     const { data, error } = await supabaseClient.from('notes').select('*');
     if (error) return;
@@ -538,46 +519,14 @@ async function fetchNotes() {
         noteLayer.appendChild(div);
     });
 }
-
 function makeDraggable(element, noteId) {
     let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     element.onmousedown = dragMouseDown;
     element.ontouchstart = dragMouseDown;
-
-    function dragMouseDown(e) {
-        e = e || window.event;
-        if (e.type !== 'touchstart') e.preventDefault();
-        pos3 = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
-        pos4 = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
-        document.onmouseup = closeDragElement;
-        document.onmousemove = elementDrag;
-        document.ontouchend = closeDragElement;
-        document.ontouchmove = elementDrag;
-    }
-
-    function elementDrag(e) {
-        e = e || window.event;
-        let clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
-        let clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
-        pos1 = pos3 - clientX;
-        pos2 = pos4 - clientY;
-        pos3 = clientX;
-        pos4 = clientY;
-        element.style.top = (element.offsetTop - pos2) + "px";
-        element.style.left = (element.offsetLeft - pos1) + "px";
-    }
-
-    function closeDragElement() {
-        document.onmouseup = null;
-        document.onmousemove = null;
-        document.ontouchend = null;
-        document.ontouchmove = null;
-        const xPercent = (element.offsetLeft / window.innerWidth) * 100;
-        const yPercent = (element.offsetTop / window.innerHeight) * 100;
-        updateNotePosition(noteId, xPercent, yPercent);
-    }
+    function dragMouseDown(e) { e = e || window.event; if (e.type !== 'touchstart') e.preventDefault(); pos3 = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX; pos4 = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY; document.onmouseup = closeDragElement; document.onmousemove = elementDrag; document.ontouchend = closeDragElement; document.ontouchmove = elementDrag; }
+    function elementDrag(e) { e = e || window.event; let clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX; let clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY; pos1 = pos3 - clientX; pos2 = pos4 - clientY; pos3 = clientX; pos4 = clientY; element.style.top = (element.offsetTop - pos2) + "px"; element.style.left = (element.offsetLeft - pos1) + "px"; }
+    function closeDragElement() { document.onmouseup = null; document.onmousemove = null; document.ontouchend = null; document.ontouchmove = null; const xPercent = (element.offsetLeft / window.innerWidth) * 100; const yPercent = (element.offsetTop / window.innerHeight) * 100; updateNotePosition(noteId, xPercent, yPercent); }
 }
-
 async function updateNotePosition(id, x, y) {
     x = Math.max(0, Math.min(x, 95));
     y = Math.max(0, Math.min(y, 95));
@@ -589,8 +538,6 @@ function logout() {
     currentStudentId = null;
     localStorage.removeItem('wimpy_user');
     sessionStorage.removeItem('wimpy_user');
-    
-    // Reset UI
     authSection.classList.remove('hidden');
     adminDashboard.classList.add('hidden');
     studentDashboard.classList.add('hidden');
@@ -598,28 +545,7 @@ function logout() {
     srCodeInput.value = '';
     passwordInput.value = '';
     searchInput.value = '';
-    
-    fetchMembers(); 
-    fetchNotes();
-    fetchRecentLogins();
-}
-
-function setupAvatarUpdate(name, avatarUrl) {
-    const avatarImg = document.getElementById('userAvatarDisplay');
-    if (!avatarImg) return;
-    avatarImg.src = avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
-}
-
-// Click to Zoom
-window.viewFullImage = function(src) {
-    const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:10000; display:flex; justify-content:center; align-items:center; cursor: zoom-out; animation: fadeIn 0.3s;';
-    const img = document.createElement('img');
-    img.src = src;
-    img.style.cssText = 'max-width:90%; max-height:90%; border: 5px solid #fff; box-shadow: 0 0 30px rgba(0,0,0,0.5); object-fit: contain;';
-    overlay.appendChild(img);
-    overlay.onclick = function() { overlay.remove(); };
-    document.body.appendChild(overlay);
+    fetchMembers(); fetchNotes(); fetchRecentLogins();
 }
 
 function showWelcomeNote() {
@@ -661,4 +587,15 @@ function showWelcomeNote() {
     `;
     modal.appendChild(note);
     document.body.appendChild(modal);
+}
+// Click to Zoom
+window.viewFullImage = function(src) {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:10000; display:flex; justify-content:center; align-items:center; cursor: zoom-out; animation: fadeIn 0.3s;';
+    const img = document.createElement('img');
+    img.src = src;
+    img.style.cssText = 'max-width:90%; max-height:90%; border: 5px solid #fff; box-shadow: 0 0 30px rgba(0,0,0,0.5); object-fit: contain;';
+    overlay.appendChild(img);
+    overlay.onclick = function() { overlay.remove(); };
+    document.body.appendChild(overlay);
 }
