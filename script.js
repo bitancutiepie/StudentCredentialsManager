@@ -182,7 +182,14 @@ async function handleLogin(srCode, password) {
         showAdminPanel(data.name);
     } else {
         // Update last_login timestamp
-        await supabaseClient.from('students').update({ last_login: new Date().toISOString() }).eq('id', data.id);
+        const { error: updateError } = await supabaseClient
+            .from('students')
+            .update({ last_login: new Date().toISOString() })
+            .eq('id', data.id);
+
+        if (updateError) {
+            console.error('Login Update Error:', updateError.message, updateError.details);
+        }
         showStudentPanel(data.name, data.sr_code, data.avatar_url, data.id);
     }
 }
@@ -456,7 +463,10 @@ async function fetchRecentLogins() {
         .order('last_login', { ascending: false })
         .limit(5);
 
-    if (error) return console.error('Error fetching logins:', error);
+    if (error) {
+        console.error('Error fetching logins:', error.message, error.details);
+        return;
+    }
     if (!data || data.length === 0) return;
 
     container.innerHTML = '';
@@ -643,6 +653,7 @@ function logout() {
     searchInput.value = '';
     fetchMembers(); 
     fetchNotes();
+    fetchRecentLogins();
 }
 
 function showWelcomeNote() {
