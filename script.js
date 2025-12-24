@@ -1,4 +1,4 @@
-// script.js (Clean Pop-Up Window Version)
+// script.js (Fixed "Keep Logged In" Toggle)
 
 // --- CONFIGURATION ---
 const SUPABASE_URL = 'https://egnyblflgppsosunnilq.supabase.co';
@@ -15,6 +15,7 @@ const srCodeInput = document.getElementById('srCode');
 const passwordInput = document.getElementById('password');
 const submitBtn = document.getElementById('submitBtn');
 const toggleAuth = document.getElementById('toggleAuth');
+const keepLoggedInContainer = document.getElementById('keepLoggedInContainer'); // Target the checkbox container
 
 const authSection = document.getElementById('authSection');
 const adminDashboard = document.getElementById('adminDashboard');
@@ -30,7 +31,7 @@ const noteLayer = document.getElementById('note-layer');
 const noteInput = document.getElementById('noteInput');
 const searchInput = document.getElementById('searchInput');
 let currentStudentId = null;
-let avatarInput; // Will be created dynamically
+let avatarInput; 
 
 let isLoginMode = true;
 let allStudents = [];
@@ -62,6 +63,12 @@ function copyToClipboard(text) {
 
 // --- INITIAL LOAD ---
 document.addEventListener("DOMContentLoaded", () => {
+    // 1. Check if already logged in (Auto-Redirect)
+    if (localStorage.getItem('wimpy_user') || sessionStorage.getItem('wimpy_user')) {
+        window.location.href = 'web2.html';
+        return; 
+    }
+
     // Inject Avatar Input for Registration
     const avatarLabel = document.createElement('div');
     avatarLabel.innerText = "Upload Profile Picture (Optional):";
@@ -92,23 +99,44 @@ document.addEventListener("DOMContentLoaded", () => {
 toggleAuth.addEventListener('click', () => {
     isLoginMode = !isLoginMode;
     authForm.reset();
+    
     if (isLoginMode) {
+        // === LOGIN MODE ===
         formTitle.innerText = 'Ako na ang Bahala';
         submitBtn.innerText = 'ENTER →';
         nameInput.classList.add('hidden');
         nameInput.required = false;
+        
+        // Hide Avatar stuff
         if(avatarInput) avatarInput.classList.add('hidden');
         const lbl = document.getElementById('avatarLabel');
         if(lbl) lbl.classList.add('hidden');
+
+        // SHOW Checkbox (Force Display Flex)
+        if(keepLoggedInContainer) {
+            keepLoggedInContainer.classList.remove('hidden');
+            keepLoggedInContainer.style.display = 'flex'; 
+        }
+
         toggleAuth.innerHTML = "Magpapalista? <b>Come here mga kosa click this</b>";
     } else {
+        // === SIGN UP MODE ===
         formTitle.innerText = 'Palista na';
         submitBtn.innerText = 'SIGN UP';
         nameInput.classList.remove('hidden');
         nameInput.required = true;
+
+        // Show Avatar stuff
         if(avatarInput) avatarInput.classList.remove('hidden');
         const lbl = document.getElementById('avatarLabel');
         if(lbl) lbl.classList.remove('hidden');
+
+        // HIDE Checkbox (Force Display None)
+        if(keepLoggedInContainer) {
+            keepLoggedInContainer.classList.add('hidden');
+            keepLoggedInContainer.style.display = 'none'; 
+        }
+
         toggleAuth.innerHTML = "Already a member? <b>Login</b>";
     }
 });
@@ -178,20 +206,31 @@ async function handleLogin(srCode, password) {
         return;
     }
 
-    if (data.sr_code === 'ADMIN') {
-        showAdminPanel(data.name);
-    } else {
-        // Update last_login timestamp
-        const { error: updateError } = await supabaseClient
-            .from('students')
-            .update({ last_login: new Date().toISOString() })
-            .eq('id', data.id);
+    // Save user data
+    const userPayload = JSON.stringify({
+        id: data.id,
+        name: data.name,
+        sr_code: data.sr_code,
+        avatar_url: data.avatar_url
+    });
 
-        if (updateError) {
-            console.error('Login Update Error:', updateError.message, updateError.details);
-        }
-        showStudentPanel(data.name, data.sr_code, data.avatar_url, data.id);
+    // CHECK THE BOX
+    const keepLoggedIn = document.getElementById('keepLoggedIn').checked;
+
+    if (keepLoggedIn) {
+        localStorage.setItem('wimpy_user', userPayload); // Stays forever
+    } else {
+        sessionStorage.setItem('wimpy_user', userPayload); // Deleted when tab closes
     }
+
+    // Update last login
+    await supabaseClient
+    .from('students')
+    .update({ last_login: new Date().toISOString() })
+    .eq('id', data.id);
+
+    // REDIRECT
+    window.location.href = 'web2.html';
 }
 
 function showAdminPanel(name) {
@@ -210,34 +249,15 @@ function showStudentPanel(name, code, avatarUrl, id) {
     studentNameDisplay.innerText = name;
     studentCodeDisplay.innerText = code;
 
+    setupAvatarUpdate(name, avatarUrl);
+}
+
+function setupAvatarUpdate(name, avatarUrl) {
     const avatarImg = document.getElementById('userAvatarDisplay');
+    if (!avatarImg) return;
+
+    avatarImg.src = avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
     
-    // Apply styles to existing image
-    avatarImg.style.width = '100px';
-    avatarImg.style.height = '100px';
-    avatarImg.style.borderRadius = '50%';
-    avatarImg.style.objectFit = 'cover';
-    avatarImg.style.cursor = 'pointer';
-    avatarImg.title = 'Click to change profile picture';
-
-    // Add visual hint for updating profile pic
-    let hint = document.getElementById('avatarHint');
-    if (!hint) {
-        hint = document.createElement('div');
-        hint.id = 'avatarHint';
-        hint.innerText = '📷 Tap image to update';
-        hint.style.fontSize = '0.8rem';
-        hint.style.color = '#555';
-        hint.style.cursor = 'pointer';
-        hint.onclick = () => avatarImg.click();
-        
-        const imgContainer = avatarImg.parentElement;
-        if (imgContainer && imgContainer.parentNode) {
-            imgContainer.parentNode.insertBefore(hint, imgContainer.nextSibling);
-        }
-    }
-
-    // Setup input if not present
     let updateInput = document.getElementById('updateAvatarInput');
     if (!updateInput) {
         updateInput = document.createElement('input');
@@ -247,15 +267,13 @@ function showStudentPanel(name, code, avatarUrl, id) {
         updateInput.style.display = 'none';
         avatarImg.parentNode.appendChild(updateInput);
 
-        avatarImg.addEventListener('click', () => updateInput.click());
-        updateInput.addEventListener('change', async (e) => {
+        avatarImg.onclick = () => updateInput.click();
+        updateInput.onchange = async (e) => {
             if (e.target.files[0] && currentStudentId) {
                 await updateProfilePic(currentStudentId, e.target.files[0]);
             }
-        });
+        };
     }
-
-    avatarImg.src = avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
 }
 
 async function updateProfilePic(id, file) {
@@ -272,9 +290,6 @@ async function updateProfilePic(id, file) {
     
     if (uploadError) {
         console.error('Supabase Storage Error:', uploadError);
-        if (uploadError.message.includes('row-level security')) {
-            return showToast('Permission Denied: Enable "Anon" uploads in Supabase Storage.', 'error');
-        }
         return showToast(`Upload failed: ${uploadError.message}`, 'error');
     }
 
@@ -315,43 +330,43 @@ searchInput.addEventListener('input', (e) => {
 });
 
 function displayStudents(students) {
-    studentTableBody.innerHTML = '';
-    students.forEach(student => {
-        if(student.sr_code === 'ADMIN') return;
+    studentTableBody.innerHTML = students
+        .filter(s => s.sr_code !== 'ADMIN')
+        .map(student => {
+            const safeName = student.name.replace(/'/g, "\\'");
+            const safeCode = student.sr_code.replace(/'/g, "\\'");
+            const safeAvatar = (student.avatar_url || '').replace(/'/g, "\\'");
+            const avatar = student.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random`;
 
-        const safeName = student.name.replace(/'/g, "\\'");
-        const safeCode = student.sr_code.replace(/'/g, "\\'");
-        const safeAvatar = (student.avatar_url || '').replace(/'/g, "\\'");
-
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>
-                <div class="flex-cell">
-                    <img src="${student.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random`}" style="width:35px; height:35px; border-radius:50%; object-fit:cover; border:1px solid #333;">
-                    <span style="font-weight:bold;">${student.name}</span>
-                </div>
-            </td>
-            <td>
-                <div class="flex-cell">
-                    <span style="font-family:monospace; font-size:1.1rem;">${student.sr_code}</span>
-                    <button class="btn-icon btn-copy" onclick="copyToClipboard('${safeCode}')" title="Copy Code">📋</button>
-                </div>
-            </td>
-            <td>
-                <div class="flex-cell">
-                    <span style="font-family:monospace; font-size:1.1rem;">${student.password}</span>
-                    <button class="btn-icon btn-copy" onclick="copyToClipboard('${student.password}')" title="Copy Password">🔑</button>
-                </div>
-            </td>
-            <td>
-                <div class="flex-cell">
-                    <button class="btn-icon btn-delete" onclick="deleteStudent('${student.id}')" title="Delete">🗑️</button>
-                    <button class="btn-icon" style="background:#2196F3; color:white; border-color:#0b7dda;" onclick="loginAsUser('${safeName}', '${safeCode}', '${safeAvatar}', '${student.id}')" title="Login As">🚀</button>
-                </div>
-            </td>
-        `;
-        studentTableBody.appendChild(row);
-    });
+            return `
+                <tr>
+                    <td>
+                        <div class="flex-cell">
+                            <img src="${avatar}" style="width:35px; height:35px; border-radius:50%; object-fit:cover; border:1px solid #333;">
+                            <span style="font-weight:bold;">${student.name}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="flex-cell">
+                            <span style="font-family:monospace; font-size:1.1rem;">${student.sr_code}</span>
+                            <button class="btn-icon btn-copy" onclick="copyToClipboard('${safeCode}')" title="Copy Code">📋</button>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="flex-cell">
+                            <span style="font-family:monospace; font-size:1.1rem;">${student.password}</span>
+                            <button class="btn-icon btn-copy" onclick="copyToClipboard('${student.password}')" title="Copy Password">🔑</button>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="flex-cell">
+                            <button class="btn-icon btn-delete" onclick="deleteStudent('${student.id}')" title="Delete">🗑️</button>
+                            <button class="btn-icon" style="background:#2196F3; color:white; border-color:#0b7dda;" onclick="loginAsUser('${safeName}', '${safeCode}', '${safeAvatar}', '${student.id}')" title="Login As">🚀</button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
 }
 
 async function deleteStudent(id) {
@@ -372,9 +387,7 @@ function loginAsUser(name, code, avatarUrl, id) {
 }
 
 // --- PORTAL POP-UP LOGIC ---
-
 function openPortalWindow() {
-    // Calculates the center of the screen
     const width = Math.min(1000, window.screen.width);
     const height = Math.min(800, window.screen.height);
     const left = (window.screen.width - width) / 2;
@@ -447,7 +460,6 @@ function showPublicProfile(name, avatarUrl) {
             <button onclick="document.getElementById('publicProfileModal').style.display='none'">CLOSE</button>
         </div>
     `;
-    
     modal.style.display = 'flex';
 }
 
@@ -463,19 +475,14 @@ async function fetchRecentLogins() {
         .order('last_login', { ascending: false })
         .limit(5);
 
-    if (error) {
-        console.error('Error fetching logins:', error.message, error.details);
-        return;
-    }
+    if (error) return;
     if (!data || data.length === 0) return;
 
     container.innerHTML = '';
     data.forEach(student => {
         const row = document.createElement('div');
         row.style.cssText = 'display:flex; align-items:center; gap:10px; width:100%; max-width:350px; justify-content:space-between; border-bottom:1px dashed #ccc; padding:5px 0;';
-        
         const safeAvatar = student.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random`;
-        
         row.innerHTML = `
             <div style="display:flex; align-items:center; gap:8px;">
                 <img src="${safeAvatar}" style="width:25px; height:25px; border-radius:50%; object-fit:cover; border:1px solid #333;">
@@ -512,15 +519,11 @@ async function postNote() {
     if (!text) return showToast('Please write something!', 'error');
 
     let randomX;
-    // Responsive positioning: On mobile, spawn anywhere. On desktop, prefer sides.
     if (window.innerWidth < 600) {
-        randomX = Math.floor(Math.random() * 80) + 5; // 5% to 85%
+        randomX = Math.floor(Math.random() * 80) + 5; 
     } else {
-        if (Math.random() > 0.5) {
-            randomX = Math.floor(Math.random() * 20) + 2; 
-        } else {
-            randomX = Math.floor(Math.random() * 20) + 75; 
-        }
+        if (Math.random() > 0.5) randomX = Math.floor(Math.random() * 20) + 2; 
+        else randomX = Math.floor(Math.random() * 20) + 75; 
     }
     const randomY = Math.floor(Math.random() * 90) + 5; 
     const rotation = Math.floor(Math.random() * 20) - 10;
@@ -531,9 +534,8 @@ async function postNote() {
         .from('notes')
         .insert([{ content: text, x_pos: randomX, y_pos: randomY, rotation: rotation, color: randomColor }]);
 
-    if (error) {
-        showToast('Failed to stick note.', 'error');
-    } else {
+    if (error) showToast('Failed to stick note.', 'error');
+    else {
         showToast('Note posted!');
         noteInput.value = '';
         fetchNotes();
@@ -541,10 +543,7 @@ async function postNote() {
 }
 
 async function fetchNotes() {
-    const { data, error } = await supabaseClient
-        .from('notes')
-        .select('*');
-
+    const { data, error } = await supabaseClient.from('notes').select('*');
     if (error) return;
 
     noteLayer.innerHTML = '';
@@ -553,14 +552,11 @@ async function fetchNotes() {
         div.className = 'sticky-note';
         div.innerText = note.content;
         div.id = `note-${note.id}`;
-        
         div.style.left = note.x_pos + '%';
         div.style.top = note.y_pos + '%';
         div.style.transform = `rotate(${note.rotation}deg)`;
         div.style.backgroundColor = note.color;
-
         makeDraggable(div, note.id);
-
         noteLayer.appendChild(div);
     });
 }
@@ -601,36 +597,8 @@ function makeDraggable(element, noteId) {
         document.onmousemove = null;
         document.ontouchend = null;
         document.ontouchmove = null;
-
-        const visibleBox = Array.from(document.querySelectorAll('.sketch-box')).find(box => !box.classList.contains('hidden'));
-        if (visibleBox) {
-            const boxRect = visibleBox.getBoundingClientRect();
-            const noteRect = element.getBoundingClientRect();
-            
-            const overlap = !(noteRect.right < boxRect.left || noteRect.left > boxRect.right || noteRect.bottom < boxRect.top || noteRect.top > boxRect.bottom);
-
-            if (overlap) {
-                const noteCX = noteRect.left + noteRect.width / 2;
-                const boxCX = boxRect.left + boxRect.width / 2;
-                let newLeft;
-                const padding = 20;
-
-                if (noteCX < boxCX) {
-                    newLeft = (boxRect.left + window.scrollX) - noteRect.width - padding;
-                    if (newLeft < 10) newLeft = 10;
-                } else {
-                    newLeft = (boxRect.right + window.scrollX) + padding;
-                    if (newLeft + noteRect.width > window.innerWidth) newLeft = window.innerWidth - noteRect.width - 10;
-                }
-                
-                if (window.innerWidth < 600 && (newLeft < 10 || newLeft > window.innerWidth - 100)) {
-                     element.style.top = ((boxRect.bottom + window.scrollY) + padding) + "px";
-                } else {
-                     element.style.left = newLeft + "px";
-                }
-            }
-        }
-
+        
+        // Simple bounds check logic for notes
         const xPercent = (element.offsetLeft / window.innerWidth) * 100;
         const yPercent = (element.offsetTop / window.innerHeight) * 100;
         updateNotePosition(noteId, xPercent, yPercent);
@@ -656,22 +624,56 @@ function logout() {
     fetchRecentLogins();
 }
 
+// "Click to Zoom" functionality
+window.viewFullImage = function(src) {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:10000; display:flex; justify-content:center; align-items:center; cursor: zoom-out; animation: fadeIn 0.3s;';
+    const img = document.createElement('img');
+    img.src = src;
+    img.style.cssText = 'max-width:90%; max-height:90%; border: 5px solid #fff; box-shadow: 0 0 30px rgba(0,0,0,0.5); object-fit: contain;';
+    overlay.appendChild(img);
+    overlay.onclick = function() { overlay.remove(); };
+    document.body.appendChild(overlay);
+}
+
 function showWelcomeNote() {
     const modal = document.createElement('div');
-    modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; display:flex; justify-content:center; align-items:center;';
+    modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:9999; display:flex; justify-content:center; align-items:center; overflow-y: auto; padding: 20px;';
     
     const note = document.createElement('div');
     note.className = 'sketch-box';
-    note.style.width = '90%';
-    note.style.maxWidth = '400px';
-    note.style.margin = '0'; // Override default margin for centering
+    note.style.width = '100%';
+    note.style.maxWidth = '550px';
+    note.style.margin = 'auto'; 
     note.style.textAlign = 'center';
     note.style.transform = 'rotate(-1deg)';
     
     note.innerHTML = `
-        <h2 style="margin-top:0;">ANNOUNCEMENT</h2>
-        <p style="font-size:1.5rem; margin: 20px 0;">"Register na kayo para maenroll ko kayo -JV"</p>
-        <button onclick="this.parentElement.parentElement.remove()">GEH GEH</button>
+        <h2 style="margin-top:0; text-decoration: underline wavy #000;">✨ SYSTEM UPDATE</h2>
+        <p style="font-size:1.1rem; margin: 10px 0;">"Look at the upgrade guys! (Click pics to zoom)"</p>
+        <div style="display: flex; gap: 15px; justify-content: center; align-items: center; margin: 25px 0 15px 0; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 180px; position: relative; cursor: zoom-in;" onclick="viewFullImage('Beforeimg.png')">
+                <div style="font-weight: bold; background: #bdc3c7; color: #000; display: inline-block; padding: 2px 10px; transform: rotate(-3deg); border: 2px solid #000; position: absolute; top: -12px; left: -5px; z-index: 2;">BEFORE:</div>
+                <img src="Beforeimg.png" alt="Old Website" style="width: 100%; height: auto; border: 3px solid #000; box-shadow: 4px 4px 0 rgba(0,0,0,0.2); background: #fff; transition: transform 0.2s;">
+            </div>
+            <div style="font-size: 2rem; font-weight: bold;">→</div>
+            <div style="flex: 1; min-width: 180px; position: relative; cursor: zoom-in;" onclick="viewFullImage('Afterimg.png')">
+                <div style="font-weight: bold; background: #ffee58; color: #000; display: inline-block; padding: 2px 10px; transform: rotate(3deg); border: 2px solid #000; position: absolute; top: -12px; right: -5px; z-index: 2;">NOW:</div>
+                <img src="Afterimg.png" alt="New Website" style="width: 100%; height: auto; border: 3px solid #000; box-shadow: 4px 4px 0 rgba(0,0,0,0.2); background: #fff; transition: transform 0.2s;">
+            </div>
+        </div>
+        <div style="text-align: left; background: #f9f9f9; border: 2px dashed #bbb; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+            <p style="font-weight: bold; margin: 0 0 10px 0; border-bottom: 2px solid #ddd; padding-bottom: 5px;">📝 New Features Added:</p>
+            <ul style="padding-left: 20px; margin: 0; list-style-type: '✅ '; font-size: 1rem;">
+                <li><b>Live Tracker:</b> See exactly which class is happening right now.</li>
+                <li><b>Subject Cabinet:</b> Organized folders for reviewers & PDFs.</li>
+                <li><b>Custom Avatars:</b> Upload your own profile picture.</li>
+                <li><b>Binder UI:</b> New "notebook" design for better vibes.</li>
+                <li><b>Auto-Schedule:</b> Classes automatically update daily.</li>
+            </ul>
+        </div>
+        <p style="font-size:1.3rem; margin: 15px 0; color: #d32f2f; font-weight: bold;">"Login na kayo para makita niyo!"</p>
+        <button onclick="this.parentElement.parentElement.remove()" style="background: #000; color: #fff; border: 2px solid #000; font-family: 'Patrick Hand'; font-size: 1.2rem; cursor: pointer; width: 100%; border-radius: 5px; padding: 10px;">SHEESH!</button>
     `;
     
     modal.appendChild(note);

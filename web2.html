@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema ni JV</title>
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Permanent+Marker&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    
+    <style>
+        :root {
+            --paper-color: #fdfbf7;
+            --line-color: #a4b0be;
+            --ink-color: #2f3542;
+            --red-ink: #ff4757;
+            --highlight: #ffee58;
+            --tape-color: rgba(255, 255, 255, 0.4);
+        }
+
+        body {
+            font-family: 'Patrick Hand', cursive;
+            background-color: #57606f; /* Dark Desk Background */
+            background-image: radial-gradient(#2f3542 15%, transparent 16%), radial-gradient(#2f3542 15%, transparent 16%);
+            background-size: 20px 20px;
+            margin: 0;
+            padding: 20px;
+            color: var(--ink-color);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* --- THE BINDER CONTAINER --- */
+        .binder {
+            display: flex;
+            max-width: 1200px;
+            margin: 0 auto;
+            background: var(--paper-color);
+            box-shadow: 15px 15px 30px rgba(0,0,0,0.4);
+            border-radius: 5px;
+            position: relative;
+            min-height: 85vh;
+            overflow: hidden; /* For rounded corners */
+        }
+
+        /* Left Sidebar (The Rings & Tabs) */
+        .sidebar {
+            width: 80px;
+            background: #2f3542;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 40px;
+            z-index: 20;
+            flex-shrink: 0;
+        }
+
+        .binder-ring {
+            width: 40px;
+            height: 15px;
+            background: linear-gradient(90deg, #bdc3c7, #fff, #bdc3c7);
+            border-radius: 10px;
+            margin-bottom: 60px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            position: relative;
+            z-index: 25;
+        }
+        
+        .binder-ring::before {
+            content: '';
+            position: absolute;
+            left: -15px;
+            top: 2px;
+            width: 12px;
+            height: 12px;
+            background: #000;
+            border-radius: 50%;
+        }
+
+        /* Navigation Tabs (Vertical Sticky Notes) */
+        .nav-tabs {
+            position: absolute;
+            left: 60px; /* Moved left to hug the spine tighter */
+            top: 50px;  /* Pushed down slightly for better spacing */
+            display: flex;
+            flex-direction: column;
+            gap: 20px; /* Increased gap to prevent crowding */
+            z-index: 15;
+        }
+
+        .tab-btn {
+            width: 130px; /* Slightly narrower to reduce overlap chance */
+            padding: 12px 10px 12px 25px;
+            font-family: 'Permanent Marker', cursive;
+            font-size: 1rem;
+            border: none;
+            cursor: pointer;
+            text-align: left;
+            transition: transform 0.2s ease;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+            clip-path: polygon(0% 0%, 95% 0%, 100% 50%, 95% 100%, 0% 100%);
+            position: relative;
+        }
+
+        .tab-btn:hover { transform: translateX(10px); }
+        .tab-btn.active { transform: translateX(15px); box-shadow: 5px 5px 10px rgba(0,0,0,0.1); }
+
+        /* Tab Colors */
+        .tab-btn:nth-child(1) { background: #ff7675; color: white; transform: rotate(-2deg); } /* Schedule */
+        .tab-btn:nth-child(2) { background: #74b9ff; color: white; transform: rotate(1deg); } /* Assignments */
+        .tab-btn:nth-child(3) { background: #55efc4; color: #2d3436; transform: rotate(-1deg); } /* Calendar */
+        .tab-btn:nth-child(4) { background: #ffeaa7; color: #2d3436; transform: rotate(2deg); } /* Links */
+
+        /* --- MAIN PAPER AREA --- */
+        .paper-content {
+            flex-grow: 1;
+            /* INCREASED LEFT PADDING from 120px to 170px to clear the tabs */
+            padding: 40px 40px 40px 170px; 
+            background-image: repeating-linear-gradient(var(--paper-color) 0px, var(--paper-color) 29px, var(--line-color) 30px);
+            position: relative;
+        }
+
+        /* The Vertical Red Margin Line */
+        .paper-content::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 145px; /* Moved margin line to match new padding */
+            width: 2px;
+            height: 100%;
+            background-color: #ff9ff3;
+            opacity: 0.6;
+            z-index: 0;
+        }
+
+        /* --- TYPOGRAPHY --- */
+        h1 {
+            font-family: 'Permanent Marker', cursive;
+            font-size: 3rem;
+            margin: 0;
+            transform: rotate(-2deg);
+            text-shadow: 2px 2px 0px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            display: inline-block;
+            background: var(--ink-color);
+            color: white;
+            padding: 5px 15px;
+            transform: rotate(1deg);
+            box-shadow: 3px 3px 0 rgba(0,0,0,0.2);
+        }
+
+        p { font-size: 1.3rem; margin: 10px 0; }
+
+        /* --- THE WATCH --- */
+        .casio-watch {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #333;
+            padding: 5px 15px;
+            border-radius: 4px;
+            border: 3px solid #7f8c8d;
+            box-shadow: 5px 5px 10px rgba(0,0,0,0.2);
+            transform: rotate(3deg);
+            z-index: 10;
+        }
+        .watch-face {
+            font-family: 'Courier New', monospace;
+            color: #7bed9f;
+            font-weight: bold;
+            font-size: 1.5rem;
+            text-shadow: 0 0 5px #7bed9f;
+            letter-spacing: 2px;
+        }
+        .watch-brand {
+            color: #bdc3c7;
+            font-size: 0.6rem;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 2px;
+        }
+
+        /* --- CARDS & ITEMS --- */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+            position: relative;
+            z-index: 5;
+        }
+
+        .class-card {
+            background: white;
+            padding: 20px;
+            box-shadow: 3px 3px 8px rgba(0,0,0,0.1);
+            position: relative;
+            transition: all 0.3s ease;
+            border: 1px solid #d1ccc0;
+        }
+
+        /* Tape Effect on top of cards */
+        .class-card::before {
+            content: '';
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 30px;
+            background-color: rgba(255,255,255,0.4);
+            border-left: 1px dashed rgba(0,0,0,0.1);
+            border-right: 1px dashed rgba(0,0,0,0.1);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            opacity: 0.7;
+        }
+
+        .class-card:hover {
+            transform: scale(1.02) rotate(-1deg);
+            box-shadow: 10px 10px 15px rgba(0,0,0,0.15);
+            z-index: 10;
+        }
+
+        /* Specific Styles for Assignment Cards (Sticky Note Look) */
+        #assignment-list .class-card {
+            background: #fffa65;
+            border: none;
+            border-bottom-right-radius: 40px 5px;
+        }
+        #assignment-list .class-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0; right: 0;
+            width: 0; height: 0;
+            border-style: solid;
+            border-width: 0 0 40px 40px;
+            border-color: transparent transparent rgba(0,0,0,0.1) transparent;
+        }
+
+        .subject-code {
+            font-family: 'Permanent Marker', cursive;
+            font-size: 1.5rem;
+            color: #d63031;
+        }
+
+        .time-badge {
+            float: right;
+            font-weight: bold;
+            background: #000;
+            color: #fff;
+            padding: 2px 8px;
+            font-size: 0.9rem;
+            border-radius: 3px;
+        }
+
+        /* --- BUTTONS --- */
+        .filter-bar {
+            margin: 20px 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .sketch-btn {
+            background: transparent;
+            border: 2px solid var(--ink-color);
+            padding: 8px 16px;
+            font-family: 'Patrick Hand', cursive;
+            font-size: 1.1rem;
+            cursor: pointer;
+            border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+            transition: 0.2s;
+            text-decoration: none;
+            color: var(--ink-color);
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .sketch-btn:hover {
+            background: var(--ink-color);
+            color: white;
+            transform: rotate(-2deg);
+        }
+
+        .sketch-btn.meet { border-color: #0984e3; color: #0984e3; }
+        .sketch-btn.meet:hover { background: #0984e3; color: white; }
+        
+        .sketch-btn.classroom { border-color: #00b894; color: #00b894; }
+        .sketch-btn.classroom:hover { background: #00b894; color: white; }
+
+        .sketch-btn.danger {
+            border-color: #d63031;
+            color: #d63031;
+            font-size: 0.9rem;
+        }
+        .sketch-btn.danger:hover { background: #d63031; color: white; }
+
+        /* --- ADMIN FORMS --- */
+        .admin-controls {
+            display: none; /* Hidden by default */
+            margin-top: 40px;
+            background: #fff;
+            padding: 20px;
+            border: 2px dashed #000;
+            position: relative;
+        }
+        .admin-controls::before {
+            content: 'TEACHER ONLY';
+            position: absolute;
+            top: -15px;
+            left: 20px;
+            background: #d63031;
+            color: white;
+            padding: 2px 10px;
+            font-weight: bold;
+            transform: rotate(-2deg);
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: none;
+            border-bottom: 2px solid #ccc;
+            background: transparent;
+            font-family: 'Patrick Hand';
+            font-size: 1.2rem;
+            box-sizing: border-box;
+        }
+        input:focus, textarea:focus {
+            outline: none;
+            border-bottom: 2px solid var(--ink-color);
+        }
+
+        /* --- UTILS --- */
+        .hidden { display: none !important; }
+        .loader { font-size: 1.5rem; text-align: center; margin-top: 50px; color: #7f8c8d; }
+
+        /* --- FLOATING UP BUTTON (Wimpy Style) --- */
+        /* --- LIVE CLASS CARD STYLES --- */
+        .live-card {
+            background: #fff;
+            border: 3px solid #d63031; /* Red border for urgency */
+            padding: 15px 20px;
+            border-radius: 4px;
+            position: relative;
+            box-shadow: 0 0 15px rgba(214, 48, 49, 0.3);
+            transform: rotate(-1deg);
+            animation: urgentPulse 2s infinite;
+        }
+
+        .live-card::before {
+            content: 'HAPPENING NOW';
+            position: absolute;
+            top: -12px;
+            left: 20px;
+            background: #d63031;
+            color: white;
+            font-family: 'Permanent Marker', cursive;
+            padding: 2px 10px;
+            font-size: 1rem;
+            transform: rotate(-2deg);
+            z-index: 2;
+        }
+
+        .live-card h3 {
+            margin: 10px 0 5px 0;
+            color: #d63031;
+            font-size: 1.8rem;
+        }
+
+        .live-card-details {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        @keyframes urgentPulse {
+            0% { box-shadow: 0 0 0 0 rgba(214, 48, 49, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(214, 48, 49, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(214, 48, 49, 0); }
+        }
+
+        .floating-action {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: #fff; /* Paper white */
+            border: 3px solid #000; /* Marker pen black */
+            /* This creates a non-perfect, hand-drawn circle shape */
+            border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 5px 5px 0px rgba(0,0,0,0.2); /* Hard shadow for pop */
+            transition: transform 0.2s ease;
+            z-index: 100;
+            color: #000;
+            font-size: 1.8rem;
+        }
+
+        .floating-action:hover {
+            transform: translateY(-5px) rotate(-10deg); /* Floats and tilts when hovered */
+            box-shadow: 8px 8px 0px rgba(0,0,0,0.2);
+            background: #000; /* Invert colors on hover */
+            color: #fff;
+            border-color: #fff;
+        }
+
+        /* --- TOAST NOTIFICATIONS --- */
+        #toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            background: #fff740; /* Sticky Note Yellow */
+            color: #000;
+            padding: 15px 25px;
+            border: 2px solid #000;
+            font-family: 'Patrick Hand', cursive;
+            font-size: 1.2rem;
+            box-shadow: 5px 5px 0 rgba(0,0,0,0.2);
+            transform: rotate(-2deg); /* Wimpy Style Tilt */
+            opacity: 0;
+            animation: slideInFadeOut 4s forwards; /* Lasts 4 seconds total */
+            min-width: 200px;
+            text-align: center;
+        }
+
+        /* Animation: Slide in -> Wait -> Fade Up & Out */
+        @keyframes slideInFadeOut {
+            0% { transform: translateX(100%) rotate(0deg); opacity: 0; }
+            10% { transform: translateX(0) rotate(-2deg); opacity: 1; }
+            80% { transform: translateX(0) rotate(-2deg); opacity: 1; }
+            100% { transform: translateY(-20px) rotate(-2deg); opacity: 0; }
+        }
+
+        /* --- MOBILE RESPONSIVENESS --- */
+        @media (max-width: 768px) {
+            .binder { flex-direction: column; min-height: 100vh; border-radius: 0; }
+            .sidebar { 
+                width: 100%; 
+                height: 60px; 
+                flex-direction: row; 
+                justify-content: space-around; 
+                padding: 0; 
+                align-items: center; 
+                background: #2f3542;
+            }
+            .binder-ring { 
+                display: none; /* Hide rings on mobile to save space */
+            }
+            .nav-tabs {
+                position: static;
+                flex-direction: row;
+                gap: 5px;
+                padding: 10px;
+                overflow-x: auto;
+                width: 100%;
+            }
+            .tab-btn {
+                width: auto;
+                padding: 8px 15px;
+                font-size: 0.9rem;
+                clip-path: none;
+                border-radius: 5px;
+                flex-shrink: 0;
+            }
+            .paper-content {
+                padding: 20px;
+                background-size: 100% 30px; /* Adjust line height */
+            }
+            .paper-content::before { display: none; /* Remove margin line on mobile */ }
+            
+            h1 { font-size: 2rem; }
+            .casio-watch { position: relative; top: 0; right: 0; display: inline-block; margin-bottom: 20px; transform: rotate(0); }
+            .grid-container { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="binder">
+        <!-- The Spine / Sidebar -->
+        <div class="sidebar">
+            <div class="binder-ring"></div>
+            <div class="binder-ring"></div>
+            <div class="binder-ring"></div>
+        </div>
+
+        <!-- The Tabs -->
+        <div class="nav-tabs">
+            <button class="tab-btn active" onclick="switchTab('schedule', event)">Schedule</button>
+            <button class="tab-btn" onclick="switchTab('assignments', event)">Homework</button>
+            <button class="tab-btn" onclick="switchTab('calendar', event)">Events</button>
+            <button class="tab-btn" onclick="switchTab('links', event)">Links</button>
+        </div>
+
+        <!-- The Main Paper Content -->
+        <div class="paper-content">
+            
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <img id="userAvatarDisplay" style="width: 60px; height: 60px; border-radius: 50%; border: 2px solid #000; cursor: pointer; object-fit: cover;" title="Click to change profile picture">
+                    <div>
+                        <h1>BSIT 2106 <span style="font-size: 1.5rem; color:#666;">(2nd Sem)</span></h1>
+                        <p id="welcome-msg" style="background: yellow; display: inline-block; transform: rotate(-1deg); padding: 0 5px;">Loading User...</p>
+                    </div>
+                </div>
+                
+                <div class="casio-watch">
+                    <div class="watch-brand">CASIO</div>
+                    <div class="watch-face" id="live-clock">00:00</div>
+                </div>
+            </div>
+
+            <!-- DYNAMIC LIVE CLASS SECTION -->
+            <div id="live-class-container" style="display: none; margin-bottom: 20px;">
+                <!-- JavaScript will inject the card here -->
+            </div>
+
+            <!-- Logout Button (Hidden in plain sight as a doodle button) -->
+            <div style="margin-top: 10px; text-align: right;">
+                <button onclick="logout()" class="sketch-btn danger" style="border: none; text-decoration: underline;">
+                    <i class="fas fa-door-open"></i> Go Home
+                </button>
+            </div>
+
+            <br>
+
+            <!-- ================= SCHEDULE TAB ================= -->
+            <div id="schedule" class="tab-content">
+                <h2><i class="fas fa-clock"></i> Class Schedule</h2>
+                
+                <div class="filter-bar">
+                    <button class="sketch-btn" onclick="filterSchedule('Monday')">M</button>
+                    <button class="sketch-btn" onclick="filterSchedule('Tuesday')">T</button>
+                    <button class="sketch-btn" onclick="filterSchedule('Wednesday')">W</button>
+                    <button class="sketch-btn" onclick="filterSchedule('Thursday')">Th</button>
+                    <button class="sketch-btn" onclick="filterSchedule('Friday')">F</button>
+                    <button class="sketch-btn" onclick="filterSchedule('All')">All</button>
+                </div>
+                
+                <h3 id="current-day-label" style="text-align: center; font-size: 1.5rem; color: #57606f;">Weekly View</h3>
+
+                <div id="schedule-list" class="grid-container">
+                    <div class="loader">Flipping pages...</div>
+                </div>
+
+                <!-- Admin Add Class -->
+                <div class="admin-controls" id="admin-schedule-form">
+                    <h3>Teacher's Note: Add Class</h3>
+                    <form onsubmit="addClass(event)">
+                        <select id="s-day" required>
+                            <option value="Monday">Monday</option>
+                            <option value="Tuesday">Tuesday</option>
+                            <option value="Wednesday">Wednesday</option>
+                            <option value="Thursday">Thursday</option>
+                            <option value="Friday">Friday</option>
+                        </select>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <input type="text" id="s-code" placeholder="Code (IT 211)" required>
+                            <input type="text" id="s-name" placeholder="Subject Name" required>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <input type="time" id="s-start" required>
+                            <input type="time" id="s-end" required>
+                        </div>
+                        <input type="text" id="s-room" placeholder="Room / Lab">
+                        <input type="text" id="s-instructor" placeholder="Instructor">
+                        <input type="url" id="s-meet" placeholder="G-Meet Link">
+                        <input type="url" id="s-class" placeholder="Classroom Link">
+                        <button type="submit" class="sketch-btn" style="background: #000; color: #fff;">Save to Schedule</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- ================= ASSIGNMENTS TAB ================= -->
+            <div id="assignments" class="tab-content hidden">
+                <h2><i class="fas fa-thumbtack"></i> Assignments</h2>
+                <div id="assignment-list" class="grid-container">
+                    <div class="loader">Checking backpack...</div>
+                </div>
+
+                <!-- Admin Add Assignment -->
+                <div class="admin-controls" id="admin-assignment-form">
+                    <h3>Teacher's Note: Add Homework</h3>
+                    <form onsubmit="addAssignment(event)">
+                        <input type="text" id="a-title" placeholder="Title" required>
+                        <input type="text" id="a-subject" placeholder="Subject (e.g. Math)" required>
+                        <input type="datetime-local" id="a-due">
+                        <textarea id="a-desc" placeholder="Details..."></textarea>
+                        <button type="submit" class="sketch-btn" style="background: #000; color: #fff;">Post Homework</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- ================= CALENDAR TAB ================= -->
+            <div id="calendar" class="tab-content hidden">
+                <h2><i class="fas fa-calendar-alt"></i> Upcoming Events</h2>
+                <div id="events-list" class="grid-container">
+                    <div class="loader">Looking at the wall calendar...</div>
+                </div>
+
+                 <!-- Admin Add Event -->
+                 <div class="admin-controls" id="admin-event-form">
+                    <h3>Teacher's Note: Add Event</h3>
+                    <form onsubmit="addEvent(event)">
+                        <input type="text" id="e-title" placeholder="Event Name" required>
+                        <input type="date" id="e-date" required>
+                        <input type="text" id="e-desc" placeholder="Description">
+                        <button type="submit" class="sketch-btn" style="background: #000; color: #fff;">Save Event</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- ================= LINKS & FILES TAB ================= -->
+            <div id="links" class="tab-content hidden">
+                <h2><i class="fas fa-folder-open"></i> Subject Reviewers</h2>
+
+                <!-- Subject Filter Bar (Empty - JS will fill this) -->
+                <div class="filter-bar" id="link-filters" style="margin-bottom: 25px;">
+                    <!-- JavaScript will automatically put buttons here based on your Schedule -->
+                    <button class="sketch-btn" onclick="filterFiles('All')">All</button>
+                    <button class="sketch-btn" onclick="filterFiles('General')">General</button>
+                </div>
+
+                <!-- The Dynamic File List -->
+                <div style="margin-bottom: 30px; min-height: 200px;">
+                    <h3 id="file-filter-label" style="color: #666; font-size: 1.2rem;">Showing: All Files</h3>
+                    <div id="file-list" class="grid-container">
+                        <div class="loader">Opening filing cabinet...</div>
+                    </div>
+                </div>
+                <hr style="border: 2px dashed #a4b0be; margin: 30px 0;">
+                <!-- Static Links -->
+                <h3><i class="fas fa-external-link-alt"></i> External Tools</h3>
+                <div class="grid-container">
+                    <a href="https://drive.google.com/drive/folders/1n50vswAbnj1KnoxB0Obp3_vcrouz10CW?usp=drive_link" target="_blank" class="class-card" style="text-decoration: none; color: inherit; text-align: center; border: 2px dashed #00b894;">
+                        <i class="fab fa-google-drive" style="font-size: 3rem; color: #00b894;"></i>
+                        <h3 style="margin-top: 10px;">Old Archive</h3>
+                    </a>
+                    
+                    <a href="https://onlinequestions.org/" target="_blank" class="class-card" style="text-decoration: none; color: inherit; text-align: center; border: 2px dashed #0984e3;">
+                        <i class="fas fa-user-secret" style="font-size: 3rem; color: #0984e3;"></i>
+                        <h3 style="margin-top: 10px;">Secret Questions</h3>
+                    </a>
+                </div>
+                <!-- Admin Upload Form -->
+                <div class="admin-controls" id="admin-file-form">
+                    <h3>Teacher's Note: Upload Resource</h3>
+                    <form onsubmit="uploadFile(event)">
+                        <input type="text" id="f-title" placeholder="File Title (e.g. Week 1 Reviewer)" required>
+                        
+                        <!-- Subject Selection (Empty - JS will fill this) -->
+                        <select id="f-subject" required style="margin-bottom: 10px;">
+                            <option value="" disabled selected>Select Subject</option>
+                            <option value="General">General / Other</option>
+                            <!-- JavaScript will add your Schedule subjects here -->
+                        </select>
+
+                        <input type="file" id="f-file" required>
+                        <button type="submit" class="sketch-btn" id="upload-btn" style="background: #000; color: #fff;">
+                            <i class="fas fa-paperclip"></i> Upload to Cabinet
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+        </div> <!-- End Paper Content -->
+    </div> <!-- End Binder -->
+
+    <!-- Hand-drawn Up Arrow -->
+    <div class="floating-action" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
+        <i class="fas fa-arrow-up" style="filter: drop-shadow(2px 2px 0 rgba(0,0,0,0.1));"></i>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container"></div>
+
+    <!-- SCRIPTS -->
+    <script src="dashboard.js"></script>
+
+</body>
+</html>
