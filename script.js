@@ -581,7 +581,8 @@ function returnToAdminChoice() {
 }
 
 function showWelcomeNote() {
-    if (localStorage.getItem('wimpy_update_seen_v1')) return;
+    // Check removed so it shows every time
+    // if (localStorage.getItem('wimpy_update_seen_v2')) return;
 
     const modal = document.createElement('div');
     modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:9999; display:flex; justify-content:center; align-items:center; overflow-y: auto; padding: 20px;';
@@ -617,7 +618,7 @@ function showWelcomeNote() {
             </ul>
         </div>
         <p style="font-size:1.3rem; margin: 15px 0; color: #d32f2f; font-weight: bold;">"Login na kayo para makita niyo!"</p>
-        <button onclick="localStorage.setItem('wimpy_update_seen_v1', 'true'); this.parentElement.parentElement.remove()" style="background: #000; color: #fff; border: 2px solid #000; font-family: 'Patrick Hand'; font-size: 1.2rem; cursor: pointer; width: 100%; border-radius: 5px; padding: 10px;">SHEESH!</button>
+        <button onclick="this.parentElement.parentElement.remove()" style="background: #000; color: #fff; border: 2px solid #000; font-family: 'Patrick Hand'; font-size: 1.2rem; cursor: pointer; width: 100%; border-radius: 5px; padding: 10px;">SHEESH!</button>
     `;
     modal.appendChild(note);
     document.body.appendChild(modal);

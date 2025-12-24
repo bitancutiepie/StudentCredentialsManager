@@ -198,15 +198,18 @@
         @keyframes toastOut { from { opacity: 1; } to { opacity: 0; transform: translateY(-20px); } }
 
         @media (max-width: 600px) {
-            .sketch-box { width: 90%; margin: 10px auto; padding: 15px; }
-            .sticky-note { width: 120px; font-size: 0.9rem; }
+            .sketch-box { width: 94%; margin: 10px auto; padding: 20px 15px; }
+            .sticky-note { width: 110px; font-size: 0.85rem; padding: 10px; }
             #toast-container { left: 50%; transform: translateX(-50%); right: auto; width: 90%; text-align: center; }
             .toast { width: 100%; box-sizing: border-box; }
             /* Make table text slightly smaller but buttons easier to tap */
-            table { font-size: 0.9rem; }
-            .btn-icon { padding: 8px 12px; margin: 2px; } 
+            table { font-size: 0.8rem; }
+            th, td { padding: 8px 4px; }
+            .btn-icon { padding: 8px 10px; margin: 2px; font-size: 1rem; } 
             /* Ensure modal fits */
             #publicProfileModal .sketch-box { width: 90% !important; max-width: 300px; }
+            h2 { font-size: 2rem; }
+            input, button { font-size: 1.1rem; }
         }
 
         /* --- FIX FOR CHECKBOX --- */
