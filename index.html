@@ -92,7 +92,7 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
 
-        h2 { font-size: 2.5rem; text-align: center; margin-top: 0; text-decoration: underline; text-decoration-style: wavy; }
+        h2 { font-size: 2.5rem; text-align: center; margin-top: 0; text-decoration: underline; text-decoration-style: wavy; text-decoration-skip-ink: none; }
 
         input, textarea {
             width: 100%;
@@ -134,9 +134,11 @@
         .hidden { display: none; }
 
         table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 1.1rem; }
-        th { border-bottom: 3px solid #000; text-align: left; padding-bottom: 10px;}
-        td { border-bottom: 1px dashed #555; padding: 12px 5px; vertical-align: middle; }
+        th { border-bottom: 2px solid #000; text-align: left; padding: 12px 10px; background: rgba(0,0,0,0.05); }
+        td { border-bottom: 1px solid #ccc; padding: 12px 10px; vertical-align: middle; }
+        tr:hover { background-color: rgba(255,255,255,0.6); }
         
+        .flex-cell { display: flex; align-items: center; gap: 10px; }
         .btn-icon { width: auto; padding: 5px 10px; font-size: 1rem; margin: 0 2px; border-radius: 5px; }
         .btn-copy { background: #ffc107; color: #000; border-color: #e0a800; cursor: pointer; }
         .btn-delete { background: #dc3545; color: #fff; border-color: #c82333; cursor: pointer; }
@@ -194,6 +196,13 @@
         @media (max-width: 600px) {
             .sketch-box { width: 90%; margin: 10px auto; padding: 15px; }
             .sticky-note { width: 120px; font-size: 0.9rem; }
+            #toast-container { left: 50%; transform: translateX(-50%); right: auto; width: 90%; text-align: center; }
+            .toast { width: 100%; box-sizing: border-box; }
+            /* Make table text slightly smaller but buttons easier to tap */
+            table { font-size: 0.9rem; }
+            .btn-icon { padding: 8px 12px; margin: 2px; } 
+            /* Ensure modal fits */
+            #publicProfileModal .sketch-box { width: 90% !important; max-width: 300px; }
         }
     </style>
 </head>
@@ -252,7 +261,7 @@
         <h2>MY PROFILE</h2>
         <div class="id-badge">
             <div class="sketch-face-container">
-                <img src="pat.png" class="sketch-face" alt="Profile Pic">
+                <img src="pat.png" class="sketch-face" id="userAvatarDisplay" alt="Profile Pic">
             </div>
             
             <h3>NAME: <span id="studentNameDisplay"></span></h3>
