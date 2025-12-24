@@ -317,7 +317,7 @@
             position: relative;
         }
         .admin-controls::before {
-            content: 'TEACHER ONLY';
+            content: 'ADMIN ONLY';
             position: absolute;
             top: -15px;
             left: 20px;
@@ -523,12 +523,15 @@
         <div class="paper-content">
             
             <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap;">
+                <!-- Application Logo - Moved to a more prominent, separate position -->
+                <img src="logo.png" alt="Sistema ni JV Logo" style="height: 60px; margin-bottom: 20px; display: block; margin-left: auto; margin-right: auto;"> 
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap;">
+                <!-- User Info (Avatar + Welcome Message) -->
                 <div style="display: flex; align-items: center; gap: 15px;">
                     <img id="userAvatarDisplay" style="width: 60px; height: 60px; border-radius: 50%; border: 2px solid #000; cursor: pointer; object-fit: cover;" title="Click to change profile picture">
-                    <div>
-                        <img src="logo.png" alt="Sistema ni JV Logo" style="height: 60px; margin-right: 10px;">
-                        <p id="welcome-msg" style="background: yellow; display: inline-block; transform: rotate(-1deg); padding: 0 5px;">Loading User...</p>
-                    </div>
+                    <p id="welcome-msg" style="background: yellow; display: inline-block; transform: rotate(-1deg); padding: 0 5px;">Loading User...</p>
                 </div>
                 
                 <div class="casio-watch">
@@ -556,11 +559,11 @@
                 <h2><i class="fas fa-clock"></i> Class Schedule</h2>
                 
                 <div class="filter-bar">
-                    <button class="sketch-btn" onclick="filterSchedule('Monday')">M</button>
-                    <button class="sketch-btn" onclick="filterSchedule('Tuesday')">T</button>
-                    <button class="sketch-btn" onclick="filterSchedule('Wednesday')">W</button>
-                    <button class="sketch-btn" onclick="filterSchedule('Thursday')">Th</button>
-                    <button class="sketch-btn" onclick="filterSchedule('Friday')">F</button>
+                    <button class="sketch-btn" onclick="filterSchedule('Monday')">Monday</button>
+                    <button class="sketch-btn" onclick="filterSchedule('Tuesday')">Tuesday</button>
+                    <button class="sketch-btn" onclick="filterSchedule('Wednesday')">Wednesday</button>
+                    <button class="sketch-btn" onclick="filterSchedule('Thursday')">Thursday</button>
+                    <button class="sketch-btn" onclick="filterSchedule('Friday')">Friday</button>
                     <button class="sketch-btn" onclick="filterSchedule('All')">All</button>
                 </div>
                 
@@ -572,8 +575,8 @@
 
                 <!-- Admin Add Class -->
                 <div class="admin-controls" id="admin-schedule-form">
-                    <h3>Teacher's Note: Add Class</h3>
-                    <form onsubmit="addClass(event)">
+                    <h3>Admin's Note: Add Class</h3>
+                    <form onsubmit="addClass(event)" autocomplete="off">
                         <select id="s-day" required>
                             <option value="Monday">Monday</option>
                             <option value="Tuesday">Tuesday</option>
@@ -607,8 +610,8 @@
 
                 <!-- Admin Add Assignment -->
                 <div class="admin-controls" id="admin-assignment-form">
-                    <h3>Teacher's Note: Add Homework</h3>
-                    <form onsubmit="addAssignment(event)">
+                    <h3>Admin's Note: Add Homework</h3>
+                    <form onsubmit="addAssignment(event)" autocomplete="off">
                         <input type="text" id="a-title" placeholder="Title" required>
                         <input type="text" id="a-subject" placeholder="Subject (e.g. Math)" required>
                         <input type="datetime-local" id="a-due">
@@ -627,8 +630,8 @@
 
                  <!-- Admin Add Event -->
                  <div class="admin-controls" id="admin-event-form">
-                    <h3>Teacher's Note: Add Event</h3>
-                    <form onsubmit="addEvent(event)">
+                    <h3>Admin's Note: Add Event</h3>
+                    <form onsubmit="addEvent(event)" autocomplete="off">
                         <input type="text" id="e-title" placeholder="Event Name" required>
                         <input type="date" id="e-date" required>
                         <input type="text" id="e-desc" placeholder="Description">
@@ -671,8 +674,8 @@
                 </div>
                 <!-- Admin Upload Form -->
                 <div class="admin-controls" id="admin-file-form">
-                    <h3>Teacher's Note: Upload Resource</h3>
-                    <form onsubmit="uploadFile(event)">
+                    <h3>Admin's Note: Upload Resource</h3>
+                    <form onsubmit="uploadFile(event)" autocomplete="off">
                         <input type="text" id="f-title" placeholder="File Title (e.g. Week 1 Reviewer)" required>
                         
                         <!-- Subject Selection (Empty - JS will fill this) -->
@@ -682,7 +685,7 @@
                             <!-- JavaScript will add your Schedule subjects here -->
                         </select>
 
-                        <input type="file" id="f-file" required>
+                        <input type="file" id="f-file" required accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.jpg,.png,.jpeg">
                         <button type="submit" class="sketch-btn" id="upload-btn" style="background: #000; color: #fff;">
                             <i class="fas fa-paperclip"></i> Upload to Cabinet
                         </button>

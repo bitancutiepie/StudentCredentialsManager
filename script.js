@@ -56,6 +56,14 @@ function showToast(message, type = 'info') {
     }, 3000);
 }
 
+function debounce(func, wait) {
+    let timeout;
+    return function(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+}
+
 function copyToClipboard(text) {
     navigator.clipboard.writeText(text).then(() => {
         showToast('Copied: ' + text, 'success');
@@ -185,8 +193,22 @@ authForm.addEventListener('submit', async (e) => {
     e.preventDefault(); 
     const srCode = srCodeInput.value.toUpperCase().trim(); // Added trim for safety
     const password = passwordInput.value;
-    const name = nameInput.value;
+    const name = nameInput.value.trim();
     const avatarFile = avatarInput ? avatarInput.files[0] : null;
+
+    // --- VALIDATION ---
+    if (!srCode) return showToast('SR Code is required', 'error');
+    if (!password) return showToast('Password is required', 'error');
+
+    if (!isLoginMode) {
+        if (name.length < 2) return showToast('Please enter a valid name', 'error');
+        if (password.length < 6) return showToast('Password must be at least 6 characters', 'error');
+        if (avatarFile) {
+            if (avatarFile.size > 2 * 1024 * 1024) return showToast('Image too large (Max 2MB)', 'error');
+            if (!avatarFile.type.startsWith('image/')) return showToast('File must be an image', 'error');
+        }
+    }
+    // ------------------
 
     submitBtn.innerText = 'Thinking...';
     submitBtn.disabled = true;
@@ -198,7 +220,11 @@ authForm.addEventListener('submit', async (e) => {
             await handleRegister(name, srCode, password, avatarFile);
         }
     } catch (err) {
-        showToast(err.message, 'error');
+        if (err.message && err.message.includes('duplicate key')) {
+            showToast('SR Code already registered!', 'error');
+        } else {
+            showToast(err.message, 'error');
+        }
     } finally {
         submitBtn.innerText = isLoginMode ? 'ENTER →' : 'SIGN UP';
         submitBtn.disabled = false;
@@ -303,14 +329,14 @@ async function fetchStudents() {
     displayStudents(allStudents);
 }
 
-searchInput.addEventListener('input', (e) => {
+searchInput.addEventListener('input', debounce((e) => {
     const searchTerm = e.target.value.toLowerCase();
     const filtered = allStudents.filter(student => 
         student.name.toLowerCase().includes(searchTerm) || 
         student.sr_code.toLowerCase().includes(searchTerm)
     );
     displayStudents(filtered);
-});
+}, 300));
 
 function displayStudents(students) {
     studentTableBody.innerHTML = students
@@ -548,7 +574,15 @@ function logout() {
     fetchMembers(); fetchNotes(); fetchRecentLogins();
 }
 
+// Function to return to the admin choice modal from the admin dashboard
+function returnToAdminChoice() {
+    adminDashboard.classList.add('hidden');
+    if(adminChoiceModal) adminChoiceModal.classList.remove('hidden');
+}
+
 function showWelcomeNote() {
+    if (localStorage.getItem('wimpy_update_seen_v1')) return;
+
     const modal = document.createElement('div');
     modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:9999; display:flex; justify-content:center; align-items:center; overflow-y: auto; padding: 20px;';
     const note = document.createElement('div');
@@ -583,7 +617,7 @@ function showWelcomeNote() {
             </ul>
         </div>
         <p style="font-size:1.3rem; margin: 15px 0; color: #d32f2f; font-weight: bold;">"Login na kayo para makita niyo!"</p>
-        <button onclick="this.parentElement.parentElement.remove()" style="background: #000; color: #fff; border: 2px solid #000; font-family: 'Patrick Hand'; font-size: 1.2rem; cursor: pointer; width: 100%; border-radius: 5px; padding: 10px;">SHEESH!</button>
+        <button onclick="localStorage.setItem('wimpy_update_seen_v1', 'true'); this.parentElement.parentElement.remove()" style="background: #000; color: #fff; border: 2px solid #000; font-family: 'Patrick Hand'; font-size: 1.2rem; cursor: pointer; width: 100%; border-radius: 5px; padding: 10px;">SHEESH!</button>
     `;
     modal.appendChild(note);
     document.body.appendChild(modal);

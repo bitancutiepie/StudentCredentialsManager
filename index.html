@@ -233,6 +233,16 @@
     <div id="note-layer"></div>
 
     <div class="sketch-box" id="authSection">
+        <img src="logo.png" alt="Sistema ni JV Logo" style="
+            max-width: 80%;
+            height: auto;
+            display: block;
+            margin: 0 auto 25px auto; /* Center and add space below */
+            border: 3px solid #000; /* Strong border */
+            border-radius: 2% 6% 5% 4% / 1% 1% 2% 4%; /* Sketchy border-radius */
+            box-shadow: 5px 5px 0px rgba(0,0,0,0.1); /* Hand-drawn shadow */
+            transform: rotate(-2deg); /* Slight tilt */
+        ">
         <h2 id="formTitle">Sistema ni Jv</h2>
         <form id="authForm">
             <input type="text" id="name" placeholder="YOUR NAME (Full Name)" class="hidden">
@@ -270,6 +280,7 @@
             <p style="margin:0;">Current Admin: <b id="adminNameDisplay">Greg</b></p>
             <div>
                 <button onclick="openPortalWindow()" style="width:auto; font-size:1rem; background:#4CAF50; border-color:green; color:white; padding:5px 10px; margin:0;">🌍 OPEN PORTAL</button>
+                <button onclick="returnToAdminChoice()" style="width:auto; font-size:1rem; background:#6c757d; border-color:#5a6268; color:white; padding:5px 10px; margin:0;">↩️ ADMIN MENU</button>
                 <button onclick="logout()" style="width:auto; font-size:1rem; padding:5px 10px; margin:0;">EXIT</button>
             </div>
         </div>
