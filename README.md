@@ -14,7 +14,7 @@ Instead of a boring corporate interface, this project utilizes a **hand-drawn, s
 ## ✨ Key Features & Functions
 
 ### 🔐 Authentication
-- **`handleRegister(name, srCode, password)`**: Handles new user registration and adds them to the `students` table in Supabase.
+- **`handleRegister(name, srCode, password, file)`**: Handles new user registration, including optional profile picture upload to Supabase Storage.
 - **`handleLogin(srCode, password)`**: Validates credentials against the database. Routes users to either the Admin Dashboard (if SR Code is 'ADMIN') or the Student Dashboard.
 - **`logout()`**: Resets the application state, clears inputs, and returns to the login screen.
 
@@ -23,18 +23,21 @@ Instead of a boring corporate interface, this project utilizes a **hand-drawn, s
 - **`displayStudents(students)`**: Dynamically populates the admin table. Includes "Copy" buttons for SR Codes and Passwords.
 - **Search Mechanic**: Real-time filtering of the student list by Name or SR Code via the `searchInput` event listener.
 - **`deleteStudent(id)`**: Allows admins to remove users from the database with a confirmation prompt ("Scratch this person out specifically?").
+- **`loginAsUser(...)`**: "Instant Login" feature allowing Admins to switch their view to any student's dashboard immediately.
 - **`openPortalWindow()`**: Opens the university portal (`dione.batstate-u.edu.ph`) in a centered, standalone pop-up window calculated based on screen size.
 
-### 📝 Student Features (Sticky Notes)
+### 📝 Student Features
 - **`postNote()`**: Creates sticky notes with randomized colors, rotations, and positions. Saves them to the `notes` table.
 - **`fetchNotes()`**: Loads all sticky notes from the database for global display on the "Note Layer".
 - **`makeDraggable(element, noteId)`**: Implements drag-and-drop functionality. Includes collision detection logic to prevent notes from overlapping the main content box (`.sketch-box`).
 - **`updateNotePosition(id, x, y)`**: Persists the new coordinates (as percentages) of a dragged note to Supabase.
+- **Profile Management**: Users can upload a profile picture during registration or update it later by clicking their avatar in the dashboard.
 
 ### 🧰 Utilities
 - **`showToast(message, type)`**: Provides visual feedback (success/error) using custom toast notifications.
 - **`copyToClipboard(text)`**: Helper function to copy text to the clipboard, triggering a success toast.
-- **`fetchMembers()`**: Updates the public "Members currently in the club" list on the login page, filtering out Admin accounts.
+- **`fetchMembers()`**: Updates the public "Members currently in the club" list. Clicking a name triggers `showPublicProfile()` to display user details.
+- **`showWelcomeNote()`**: Displays a "hand-written" announcement pop-up upon application load.
 
 ## 🎨 UI/UX Design
 * **Sketchbook Theme:** Uses the *Patrick Hand* font and CSS gradients to simulate lined paper.
@@ -56,7 +59,8 @@ Instead of a boring corporate interface, this project utilizes a **hand-drawn, s
 2.  Ensure `index.html`, `script.js`, and assets are in the same folder.
 3.  **Configure Supabase:**
     *   Create a Supabase project.
-    *   Set up tables: `students` (id, name, sr_code, password) and `notes` (id, content, x_pos, y_pos, rotation, color).
+    *   Set up tables: `students` (id, name, sr_code, password, avatar_url) and `notes` (id, content, x_pos, y_pos, rotation, color).
+    *   **Storage Setup:** Create a public bucket named `avatars`. **Important:** Configure Storage Policies to allow "Anon" (public) uploads, updates, and selects.
     *   Update `SUPABASE_URL` and `SUPABASE_KEY` in `script.js`.
 4.  **Open `index.html`** in any modern web browser.
 
