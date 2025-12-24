@@ -83,6 +83,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     fetchMembers();
     fetchNotes(); 
+    fetchRecentLogins();
     showWelcomeNote();
 });
 
@@ -180,6 +181,8 @@ async function handleLogin(srCode, password) {
     if (data.sr_code === 'ADMIN') {
         showAdminPanel(data.name);
     } else {
+        // Update last_login timestamp
+        await supabaseClient.from('students').update({ last_login: new Date().toISOString() }).eq('id', data.id);
         showStudentPanel(data.name, data.sr_code, data.avatar_url, data.id);
     }
 }
@@ -439,6 +442,57 @@ function showPublicProfile(name, avatarUrl) {
     `;
     
     modal.style.display = 'flex';
+}
+
+async function fetchRecentLogins() {
+    const container = document.getElementById('recentLoginsList');
+    if(!container) return;
+
+    const { data, error } = await supabaseClient
+        .from('students')
+        .select('name, avatar_url, last_login')
+        .neq('sr_code', 'ADMIN')
+        .not('last_login', 'is', null)
+        .order('last_login', { ascending: false })
+        .limit(5);
+
+    if (error) return console.error('Error fetching logins:', error);
+    if (!data || data.length === 0) return;
+
+    container.innerHTML = '';
+    data.forEach(student => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex; align-items:center; gap:10px; width:100%; max-width:350px; justify-content:space-between; border-bottom:1px dashed #ccc; padding:5px 0;';
+        
+        const safeAvatar = student.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random`;
+        
+        row.innerHTML = `
+            <div style="display:flex; align-items:center; gap:8px;">
+                <img src="${safeAvatar}" style="width:25px; height:25px; border-radius:50%; object-fit:cover; border:1px solid #333;">
+                <span>${student.name}</span>
+            </div>
+            <small style="color:#666; font-family:sans-serif; font-size:0.8rem;">${timeAgo(student.last_login)}</small>
+        `;
+        container.appendChild(row);
+    });
+}
+
+function timeAgo(dateString) {
+    const date = new Date(dateString);
+    const now = new Date();
+    const seconds = Math.floor((now - date) / 1000);
+
+    let interval = seconds / 31536000;
+    if (interval > 1) return Math.floor(interval) + "y ago";
+    interval = seconds / 2592000;
+    if (interval > 1) return Math.floor(interval) + "mo ago";
+    interval = seconds / 86400;
+    if (interval > 1) return Math.floor(interval) + "d ago";
+    interval = seconds / 3600;
+    if (interval > 1) return Math.floor(interval) + "h ago";
+    interval = seconds / 60;
+    if (interval > 1) return Math.floor(interval) + "m ago";
+    return "Just now";
 }
 
 // --- DRAGGABLE STICKY NOTES ---
