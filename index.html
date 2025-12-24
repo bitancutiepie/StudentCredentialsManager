@@ -288,6 +288,25 @@
         </div>
     </div>
 
+    <!-- NEW ADMIN CHOICE MODAL -->
+    <div id="adminChoiceModal" class="sketch-box hidden" style="text-align: center;">
+        <h2>🔐 ADMIN ACCESS GRANTED</h2>
+        <p>"Where do you want to go, Boss?"</p>
+        
+        <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 20px;">
+            <button onclick="chooseAdminPath('manage')" style="background: #2d3436; color: white;">
+                📋 MANAGE USERS (Black List)
+            </button>
+            
+            <button onclick="chooseAdminPath('dashboard')" style="background: #d63031; color: white;">
+                📒 GO TO BINDER (As Admin)
+            </button>
+        </div>
+        <p style="font-size: 0.9rem; margin-top: 15px;">(As Admin in Binder, you can add classes & events)</p>
+    </div>
+
+    <!-- ... existing studentDashboard div ... -->
+
     <div class="sketch-box hidden" id="studentDashboard">
         <h2>MY PROFILE</h2>
         <div class="id-badge">
