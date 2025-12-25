@@ -569,7 +569,7 @@ async function loadFiles(subjectFilter = 'All') {
                     <h3 style="font-size: 1.1rem; margin: 10px 0; word-break: break-word;">${file.title}</h3>
                     ${subjectTag}
                 </div>
-                <a href="${file.file_url}" target="_blank" class="sketch-btn" style="width:80%; justify-content:center; margin-top:10px;">
+                <a href="${file.file_url}" download class="sketch-btn" style="width:80%; justify-content:center; margin-top:10px;">
                     Download <i class="fas fa-download"></i>
                 </a>
             </div>

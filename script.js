@@ -693,6 +693,9 @@ function showWelcomeNote() {
                 <li><i class="fas fa-check-circle"></i> <b>Custom Avatars:</b> Upload your own profile picture.</li>
                 <li><i class="fas fa-check-circle"></i> <b>Binder UI:</b> New "notebook" design for better vibes.</li>
                 <li><i class="fas fa-check-circle"></i> <b>Auto-Schedule:</b> Classes automatically update daily.</li>
+                <li><i class="fas fa-check-circle"></i> <b>File Previewer:</b> Click to preview files directly in the browser.</li>
+                <li><i class="fas fa-check-circle"></i> <b>Secret Request Box:</b> Send anonymous requests/suggestions to the admin.</li>
+                <li><i class="fas fa-check-circle"></i> <b>Recent Uploads:</b> See the latest shared files directly on the login page.</li>
             </ul>
         </div>
         <p style="font-size:1.3rem; margin: 15px 0; color: #d32f2f; font-weight: bold;">"Login na kayo para makita niyo!"</p>
