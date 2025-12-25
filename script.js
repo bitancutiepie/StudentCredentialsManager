@@ -27,6 +27,7 @@ let adminChoiceModal = document.getElementById('adminChoiceModal');
 const adminNameDisplay = document.getElementById('adminNameDisplay');
 const studentListContainer = document.getElementById('studentListContainer'); // Renamed from studentTableBody
 const studentNameDisplay = document.getElementById('studentNameDisplay');
+const authModeMessage = document.getElementById('authModeMessage');
 const studentCodeDisplay = document.getElementById('studentCodeDisplay');
 const toastContainer = document.getElementById('toast-container');
 const publicMemberList = document.getElementById('publicMemberList');
@@ -118,6 +119,9 @@ const initApp = () => {
     fetchNotes(); 
     fetchRecentLogins();
     fetchNewUploads(); // <--- ADD THIS LINE HERE
+    if (authModeMessage) {
+        authModeMessage.innerText = 'Enter your credentials to log in.';
+    }
     showWelcomeNote();
 
     // --- PASSWORD TOGGLE ---
@@ -175,8 +179,8 @@ toggleAuth.addEventListener('click', () => {
     isLoginMode = !isLoginMode;
     authForm.reset();
     
+    if (authModeMessage) authModeMessage.innerText = isLoginMode ? 'Enter your credentials to log in.' : 'Fill out the form to create a new account.';
     if (isLoginMode) {
-        formTitle.innerText = 'Ako na ang Bahala';
         submitBtn.innerText = 'ENTER →';
         nameInput.classList.add('hidden');
         nameInput.required = false;
@@ -191,7 +195,6 @@ toggleAuth.addEventListener('click', () => {
         }
         toggleAuth.innerHTML = "Magpapalista? <b>Come here mga kosa click this</b>";
     } else {
-        formTitle.innerText = 'Palista na';
         submitBtn.innerText = 'SIGN UP';
         nameInput.classList.remove('hidden');
         nameInput.required = true;
@@ -725,7 +728,7 @@ async function fetchNewUploads() {
     // Use 'supabaseClient' (which is defined in script.js)
     const { data, error } = await supabaseClient
         .from('shared_files')
-        .select('title, subject, created_at')
+        .select('title, subject, created_at, file_url')
         .gte('created_at', dateLimit.toISOString())
         .order('created_at', { ascending: false })
         .limit(3); // Only show top 3
@@ -739,18 +742,7 @@ async function fetchNewUploads() {
     if (data && data.length > 0) {
         container.classList.remove('hidden'); // Show the container
         
-        list.innerHTML = data.map(file => `
-            <div style="width: 95%; background: #fff; border: 2px solid #000; border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; padding: 10px; display: flex; align-items: center; gap: 10px; box-shadow: 3px 3px 0 rgba(0,0,0,0.1); transition: transform 0.2s; cursor: default;" 
-                 onmouseover="this.style.transform='scale(1.02) rotate(-1deg)'" 
-                 onmouseout="this.style.transform='scale(1) rotate(0deg)'">
-                <div style="font-size: 1.5rem; color: #000;"><i class="fas fa-file-alt"></i></div>
-                <div style="text-align: left; flex: 1;">
-                    <div style="font-size: 0.8rem; text-transform: uppercase; font-weight: bold; color: #666;">${file.subject}</div>
-                    <div style="font-size: 1.1rem; line-height: 1.1; font-weight: bold;">${file.title}</div>
-                </div>
-                <div style="font-size: 0.8rem; background: #d63031; color: white; padding: 2px 6px; border-radius: 4px; transform: rotate(5deg);">NEW!</div>
-            </div>
-        `).join('');
+        list.innerHTML = data.map(file => window.generateFileCard(file, true)).join('');
     } else {
         container.classList.add('hidden'); // Keep hidden if empty
     }
@@ -832,4 +824,97 @@ window.deleteRequest = async function(id) {
     if(!await showWimpyConfirm('Burn this note?')) return;
     await supabaseClient.from('requests').delete().eq('id', id);
     fetchRequests();
+}
+
+// --- FILE PREVIEWER MODAL ---
+window.openFilePreview = function(url, title) {
+    if (!url) return showToast('No file link available.', 'error');
+
+    // Remove existing modal if any
+    const existing = document.getElementById('filePreviewModal');
+    if (existing) existing.remove();
+
+    const isPdf = url.toLowerCase().includes('.pdf');
+    const isImg = url.match(/\.(jpeg|jpg|gif|png|webp)$/i);
+
+    const loaderHtml = `
+        <div id="previewLoader" style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:#555;">
+            <i class="fas fa-spinner fa-spin" style="font-size:3rem;"></i>
+            <p style="font-family:'Patrick Hand'; font-size:1.5rem; margin-top:10px;">Unfolding paper...</p>
+        </div>
+    `;
+
+    let contentHtml = '';
+    if (isPdf) {
+        contentHtml = `${loaderHtml}<iframe src="${url}" style="width:100%; height:100%; border:none; display:none;" onload="this.style.display='block'; document.getElementById('previewLoader').style.display='none';" title="${title}"></iframe>`;
+    } else if (isImg) {
+        contentHtml = `${loaderHtml}<div style="display:flex; justify-content:center; align-items:center; width:100%; height:100%;">
+            <img src="${url}" style="max-width:100%; max-height:100%; object-fit:contain; display:none;" onload="this.style.display='block'; document.getElementById('previewLoader').style.display='none';">
+        </div>`;
+    } else {
+        contentHtml = `
+            <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; text-align:center;">
+                <i class="fas fa-file-download" style="font-size:4rem; margin-bottom:20px;"></i>
+                <p>Preview not available for this file type.</p>
+                <a href="${url}" target="_blank" download class="preview-modal-btn" style="background:#000; color:#fff; padding:10px 20px; text-decoration:none; border: 2px solid #000; border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; font-family: 'Patrick Hand';">Download File</a>
+            </div>
+        `;
+    }
+
+    const modalHtml = `
+        <style>
+            .preview-modal-btn { transition: all 0.2s !important; cursor: pointer !important; }
+            .preview-modal-btn:hover { 
+                transform: rotate(-3deg) scale(1.1) !important; 
+                animation: previewWiggle 0.4s ease-in-out infinite !important;
+            }
+            @keyframes previewWiggle {
+                0% { transform: rotate(0deg); }
+                25% { transform: rotate(-3deg); }
+                50% { transform: rotate(3deg); }
+                75% { transform: rotate(-1deg); }
+                100% { transform: rotate(0deg); }
+            }
+        </style>
+        <div id="filePreviewModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; display:flex; justify-content:center; align-items:center;">
+            <div class="sketch-box" style="width:90%; max-width:900px; height:85%; display:flex; flex-direction:column; padding:15px; background:#fff; position:relative; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px dashed #000; padding-bottom:10px; margin-bottom:10px;">
+                    <h3 style="margin:0; font-size:1.5rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:60%;"><i class="fas fa-eye"></i> ${title}</h3>
+                    <div style="display:flex; gap:5px;">
+                        <a href="${url}" target="_blank" download style="text-decoration:none;">
+                            <button class="preview-modal-btn" style="width:auto; margin:0; padding:5px 15px; font-size:1rem; background:#0984e3; color:#fff; border: 2px solid #000; border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; font-family: 'Patrick Hand';" title="Download"><i class="fas fa-download"></i></button>
+                        </a>
+                        <button class="preview-modal-btn" onclick="document.getElementById('filePreviewModal').remove()" style="width:auto; margin:0; padding:5px 15px; font-size:1rem; background:#d63031; color:#fff; border: 2px solid #000; border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; font-family: 'Patrick Hand';">CLOSE</button>
+                    </div>
+                </div>
+                <div style="flex:1; overflow:hidden; background:#fff; border:none; position:relative;">
+                    ${contentHtml}
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+// --- REUSABLE FILE CARD GENERATOR (For Web2.html) ---
+window.generateFileCard = function(file, isNew = false) {
+    const safeUrl = (file.file_url || '').replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;");
+    const safeTitle = (file.title || 'File').replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;");
+    const subject = file.subject || 'General';
+    const badgeHtml = isNew ? `<div style="font-size: 0.8rem; background: #d63031; color: white; padding: 2px 6px; border-radius: 4px; transform: rotate(5deg);">NEW!</div>` : '';
+
+    return `
+        <div style="width: 95%; background: #fff; border: 2px solid #000; border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; padding: 10px; display: flex; align-items: center; gap: 10px; box-shadow: 3px 3px 0 rgba(0,0,0,0.1); transition: transform 0.2s; cursor: pointer;" 
+             onclick="openFilePreview('${safeUrl}', '${safeTitle}')"
+             onmouseover="this.style.transform='scale(1.02) rotate(-1deg)'" 
+             onmouseout="this.style.transform='scale(1) rotate(0deg)'">
+            <div style="font-size: 1.5rem; color: #000;"><i class="fas fa-file-alt"></i></div>
+            <div style="text-align: left; flex: 1;">
+                <div style="font-size: 0.8rem; text-transform: uppercase; font-weight: bold; color: #666;">${subject}</div>
+                <div style="font-size: 1.1rem; line-height: 1.1; font-weight: bold;">${safeTitle}</div>
+                <div style="font-size: 0.8rem; color: #2980b9; margin-top: 2px;"><i class="fas fa-eye"></i> Click to Preview</div>
+            </div>
+            ${badgeHtml}
+        </div>
+    `;
 }

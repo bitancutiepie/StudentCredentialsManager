@@ -893,5 +893,123 @@
     <!-- SCRIPTS -->
     <script src="dashboard.js"></script>
 
+    <!-- PREVIEWER FEATURE & FILE LOGIC (Added Inline) -->
+    <script>
+        // --- CONFIGURATION (Matches script.js) ---
+        const SB_URL = 'https://egnyblflgppsosunnilq.supabase.co';
+        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVnbnlibGZsZ3Bwc29zdW5uaWxxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY0OTYzMjksImV4cCI6MjA4MjA3MjMyOX0.HR9lt4oHuFjGcjwsF_fLoJMuG2OI8aCIoRCSyyu0zVE';
+        
+        // Use existing client if available, else create
+        const sb = window.supabaseClient || window.supabase.createClient(SB_URL, SB_KEY);
+        let globalFiles = [];
+
+        // --- 1. PREVIEW MODAL ---
+        window.openFilePreview = function(url, title) {
+            if (!url) return alert('No file link available.');
+            const existing = document.getElementById('filePreviewModal');
+            if (existing) existing.remove();
+
+            const isPdf = url.toLowerCase().includes('.pdf');
+            const isImg = url.match(/\.(jpeg|jpg|gif|png|webp)$/i);
+            
+            const loaderHtml = `
+                <div id="previewLoader" style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:#555;">
+                    <i class="fas fa-spinner fa-spin" style="font-size:3rem;"></i>
+                    <p style="font-family:'Patrick Hand'; font-size:1.5rem; margin-top:10px;">Unfolding paper...</p>
+                </div>
+            `;
+
+            let contentHtml = '';
+
+            if (isPdf) {
+                contentHtml = `${loaderHtml}<iframe src="${url}" style="width:100%; height:100%; border:none; display:none;" onload="this.style.display='block'; document.getElementById('previewLoader').style.display='none';" title="${title}"></iframe>`;
+            } else if (isImg) {
+                contentHtml = `${loaderHtml}<div style="display:flex; justify-content:center; align-items:center; width:100%; height:100%;">
+                    <img src="${url}" style="max-width:100%; max-height:100%; object-fit:contain; display:none;" onload="this.style.display='block'; document.getElementById('previewLoader').style.display='none';">
+                </div>`;
+            } else {
+                contentHtml = `
+                    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; text-align:center;">
+                        <i class="fas fa-file-download" style="font-size:4rem; margin-bottom:20px;"></i>
+                        <p>Preview not available for this file type.</p>
+                        <a href="${url}" target="_blank" download class="preview-modal-btn" style="background:#000; color:#fff; padding:10px 20px; text-decoration:none; border: 2px solid #000; border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; font-family: 'Patrick Hand';">Download File</a>
+                    </div>
+                `;
+            }
+
+            const modalHtml = `
+                <style>
+                    .preview-modal-btn { transition: all 0.2s !important; cursor: pointer !important; }
+                    .preview-modal-btn:hover { 
+                        transform: rotate(-3deg) scale(1.1) !important; 
+                        animation: previewWiggle 0.4s ease-in-out infinite !important;
+                    }
+                    @keyframes previewWiggle {
+                        0% { transform: rotate(0deg); }
+                        25% { transform: rotate(-3deg); }
+                        50% { transform: rotate(3deg); }
+                        75% { transform: rotate(-1deg); }
+                        100% { transform: rotate(0deg); }
+                    }
+                </style>
+                <div id="filePreviewModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; display:flex; justify-content:center; align-items:center;">
+                    <div class="sketch-box" style="width:90%; max-width:900px; height:85%; display:flex; flex-direction:column; padding:15px; background:#fff; position:relative; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px dashed #000; padding-bottom:10px; margin-bottom:10px;">
+                            <h3 style="margin:0; font-size:1.5rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:60%;"><i class="fas fa-eye"></i> ${title}</h3>
+                            <div style="display:flex; gap:5px;">
+                                <a href="${url}" target="_blank" download style="text-decoration:none;">
+                                    <button class="preview-modal-btn" style="width:auto; margin:0; padding:5px 15px; font-size:1rem; background:#0984e3; color:#fff; border: 2px solid #000; border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; font-family: 'Patrick Hand';" title="Download"><i class="fas fa-download"></i></button>
+                                </a>
+                                <button class="preview-modal-btn" onclick="document.getElementById('filePreviewModal').remove()" style="width:auto; margin:0; padding:5px 15px; font-size:1rem; background:#d63031; color:#fff; border: 2px solid #000; border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; font-family: 'Patrick Hand';">CLOSE</button>
+                            </div>
+                        </div>
+                    <div style="flex:1; overflow:hidden; background:#fff; border:none; position:relative;">${contentHtml}</div>
+                    </div>
+                </div>`;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        }
+
+        // --- 2. FETCH & RENDER FILES ---
+        window.refreshFiles = async function() {
+            const list = document.getElementById('file-list');
+            if(!list) return;
+            
+            const { data, error } = await sb.from('shared_files').select('*').order('created_at', { ascending: false });
+            if(error) return console.error(error);
+            
+            globalFiles = data || [];
+            renderFileList(globalFiles);
+        }
+
+        window.renderFileList = function(files) {
+            const list = document.getElementById('file-list');
+            if(!files.length) { list.innerHTML = '<p>No files found.</p>'; return; }
+            
+            list.innerHTML = files.map(file => {
+                const safeUrl = (file.file_url || '').replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;");
+                const safeTitle = (file.title || 'File').replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;");
+                const subject = file.subject || 'General';
+                return `
+                <div style="width: 100%; background: #fff; border: 2px solid #000; border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; padding: 10px; display: flex; align-items: center; gap: 10px; box-shadow: 3px 3px 0 rgba(0,0,0,0.1); transition: transform 0.2s; cursor: pointer; margin-bottom: 15px;" 
+                     onclick="openFilePreview('${safeUrl}', '${safeTitle}')"
+                     onmouseover="this.style.transform='scale(1.02) rotate(-1deg)'" 
+                     onmouseout="this.style.transform='scale(1) rotate(0deg)'">
+                    <div style="font-size: 1.5rem; color: #000;"><i class="fas fa-file-alt"></i></div>
+                    <div style="text-align: left; flex: 1;">
+                        <div style="font-size: 0.8rem; text-transform: uppercase; font-weight: bold; color: #666;">${subject}</div>
+                        <div style="font-size: 1.1rem; line-height: 1.1; font-weight: bold;">${safeTitle}</div>
+                        <div style="font-size: 0.8rem; color: #2980b9; margin-top: 2px;"><i class="fas fa-eye"></i> Click to Preview</div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // Override Search/Filter
+        window.searchFiles = function() { const q = document.getElementById('file-search').value.toLowerCase(); renderFileList(globalFiles.filter(f => f.title.toLowerCase().includes(q) || f.subject.toLowerCase().includes(q))); }
+        window.filterFiles = function(s) { document.getElementById('file-filter-label').innerText = 'Showing: ' + s; renderFileList(s === 'All' ? globalFiles : globalFiles.filter(f => f.subject === s)); }
+
+        // Load on start (Delayed slightly to ensure DOM is ready)
+        document.addEventListener('DOMContentLoaded', () => setTimeout(refreshFiles, 1000));
+    </script>
 </body>
 </html>
