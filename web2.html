@@ -44,6 +44,32 @@
             overflow-x: hidden;
         }
 
+        /* --- CUSTOM SCROLLBAR --- */
+        ::-webkit-scrollbar {
+            width: 14px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #fdfbf7; /* Paper color */
+            border-left: 2px solid #000;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2f3542; /* Pencil lead color */
+            border: 3px solid #fdfbf7; /* Creates a gap effect */
+            border-radius: 10px;
+            background-clip: padding-box;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #d63031; /* Red pen on hover */
+            border: 3px solid #fdfbf7;
+        }
+
+        /* For Firefox */
+        html {
+            scrollbar-color: #2f3542 #fdfbf7; /* thumb and track color */
+            scrollbar-width: thin;
+        }
+
+
         /* --- THE BINDER CONTAINER --- */
         .binder {
             display: flex;
@@ -155,47 +181,6 @@
             margin: 0;
             transform: rotate(-2deg);
             text-shadow: 2px 2px 0px rgba(0,0,0,0.1);
-        }
-
-        h2 {
-            display: inline-block;
-            background: var(--ink-color);
-            color: white;
-            padding: 5px 15px;
-            transform: rotate(1deg);
-            box-shadow: 3px 3px 0 rgba(0,0,0,0.2);
-        }
-
-        p { font-size: 1.3rem; margin: 10px 0; }
-
-        /* --- THE WATCH --- */
-        .casio-watch {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: #333;
-            padding: 5px 15px;
-            border-radius: 4px;
-            border: 3px solid #7f8c8d;
-            box-shadow: 5px 5px 10px rgba(0,0,0,0.2);
-            transform: rotate(3deg);
-            z-index: 10;
-        }
-        .watch-face {
-            font-family: 'Courier New', monospace;
-            color: #7bed9f;
-            font-weight: bold;
-            font-size: 1.5rem;
-            text-shadow: 0 0 5px #7bed9f;
-            letter-spacing: 2px;
-        }
-        .watch-brand {
-            color: #bdc3c7;
-            font-size: 0.6rem;
-            text-align: center;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 2px;
         }
 
         /* --- CARDS & ITEMS --- */
@@ -356,10 +341,27 @@
         .loader { font-size: 1.5rem; text-align: center; margin-top: 50px; color: #7f8c8d; }
 
         /* --- FLOATING UP BUTTON (Wimpy Style) --- */
+        /* --- Better Loading States (Doodle Animation) --- */
+        .loader {
+            font-family: 'Permanent Marker', cursive;
+            font-size: 1.5rem;
+            text-align: center;
+            margin-top: 50px;
+            color: #555;
+            animation: pencilFloat 1s ease-in-out infinite alternate;
+        }
+
+        .loader::before {
+            content: '✏️ '; /* Pencil Icon */
+        }
+
+        @keyframes pencilFloat {
+            from { transform: translateY(0) rotate(-5deg); }
+            to { transform: translateY(-10px) rotate(5deg); }
+        }
+
         /* --- LIVE CLASS CARD STYLES --- */
         .live-card {
-            background: #fff;
-            border: 3px solid #d63031; /* Red border for urgency */
             padding: 15px 20px;
             border-radius: 4px;
             position: relative;
@@ -538,6 +540,67 @@
             }
         }
     </style>
+    <style>
+        .sticky-time {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #fff740; /* Post-it yellow */            
+            padding: 10px 15px; /* Keep padding */
+            width: 240px; /* Increased width to accommodate larger text */
+            text-align: center;
+            box-shadow: 4px 4px 5px rgba(0,0,0,0.2);
+            transform: rotate(3deg); /* Taped crookedly */
+            font-family: 'Permanent Marker', cursive;
+            z-index: 10;
+            border-bottom-right-radius: 30px 5px; /* Dog-ear effect */            
+        }
+
+        .sticky-time .pin {
+            position: absolute;
+            top: -15px;            
+            left: 50%; /* Center the pin */
+            font-size: 1.5rem;
+            filter: drop-shadow(2px 2px 0 rgba(0,0,0,0.2));            
+            transform: translateX(-50%); /* Adjust for centering */
+        }
+
+        .sticky-time small {
+            display: block;
+            font-size: 1rem; /* Slightly larger for better readability */
+            color: #555;            
+            font-family: 'Patrick Hand', cursive;            
+            margin-bottom: 5px;            
+        }
+
+        .sticky-time #live-clock {
+            font-size: 3rem; /* Significantly larger font size */
+            color: #000;            
+            line-height: 1;            
+        }
+
+        /* Mobile */
+        @media (max-width: 768px) {
+            .sticky-time {
+                position: relative;
+                top: 0; right: 0;                
+                margin: 20px auto;                
+                transform: rotate(0deg);                
+                width: 150px; /* Smaller width for mobile */
+                padding: 8px 10px; /* Adjusted padding for mobile */
+            }
+            .sticky-time small {
+                font-size: 0.9rem; /* Smaller font for mobile */
+            }
+            .sticky-time #live-clock {
+                font-size: 2.2rem; /* Smaller font for mobile */
+            }
+            .sticky-time .pin {
+                left: 50%; /* Ensure pin remains centered */
+                transform: translateX(-50%);
+            }
+        }
+    </style>
 </head>
 <body>
 
@@ -572,9 +635,10 @@
                     <p id="welcome-msg" style="background: yellow; display: inline-block; transform: rotate(-1deg); padding: 0 5px;">Loading User...</p>
                 </div>
                 
-                <div class="casio-watch">
-                    <div class="watch-brand">CASIO</div>
-                    <div class="watch-face" id="live-clock">00:00</div>
+                <div class="sticky-time">
+                    <span class="pin">📍</span>
+                    <small>TIME CHECK:</small>
+                    <div id="live-clock">00:00</div>
                 </div>
             </div>
 
@@ -681,6 +745,12 @@
             <!-- ================= LINKS & FILES TAB ================= -->
             <div id="links" class="tab-content hidden">
                 <h2><i class="fas fa-folder-open"></i> Subject Reviewers</h2>
+
+                <!-- Insert above <h3 id="file-filter-label"> -->
+                <div style="position: relative; margin-bottom: 15px;">
+                    <input type="text" id="file-search" placeholder="🔍 Search filename..." onkeyup="searchFiles()" 
+                           style="border: 2px solid #000; border-radius: 20px; padding: 8px 15px; background: #fff;">
+                </div>
 
                 <!-- Subject Filter Bar (Empty - JS will fill this) -->
                 <div class="filter-bar" id="link-filters" style="margin-bottom: 25px;">

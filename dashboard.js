@@ -116,7 +116,16 @@ async function loadSchedule(dayFilter) {
     list.innerHTML = data.map(cls => {
         const start = cls.start_time.substring(0, 5); 
         const end = cls.end_time.substring(0, 5);
+        
         const deleteBtn = isAdmin ? `<button onclick="deleteClass(${cls.id})" class="sketch-btn danger" style="float:right;">X</button>` : '';
+        
+        // Copy button for Meet link
+        const copyBtn = cls.meet_link ? 
+            `<button onclick="navigator.clipboard.writeText('${cls.meet_link}').then(()=>showToast('Link Copied!'))" 
+             class="sketch-btn" style="border-color:#555; color:#555; padding: 8px 12px;" title="Copy Link">
+             <i class="fas fa-copy"></i>
+             </button>` 
+            : '';
 
         return `
             <div class="class-card">
@@ -127,9 +136,10 @@ async function loadSchedule(dayFilter) {
                 </div>
                 <h3>${cls.subject_name}</h3>
                 <p><b>Prof:</b> ${cls.instructor || 'TBA'} | <b>Room:</b> ${cls.room || 'TBA'}</p>
-                <div style="margin-top:10px;">
+                <div style="margin-top:10px; display:flex; gap:5px;">
                     ${cls.meet_link ? `<a href="${cls.meet_link}" target="_blank" class="sketch-btn meet"><i class="fas fa-video"></i> Meet</a>` : ''}
                     ${cls.classroom_link ? `<a href="${cls.classroom_link}" target="_blank" class="sketch-btn classroom"><i class="fas fa-chalkboard"></i> Class</a>` : ''}
+                    ${copyBtn}
                 </div>
                 <small style="display:block; margin-top:5px; color:#666;">${cls.day_of_week}</small>
             </div>
@@ -701,5 +711,26 @@ window.sendEmailService = async function(e) {
     } finally {
         btn.disabled = false;
         btn.innerHTML = originalText;
+    }
+}
+
+// Add this function anywhere in dashboard.js
+window.searchFiles = function() {
+    const input = document.getElementById('file-search');
+    const filter = input.value.toLowerCase();
+    const container = document.getElementById('file-list');
+    const cards = container.getElementsByClassName('class-card');
+
+    for (let i = 0; i < cards.length; i++) {
+        // We look for the h3 tag inside the card which contains the title
+        let title = cards[i].getElementsByTagName("h3")[0];
+        if (title) {
+            let txtValue = title.textContent || title.innerText;
+            if (txtValue.toLowerCase().indexOf(filter) > -1) {
+                cards[i].style.display = "";
+            } else {
+                cards[i].style.display = "none";
+            }
+        }       
     }
 }

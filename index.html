@@ -250,7 +250,13 @@
         <form id="authForm">
             <input type="text" id="name" placeholder="YOUR NAME (Full Name)" class="hidden">
             <input type="text" id="srCode" placeholder="SR CODE" required>
-            <input type="password" id="password" placeholder="PASSWORD" required>
+            <!-- REPLACE the existing password input line with this block -->
+            <div style="position: relative; width: 100%;">
+                <input type="password" id="password" placeholder="PASSWORD" required style="padding-right: 40px;">
+                <span id="togglePassword" style="position: absolute; right: 10px; top: 20px; cursor: pointer; font-size: 1.2rem; user-select: none;">
+                    🙈
+                </span>
+            </div>
             
             <!-- FIXED CHECKBOX LAYOUT - Re-added for login functionality -->
             <div class="checkbox-container" id="keepLoggedInContainer">
