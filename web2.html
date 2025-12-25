@@ -326,6 +326,10 @@
         }
         .sketch-btn.danger:hover { background: #d63031; color: white; }
 
+        /* Wallpaper Button Custom Style */
+        .wallpaper-btn { margin-left: auto; border-color: #6c5ce7; color: #6c5ce7; }
+        .wallpaper-btn:hover { background: #6c5ce7; color: white; }
+
         /* --- ADMIN FORMS --- */
         .admin-controls {
             display: none; /* Hidden by default */
@@ -568,6 +572,9 @@
             input, select, textarea {
                 font-size: 16px !important; 
             }
+
+            /* Fix Wallpaper Button Visibility on Mobile */
+            .wallpaper-btn { margin-left: 0; width: 100%; margin-top: 5px; }
         }
 
         /* --- WIMPY POP-UP MODAL --- */
@@ -777,7 +784,7 @@
                     <button class="sketch-btn" onclick="filterSchedule('Thursday')">Thursday</button>
                     <button class="sketch-btn" onclick="filterSchedule('Friday')">Friday</button>
                     <button class="sketch-btn" onclick="filterSchedule('All')">All</button>
-                    <button class="sketch-btn" onclick="openWallpaperModal()" style="margin-left:auto; border-color:#6c5ce7; color:#6c5ce7;">
+                    <button class="sketch-btn wallpaper-btn" onclick="openWallpaperModal()">
                         <i class="fas fa-camera-retro"></i> Wallpaper
                     </button>
                 </div>
