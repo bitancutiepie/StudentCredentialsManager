@@ -28,7 +28,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     await populateSubjectOptions(); // <--- Updates buttons based on your actual schedule
 
     // ADD THIS NEW LINE:
-    if (isAdmin) await populateEmailDropdown(); 
+    if (isAdmin) {
+        await populateEmailDropdown();
+        await fetchAdminGalleryList(); // Load gallery items for admin
+    }
 });
 
 // --- AUTH CHECK ---
@@ -54,6 +57,7 @@ function checkSession() {
     if (user.sr_code === 'ADMIN') {
         isAdmin = true;
         document.querySelectorAll('.admin-controls').forEach(el => el.style.display = 'block');
+        document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
     }
 }
 
@@ -596,7 +600,7 @@ async function loadFiles(subjectFilter = 'All') {
     list.innerHTML = '<div class="loader">Rummaging through files...</div>';
 
     // Start Query
-    let query = db.from('shared_files').select('*').order('created_at', { ascending: false });
+    let query = db.from('shared_files').select('*').neq('subject', 'LandingGallery').order('created_at', { ascending: false });
 
     // Apply Filter if not 'All'
     if (subjectFilter !== 'All') {
@@ -791,6 +795,75 @@ window.sendEmailService = async function(e) {
     }
 }
 
+// --- LANDING PAGE GALLERY MANAGER (ADMIN) ---
+window.uploadGalleryItem = async function(e) {
+    e.preventDefault();
+    if (!isAdmin) return;
+
+    const fileInput = document.getElementById('g-file');
+    const captionInput = document.getElementById('g-caption');
+    const btn = document.getElementById('upload-gallery-btn');
+    const file = fileInput.files[0];
+
+    if (!file) return showToast('Please select an image.');
+
+    btn.disabled = true;
+    btn.innerHTML = 'Posting...';
+
+    try {
+        const fileName = `gallery_${Date.now()}_${file.name.replace(/\s/g, '_')}`;
+        
+        // Reuse class-resources bucket
+        const { error: uploadError } = await db.storage
+            .from('class-resources')
+            .upload(fileName, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = db.storage
+            .from('class-resources')
+            .getPublicUrl(fileName);
+
+        const { error: dbError } = await db.from('shared_files').insert([{
+            title: captionInput.value || 'Untitled',
+            subject: 'LandingGallery', // Special tag for landing page
+            file_url: urlData.publicUrl,
+            file_type: file.type
+        }]);
+
+        if (dbError) throw dbError;
+
+        showToast('Posted to Landing Page!');
+        fetchAdminGalleryList(); 
+        e.target.reset();
+
+    } catch (error) {
+        console.error(error);
+        showToast('Upload failed: ' + error.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-camera"></i> Post to Gallery';
+    }
+}
+
+window.fetchAdminGalleryList = async function() {
+    const list = document.getElementById('admin-gallery-list');
+    if(!list) return;
+    
+    const { data, error } = await db.from('shared_files').select('*').eq('subject', 'LandingGallery').order('created_at', { ascending: false });
+    if(error || !data || data.length === 0) { list.innerHTML = '<p style="font-size:0.9rem; color:#666; text-align:center;">Gallery is empty.</p>'; return; }
+
+    list.innerHTML = data.map(item => `
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px dashed #ccc; padding:5px 0;">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <img src="${item.file_url}" style="width:30px; height:30px; object-fit:cover; border:1px solid #000;">
+                <small style="font-family:'Patrick Hand';">${item.title}</small>
+            </div>
+            <button onclick="deleteFile(${item.id}); setTimeout(fetchAdminGalleryList, 500);" class="sketch-btn danger" style="padding:2px 6px; font-size:0.8rem; width:auto; margin:0;">X</button>
+        </div>
+    `).join('');
+}
+
 // Add this function anywhere in dashboard.js
 window.searchFiles = function() {
     const input = document.getElementById('file-search');
@@ -868,5 +941,104 @@ window.submitRequest = async function() {
     else {
         showToast('Request sent to Admin!');
         closeRequestModal();
+    }
+}
+
+// --- SYSTEM UPDATE MODAL (Ported for Binder) ---
+window.showWelcomeNote = function() {
+    const modal = document.createElement('div');
+    modal.className = 'wimpy-modal-overlay';
+    // Override alignment for scrolling large content
+    modal.style.alignItems = 'flex-start'; 
+    modal.style.overflowY = 'auto';
+    modal.style.padding = '20px';
+    
+    const note = document.createElement('div');
+    note.className = 'wimpy-modal-box';
+    // Override size for this specific modal
+    note.style.maxWidth = '600px';
+    note.style.width = '100%';
+    note.style.margin = '40px auto';
+    note.style.background = '#fdfbf7';
+    
+    note.innerHTML = `
+        <style>
+            .update-flex { display: flex; gap: 20px; justify-content: center; align-items: center; margin: 25px 0 15px 0; flex-wrap: wrap; }
+            .update-arrow { font-size: 2rem; font-weight: bold; transition: transform 0.3s; }
+            .update-img-container { flex: 1; min-width: 200px; position: relative; cursor: zoom-in; }
+            @media (max-width: 600px) { .update-flex { flex-direction: column; gap: 30px; } .update-arrow { transform: rotate(90deg); } }
+        </style>
+        <h2 style="margin-top:0; text-decoration: underline wavy #000;"><i class="fas fa-star"></i> SYSTEM UPDATE</h2>
+        <p style="font-size:1.1rem; margin: 10px 0;">"Look at the upgrade guys! (Click pics to zoom)"</p>
+        <div class="update-flex">
+            <div class="update-img-container" onclick="viewFullImage('Beforeimg.png')">
+                <div style="font-weight: bold; background: #bdc3c7; color: #000; display: inline-block; padding: 2px 10px; transform: rotate(-3deg); border: 2px solid #000; position: absolute; top: -12px; left: -5px; z-index: 2; font-size: 0.8rem;">BEFORE:</div>
+                <img src="Beforeimg.png" alt="Old Website" style="width: 100%; height: auto; border: 3px solid #000; box-shadow: 4px 4px 0 rgba(0,0,0,0.2); background: #fff;">
+            </div>
+            <div class="update-arrow">→</div>
+            <div class="update-img-container" onclick="viewFullImage('Afterimg.png')">
+                <div style="font-weight: bold; background: #ffee58; color: #000; display: inline-block; padding: 2px 10px; transform: rotate(3deg); border: 2px solid #000; position: absolute; top: -12px; right: -5px; z-index: 2; font-size: 0.8rem;">NOW:</div>
+                <img src="Afterimg.png" alt="New Website" style="width: 100%; height: auto; border: 3px solid #000; box-shadow: 4px 4px 0 rgba(0,0,0,0.2); background: #fff;">
+            </div>
+        </div>
+        <div style="text-align: left; background: #f9f9f9; border: 2px dashed #bbb; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+            <p style="font-weight: bold; margin: 0 0 10px 0; border-bottom: 2px solid #ddd; padding-bottom: 5px;"><i class="fas fa-edit"></i> What's New in this Update:</p>
+            <ul style="padding-left: 20px; margin: 0; list-style-type: none; font-size: 1rem; line-height: 1.6;">
+                <li><i class="fas fa-camera-retro"></i> <b>Memories Gallery:</b> New photo gallery added to the login page!</li>
+                <li><i class="fas fa-question-circle"></i> <b>Help Guide:</b> Added a user guide tab inside the binder.</li>
+                <li><i class="fas fa-filter"></i> <b>Smart Filters:</b> Gallery photos no longer clutter your reviewer files.</li>
+                <li><i class="fas fa-magic"></i> <b>Wallpaper Generator V2:</b> Create wallpapers with <i>Glassmorphism</i> effects or upload your own background image!</li>
+                <li><i class="fas fa-tools"></i> <b>Admin Tools Tab:</b> (For Admin) All management tools are now in a dedicated binder tab.</li>
+                <li><i class="fas fa-sticky-note"></i> <b>Better Sticky Notes:</b> Improved tape visuals and smoother dragging.</li>
+                <li><i class="fas fa-eye"></i> <b>File Previewer:</b> Preview PDFs and images instantly before downloading.</li>
+                <li><i class="fas fa-clock"></i> <b>Live Class Tracker:</b> See exactly which class is happening right now.</li>
+                <li><i class="fas fa-folder"></i> <b>Subject Cabinet:</b> Files are now organized by subject folders.</li>
+                <li><i class="fas fa-paint-brush"></i> <b>New Look:</b> Added doodles, coffee stains, and a credits section to the login page.</li>
+            </ul>
+        </div>
+        <button onclick="showCongratsMessage(this.closest('.wimpy-modal-overlay'))" style="background: #000; color: #fff; border: 2px solid #000; font-family: 'Patrick Hand'; font-size: 1.2rem; cursor: pointer; width: 100%; border-radius: 5px; padding: 10px;">SHEESH!</button>
+    `;
+    
+    modal.appendChild(note);
+    modal.onclick = (e) => { if(e.target === modal) modal.remove(); }
+    document.body.appendChild(modal);
+}
+
+window.viewFullImage = function(src) {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:10000; display:flex; justify-content:center; align-items:center; cursor: zoom-out; animation: fadeIn 0.3s;';
+    const img = document.createElement('img');
+    img.src = src;
+    img.style.cssText = 'max-width:90%; max-height:90%; border: 5px solid #fff; box-shadow: 0 0 30px rgba(0,0,0,0.5); object-fit: contain;';
+    overlay.appendChild(img);
+    overlay.onclick = function() { overlay.remove(); };
+    document.body.appendChild(overlay);
+}
+
+window.showCongratsMessage = function(prevModal) {
+    if (prevModal) prevModal.remove();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'wimpy-modal-overlay';
+    
+    const box = document.createElement('div');
+    box.className = 'wimpy-modal-box';
+    box.innerHTML = `
+        <h2 style="margin:0 0 15px 0; font-size:2rem;">🎉 CONGRATS!</h2>
+        <p style="font-size:1.3rem; margin-bottom:20px;">Congrays Guys at naipasa natin ang First Sem, Goodluck sa Second Sem!<br><br>- Jv</p>
+        <button onclick="this.closest('.wimpy-modal-overlay').remove()" class="sketch-btn" style="background: #000; color: #fff; width: 100%;">LET'S GO!</button>
+    `;
+    
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    // Confetti
+    if (typeof confetti === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js';
+        script.onload = () => confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+        document.head.appendChild(script);
+    } else {
+        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
     }
 }

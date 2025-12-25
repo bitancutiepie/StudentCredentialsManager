@@ -155,6 +155,7 @@
         .tab-btn:nth-child(2) { background: #74b9ff; color: white; transform: rotate(1deg); } /* Assignments */
         .tab-btn:nth-child(3) { background: #55efc4; color: #2d3436; transform: rotate(-1deg); } /* Calendar */
         .tab-btn:nth-child(4) { background: #ffeaa7; color: #2d3436; transform: rotate(2deg); } /* Links */
+        .tab-btn:nth-child(5) { background: #a29bfe; color: #2d3436; transform: rotate(-1deg); } /* Help */
 
         /* --- MAIN PAPER AREA --- */
         .paper-content {
@@ -755,6 +756,8 @@
             <button class="tab-btn" onclick="switchTab('assignments', event)">Homework</button>
             <button class="tab-btn" onclick="switchTab('calendar', event)">Events</button>
             <button class="tab-btn" onclick="switchTab('links', event)">Links</button>
+            <button class="tab-btn" onclick="switchTab('help', event)">Help Guide</button>
+            <button class="tab-btn admin-only hidden" onclick="switchTab('admin-tools', event)" style="background: #2d3436; color: #fff; transform: rotate(-2deg);">Admin Tools</button>
         </div>
 
         <!-- The Main Paper Content -->
@@ -791,12 +794,127 @@
                 <button onclick="toggleWideMode()" class="sketch-btn" style="border: none; text-decoration: underline;" title="Stretch View">
                     <i class="fas fa-expand-arrows-alt"></i> Wide View
                 </button>
+                <button onclick="window.location.href='index.html'" class="sketch-btn admin-only hidden" style="border: none; text-decoration: underline; color: #636e72;">
+                    <i class="fas fa-undo"></i> Admin Menu
+                </button>
                 <button onclick="logout()" class="sketch-btn danger" style="border: none; text-decoration: underline;">
                     <i class="fas fa-door-open"></i> Go Home
                 </button>
             </div>
 
             <br>
+
+            <!-- ================= ADMIN TOOLS TAB (NEW SECTION) ================= -->
+            <div id="admin-tools" class="tab-content hidden">
+                <h2><i class="fas fa-user-shield"></i> Admin Control Panel</h2>
+                
+                <div class="grid-container" style="grid-template-columns: 1fr;">
+                    <!-- Moved Forms -->
+                    <div class="admin-controls" id="admin-schedule-form" style="display: block;">
+                        <h3>Admin's Note: Add Class</h3>
+                        <form onsubmit="addClass(event)" autocomplete="off">
+                            <select id="s-day" required>
+                                <option value="Monday">Monday</option>
+                                <option value="Tuesday">Tuesday</option>
+                                <option value="Wednesday">Wednesday</option>
+                                <option value="Thursday">Thursday</option>
+                                <option value="Friday">Friday</option>
+                            </select>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <input type="text" id="s-code" placeholder="Code (IT 211)" required>
+                                <input type="text" id="s-name" placeholder="Subject Name" required>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <input type="time" id="s-start" required>
+                                <input type="time" id="s-end" required>
+                            </div>
+                            <input type="text" id="s-room" placeholder="Room / Lab">
+                            <input type="text" id="s-instructor" placeholder="Instructor">
+                            <input type="url" id="s-meet" placeholder="G-Meet Link">
+                            <input type="url" id="s-class" placeholder="Classroom Link">
+                            <button type="submit" class="sketch-btn" style="background: #000; color: #fff;">Save to Schedule</button>
+                        </form>
+                    </div>
+
+                    <div class="admin-controls" id="admin-assignment-form" style="display: block;">
+                        <h3>Admin's Note: Add Homework</h3>
+                        <form onsubmit="addAssignment(event)" autocomplete="off">
+                            <input type="text" id="a-title" placeholder="Title" required>
+                            <input type="text" id="a-subject" placeholder="Subject (e.g. Math)" required>
+                            <input type="datetime-local" id="a-due">
+                            <textarea id="a-desc" placeholder="Details..."></textarea>
+                            <button type="submit" class="sketch-btn" style="background: #000; color: #fff;">Post Homework</button>
+                        </form>
+                    </div>
+
+                    <div class="admin-controls" id="admin-event-form" style="display: block;">
+                        <h3>Admin's Note: Add Event</h3>
+                        <form onsubmit="addEvent(event)" autocomplete="off">
+                            <input type="text" id="e-title" placeholder="Event Name" required>
+                            <input type="date" id="e-date" required>
+                            <input type="text" id="e-desc" placeholder="Description">
+                            <button type="submit" class="sketch-btn" style="background: #000; color: #fff;">Save Event</button>
+                        </form>
+                    </div>
+
+                    <div class="admin-controls" id="admin-file-form" style="display: block;">
+                        <h3>Admin's Note: Upload Resource</h3>
+                        <form onsubmit="uploadFile(event)" autocomplete="off">
+                            <input type="text" id="f-title" placeholder="File Title (e.g. Week 1 Reviewer)" required>
+                            
+                            <!-- Subject Selection (Empty - JS will fill this) -->
+                            <select id="f-subject" required style="margin-bottom: 10px;">
+                                <option value="" disabled selected>Select Subject</option>
+                                <option value="General">General / Other</option>
+                                <!-- JavaScript will add your Schedule subjects here -->
+                            </select>
+
+                            <input type="file" id="f-file" required accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.jpg,.png,.jpeg">
+                            <button type="submit" class="sketch-btn" id="upload-btn" style="background: #000; color: #fff;">
+                                <i class="fas fa-paperclip"></i> Upload to Cabinet
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="admin-controls" id="admin-email-form" style="display: block;">
+                        <h3>Admin's Note: Email Center <i class="fas fa-envelope"></i></h3>
+                        <p style="font-size: 0.9rem; margin-bottom: 10px;">(Select a specific student or blast everyone)</p>
+                        
+                        <form onsubmit="sendEmailService(event)" autocomplete="off">
+                            <!-- NEW: Recipient Dropdown -->
+                            <select id="email-recipient" style="width: 100%; padding: 10px; margin-bottom: 10px; border: none; border-bottom: 2px solid #333; font-family: 'Patrick Hand'; font-size: 1.2rem; background: transparent;">
+                                <option value="ALL">Send to Everyone (Blast)</option>
+                                <!-- JavaScript will load student names here -->
+                            </select>
+
+                            <input type="text" id="email-subject" placeholder="Subject (e.g. You passed!)" required>
+                            <textarea id="email-body" placeholder="Write your message here..." style="height: 100px;"></textarea>
+                            
+                            <button type="submit" class="sketch-btn" style="background: #000; color: #fff;">
+                                <i class="fas fa-paper-plane"></i> Send Email
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- NEW: Gallery Manager for Landing Page -->
+                    <div class="admin-controls" id="admin-gallery-form" style="display: block;">
+                        <h3>Admin's Note: Landing Page Gallery <i class="fas fa-images"></i></h3>
+                        <p style="font-size: 0.9rem; margin-bottom: 10px;">(Upload photos for the main login page)</p>
+                        
+                        <form onsubmit="uploadGalleryItem(event)" autocomplete="off">
+                            <input type="text" id="g-caption" placeholder="Caption (e.g. First Day of School)" required>
+                            <input type="file" id="g-file" required accept="image/*">
+                            
+                            <button type="submit" id="upload-gallery-btn" class="sketch-btn" style="background: #000; color: #fff;">
+                                <i class="fas fa-camera"></i> Post to Gallery
+                            </button>
+                        </form>
+
+                        <hr style="border: 1px dashed #ccc; margin: 15px 0;">
+                        <div id="admin-gallery-list" style="max-height: 150px; overflow-y: auto;"></div>
+                    </div>
+                </div>
+            </div>
 
             <!-- ================= SCHEDULE TAB ================= -->
             <div id="schedule" class="tab-content">
@@ -819,33 +937,6 @@
                 <div id="schedule-list" class="grid-container">
                     <div class="loader">Flipping pages...</div>
                 </div>
-
-                <!-- Admin Add Class -->
-                <div class="admin-controls" id="admin-schedule-form">
-                    <h3>Admin's Note: Add Class</h3>
-                    <form onsubmit="addClass(event)" autocomplete="off">
-                        <select id="s-day" required>
-                            <option value="Monday">Monday</option>
-                            <option value="Tuesday">Tuesday</option>
-                            <option value="Wednesday">Wednesday</option>
-                            <option value="Thursday">Thursday</option>
-                            <option value="Friday">Friday</option>
-                        </select>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                            <input type="text" id="s-code" placeholder="Code (IT 211)" required>
-                            <input type="text" id="s-name" placeholder="Subject Name" required>
-                        </div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                            <input type="time" id="s-start" required>
-                            <input type="time" id="s-end" required>
-                        </div>
-                        <input type="text" id="s-room" placeholder="Room / Lab">
-                        <input type="text" id="s-instructor" placeholder="Instructor">
-                        <input type="url" id="s-meet" placeholder="G-Meet Link">
-                        <input type="url" id="s-class" placeholder="Classroom Link">
-                        <button type="submit" class="sketch-btn" style="background: #000; color: #fff;">Save to Schedule</button>
-                    </form>
-                </div>
             </div>
 
             <!-- ================= ASSIGNMENTS TAB ================= -->
@@ -854,18 +945,6 @@
                 <div id="assignment-list" class="grid-container">
                     <div class="loader">Checking backpack...</div>
                 </div>
-
-                <!-- Admin Add Assignment -->
-                <div class="admin-controls" id="admin-assignment-form">
-                    <h3>Admin's Note: Add Homework</h3>
-                    <form onsubmit="addAssignment(event)" autocomplete="off">
-                        <input type="text" id="a-title" placeholder="Title" required>
-                        <input type="text" id="a-subject" placeholder="Subject (e.g. Math)" required>
-                        <input type="datetime-local" id="a-due">
-                        <textarea id="a-desc" placeholder="Details..."></textarea>
-                        <button type="submit" class="sketch-btn" style="background: #000; color: #fff;">Post Homework</button>
-                    </form>
-                </div>
             </div>
 
             <!-- ================= CALENDAR TAB ================= -->
@@ -873,17 +952,6 @@
                 <h2><i class="fas fa-calendar-alt"></i> Upcoming Events</h2>
                 <div id="events-list" class="grid-container">
                     <div class="loader">Looking at the wall calendar...</div>
-                </div>
-
-                 <!-- Admin Add Event -->
-                 <div class="admin-controls" id="admin-event-form">
-                    <h3>Admin's Note: Add Event</h3>
-                    <form onsubmit="addEvent(event)" autocomplete="off">
-                        <input type="text" id="e-title" placeholder="Event Name" required>
-                        <input type="date" id="e-date" required>
-                        <input type="text" id="e-desc" placeholder="Description">
-                        <button type="submit" class="sketch-btn" style="background: #000; color: #fff;">Save Event</button>
-                    </form>
                 </div>
             </div>
 
@@ -925,48 +993,32 @@
                         <h3 style="margin-top: 10px;">Secret Request</h3>
                     </div>
                 </div>
-                <!-- Admin Upload Form -->
-                <div class="admin-controls" id="admin-file-form">
-                    <h3>Admin's Note: Upload Resource</h3>
-                    <form onsubmit="uploadFile(event)" autocomplete="off">
-                        <input type="text" id="f-title" placeholder="File Title (e.g. Week 1 Reviewer)" required>
-                        
-                        <!-- Subject Selection (Empty - JS will fill this) -->
-                        <select id="f-subject" required style="margin-bottom: 10px;">
-                            <option value="" disabled selected>Select Subject</option>
-                            <option value="General">General / Other</option>
-                            <!-- JavaScript will add your Schedule subjects here -->
-                        </select>
 
-                        <input type="file" id="f-file" required accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.jpg,.png,.jpeg">
-                        <button type="submit" class="sketch-btn" id="upload-btn" style="background: #000; color: #fff;">
-                            <i class="fas fa-paperclip"></i> Upload to Cabinet
-                        </button>
-                    </form>
+
+            </div>
+
+            <!-- ================= HELP TAB ================= -->
+            <div id="help" class="tab-content hidden">
+                <h2><i class="fas fa-question-circle"></i> Student's Guide</h2>
+                
+                <div class="grid-container">
+                    <div class="class-card" style="transform: rotate(1deg);">
+                        <h3><i class="fas fa-book"></i> The Binder</h3>
+                        <p>Welcome to your digital binder! Use the <b>colored tabs</b> on the left to navigate between your Schedule, Homework, and Reviewers.</p>
+                    </div>
+                    <div class="class-card" style="transform: rotate(-1deg);">
+                        <h3><i class="fas fa-folder-open"></i> Reviewers & Files</h3>
+                        <p>Go to the <b>"Links"</b> tab to find downloadable files. You can preview them before downloading! Use the search bar to find specific subjects.</p>
+                    </div>
+                    <div class="class-card" style="transform: rotate(1deg);">
+                        <h3><i class="fas fa-camera-retro"></i> Memories</h3>
+                        <p>Check out the login page for our class photo gallery. If you have photos to add, send them to the Admin via the "Secret Request" box!</p>
+                    </div>
+                    <div class="class-card" style="transform: rotate(-1deg);">
+                        <h3><i class="fas fa-user-secret"></i> Secret Requests</h3>
+                        <p>Found a bug? Want to suggest a feature? Use the <b>"Secret Request"</b> card in the Links tab to send an anonymous note to the admin.</p>
+                    </div>
                 </div>
-
-                <!-- ================= EMAIL BLAST FORM (UPDATED) ================= -->
-                <div class="admin-controls" id="admin-email-form">
-                    <h3>Admin's Note: Email Center <i class="fas fa-envelope"></i></h3>
-                    <p style="font-size: 0.9rem; margin-bottom: 10px;">(Select a specific student or blast everyone)</p>
-                    
-                    <form onsubmit="sendEmailService(event)" autocomplete="off">
-                        <!-- NEW: Recipient Dropdown -->
-                        <select id="email-recipient" style="width: 100%; padding: 10px; margin-bottom: 10px; border: none; border-bottom: 2px solid #333; font-family: 'Patrick Hand'; font-size: 1.2rem; background: transparent;">
-                            <option value="ALL">Send to Everyone (Blast)</option>
-                            <!-- JavaScript will load student names here -->
-                        </select>
-
-                        <input type="text" id="email-subject" placeholder="Subject (e.g. You passed!)" required>
-                        <textarea id="email-body" placeholder="Write your message here..." style="height: 100px;"></textarea>
-                        
-                        <button type="submit" class="sketch-btn" style="background: #000; color: #fff;">
-                            <i class="fas fa-paper-plane"></i> Send Email
-                        </button>
-                    </form>
-                </div>
-
-
             </div>
 
         </div> <!-- End Paper Content -->
@@ -1006,6 +1058,16 @@
                 <option value="1536,2048">Tablet / iPad (Portrait)</option>
                 <option value="1920,1080">Desktop / Laptop (16:9)</option>
             </select>
+            <p>Select Background Style:</p>
+            <select id="wp-bg-select" onchange="toggleCustomBgInput(this)" style="margin-bottom: 20px; font-family: 'Patrick Hand'; font-size: 1.2rem; padding: 10px; border: 2px solid #000; background: #fff; width: 100%;">
+                <option value="paper">Classic Paper (Wimpy Style)</option>
+                <option value="midnight">Midnight Glass</option>
+                <option value="sunset">Sunset Glass</option>
+                <option value="ocean">Ocean Glass</option>
+                <option value="forest">Forest Glass</option>
+                <option value="custom">Custom Image (Upload)</option>
+            </select>
+            <input type="file" id="wp-custom-bg" accept="image/*" class="hidden" style="margin-bottom: 20px; font-family: 'Patrick Hand'; font-size: 1rem; width: 100%; border: 2px dashed #000; padding: 10px;">
             <button onclick="generateWallpaperFromSelect(event)" class="sketch-btn" style="background:#000; color:#fff; margin-bottom:10px; width:100%; justify-content:center;">
                 <i class="fas fa-magic"></i> Generate Wallpaper
             </button>
@@ -1110,7 +1172,7 @@
             const list = document.getElementById('file-list');
             if(!list) return;
             
-            const { data, error } = await sb.from('shared_files').select('*').order('created_at', { ascending: false });
+            const { data, error } = await sb.from('shared_files').select('*').neq('subject', 'LandingGallery').order('created_at', { ascending: false });
             if(error) return console.error(error);
             
             globalFiles = data || [];
@@ -1242,9 +1304,21 @@
         window.openWallpaperModal = function() {
             document.getElementById('wallpaperModal').classList.remove('hidden');
         }
+        
+        window.toggleCustomBgInput = function(select) {
+            const input = document.getElementById('wp-custom-bg');
+            if(select.value === 'custom') input.classList.remove('hidden');
+            else input.classList.add('hidden');
+        }
 
         window.generateWallpaperFromSelect = function(e) {
             const val = document.getElementById('wp-size-select').value;
+            const bgStyle = document.getElementById('wp-bg-select').value;
+            const fileInput = document.getElementById('wp-custom-bg');
+            
+            // Capture button reference immediately because e.currentTarget is null in async callbacks
+            const btn = e.currentTarget;
+
             let w, h;
             if (val === 'auto') {
                 w = Math.round(window.screen.width * (window.devicePixelRatio || 1));
@@ -1252,10 +1326,75 @@
             } else {
                 [w, h] = val.split(',').map(Number);
             }
-            generateWallpaper(w, h, e);
+            
+            if (bgStyle === 'custom' && fileInput.files && fileInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    // Pass a mock event object with the captured button
+                    generateWallpaper(w, h, bgStyle, { currentTarget: btn }, evt.target.result);
+                };
+                reader.readAsDataURL(fileInput.files[0]);
+            } else {
+                if (bgStyle === 'custom') {
+                    alert("Please select an image file first!");
+                    return;
+                }
+                generateWallpaper(w, h, bgStyle, e);
+            }
         }
 
-        window.generateWallpaper = async function(width, height, e) {
+        window.showWallpaperPreview = function(dataUrl, filename) {
+            const overlay = document.createElement('div');
+            overlay.className = 'wimpy-modal-overlay';
+            overlay.id = 'wp-preview-overlay';
+            overlay.style.zIndex = '10002'; // Ensure it's on top
+            
+            const box = document.createElement('div');
+            box.className = 'wimpy-modal-box';
+            Object.assign(box.style, {
+                maxWidth: '90%',
+                maxHeight: '90vh',
+                width: 'auto',
+                padding: '20px',
+                display: 'flex',
+                flexDirection: 'column'
+            });
+            
+            box.innerHTML = `
+                <h2 style="margin-top:0;"><i class="fas fa-eye"></i> Preview</h2>
+                <div style="flex: 1; overflow: auto; margin-bottom: 15px; border: 2px solid #000; background: #eee; display: flex; justify-content: center; align-items: center; min-height: 200px;">
+                    <img src="${dataUrl}" style="max-width: 100%; max-height: 60vh; object-fit: contain; display: block; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: center;">
+                    <button id="wp-download-btn" class="sketch-btn" style="background: #000; color: #fff; width: auto; padding: 10px 20px;">
+                        <i class="fas fa-download"></i> Download
+                    </button>
+                    <button onclick="document.getElementById('wp-preview-overlay').remove()" class="sketch-btn danger" style="width: auto; padding: 10px 20px;">
+                        Close
+                    </button>
+                </div>
+            `;
+            
+            overlay.appendChild(box);
+            document.body.appendChild(overlay);
+            
+            document.getElementById('wp-download-btn').onclick = function() {
+                const link = document.createElement('a');
+                link.download = filename;
+                link.href = dataUrl;
+                link.click();
+                
+                // Success Toast
+                const toast = document.createElement('div');
+                toast.className = 'toast';
+                toast.innerText = "Wallpaper Saved!";
+                document.getElementById('toast-container').appendChild(toast);
+                
+                document.getElementById('wp-preview-overlay').remove();
+            };
+        }
+
+        window.generateWallpaper = async function(width, height, bgStyle, e, customBgData = null) {
             const btn = e.currentTarget;
             const originalText = btn.innerHTML;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Drawing...';
@@ -1268,17 +1407,72 @@
             const isPortrait = height > width;
 
             // Apply Wimpy Styles to Stage
-            Object.assign(stage.style, {
+            let stageStyles = {
                 width: width + 'px',
                 height: height + 'px',
                 position: 'fixed', top: '0', left: '-9999px', zIndex: '-9999',
-                backgroundColor: '#fdfbf7',
-                backgroundImage: 'repeating-linear-gradient(#fdfbf7 0px, #fdfbf7 29px, #a4b0be 30px)',
                 fontFamily: '"Patrick Hand", cursive',
                 padding: '80px',
                 boxSizing: 'border-box',
                 display: 'flex', flexDirection: 'column', alignItems: 'center'
+            };
+
+            let cardStyles = {};
+            let titleColor = '#000';
+            let footerColor = '#7f8c8d';
+
+            if (bgStyle === 'paper') {
+                stageStyles.backgroundColor = '#fdfbf7';
+                stageStyles.backgroundImage = 'repeating-linear-gradient(#fdfbf7 0px, #fdfbf7 29px, #a4b0be 30px)';
+                cardStyles = {
+                    background: '#fff',
+                    border: '3px solid #000',
+                    boxShadow: '5px 5px 0 rgba(0,0,0,0.2)'
+                };
+            } else {
+                // Glassmorphism Base
+                cardStyles = {
+                    background: 'rgba(255, 255, 255, 0.65)',
+                    border: '2px solid rgba(255, 255, 255, 0.9)',
+                    boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.2)',
+                    borderRadius: '15px'
+                };
+                
+                if (bgStyle === 'midnight') {
+                    stageStyles.background = 'linear-gradient(to bottom, #0f2027, #203a43, #2c5364)';
+                    titleColor = '#fff';
+                    footerColor = 'rgba(255,255,255,0.7)';
+                } else if (bgStyle === 'sunset') {
+                    stageStyles.background = 'linear-gradient(to right, #ff7e5f, #feb47b)';
+                } else if (bgStyle === 'ocean') {
+                    stageStyles.background = 'linear-gradient(to top, #30cfd0 0%, #330867 100%)';
+                    titleColor = '#fff';
+                    footerColor = 'rgba(255,255,255,0.7)';
+                } else if (bgStyle === 'forest') {
+                    stageStyles.background = 'linear-gradient(135deg, #134e5e 0%, #71b280 100%)';
+                    titleColor = '#fff';
+                    footerColor = 'rgba(255,255,255,0.7)';
+                } else if (bgStyle === 'custom' && customBgData) {
+                    // Background handled via img tag below for better html2canvas stability
+                    titleColor = '#fff';
+                    footerColor = 'rgba(255,255,255,0.9)';
+                }
+            }
+
+            Object.assign(stage.style, {
+                ...stageStyles
             });
+
+            // Add Custom Background Image if applicable
+            if (bgStyle === 'custom' && customBgData) {
+                const bgImg = document.createElement('img');
+                bgImg.src = customBgData;
+                Object.assign(bgImg.style, {
+                    position: 'absolute', top: '0', left: '0', width: '100%', height: '100%',
+                    objectFit: 'cover', zIndex: '-1'
+                });
+                stage.appendChild(bgImg);
+            }
 
             // Add Header
             const title = document.createElement('h1');
@@ -1288,7 +1482,8 @@
                 fontSize: isPortrait ? '80px' : '100px',
                 marginBottom: '50px',
                 transform: 'rotate(-2deg)',
-                textShadow: '4px 4px 0px rgba(0,0,0,0.1)'
+                textShadow: (bgStyle === 'custom') ? '2px 2px 4px rgba(0,0,0,0.8)' : '4px 4px 0px rgba(0,0,0,0.1)',
+                color: titleColor
             });
             stage.appendChild(title);
 
@@ -1312,9 +1507,16 @@
                     // Clean up styles for static image
                     clone.style.animation = 'none';
                     clone.style.opacity = '1';
-                    clone.style.transform = `rotate(${Math.random() * 4 - 2}deg)`;
-                    clone.style.boxShadow = '5px 5px 0 rgba(0,0,0,0.2)';
-                    clone.style.border = '3px solid #000';
+                    
+                    // Apply Card Styles (Glass or Paper)
+                    Object.assign(clone.style, cardStyles);
+
+                    if (bgStyle === 'paper') {
+                        clone.style.transform = `rotate(${Math.random() * 4 - 2}deg)`;
+                    } else {
+                        clone.style.transform = `rotate(${Math.random() * 2 - 1}deg)`; // Less rotation for glass
+                    }
+
                     // Boost font size for wallpaper resolution
                     clone.querySelectorAll('*').forEach(el => {
                         const style = window.getComputedStyle(el);
@@ -1330,28 +1532,23 @@
             const footer = document.createElement('div');
             footer.innerText = "Generated by Sistema ni JV";
             Object.assign(footer.style, {
-                marginTop: 'auto', fontSize: '40px', color: '#7f8c8d', fontFamily: '"Permanent Marker", cursive'
+                marginTop: 'auto', fontSize: '40px', color: footerColor, fontFamily: '"Permanent Marker", cursive'
             });
             stage.appendChild(footer);
 
             // Capture
             try {
-                const canvas = await html2canvas(stage, { scale: 1, useCORS: true });
-                const link = document.createElement('a');
-                link.download = `WimpySchedule_${width}x${height}_${Date.now()}.png`;
-                link.href = canvas.toDataURL('image/png');
-                link.click();
+                const canvas = await html2canvas(stage, { scale: 1, useCORS: true, logging: false });
+                const dataUrl = canvas.toDataURL('image/png');
+                const filename = `WimpySchedule_${width}x${height}_${Date.now()}.png`;
                 
-                // Success Toast
-                const toast = document.createElement('div');
-                toast.className = 'toast';
-                toast.innerText = "Wallpaper Saved!";
-                document.getElementById('toast-container').appendChild(toast);
+                showWallpaperPreview(dataUrl, filename);
             } catch (err) {
                 console.error(err);
                 alert("Oops! Could not generate wallpaper.");
             } finally {
-                stage.remove();
+                // Delay removal slightly to allow library cleanup to complete
+                setTimeout(() => stage.remove(), 2000);
                 btn.innerHTML = originalText;
                 btn.disabled = false;
                 document.getElementById('wallpaperModal').classList.add('hidden');

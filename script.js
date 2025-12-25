@@ -119,6 +119,7 @@ const initApp = () => {
     fetchNotes(); 
     fetchRecentLogins();
     fetchNewUploads(); // <--- ADD THIS LINE HERE
+    fetchLandingGallery(); // <--- AND THIS ONE
     if (authModeMessage) {
         authModeMessage.innerText = 'Enter your credentials to log in.';
     }
@@ -366,6 +367,7 @@ function showAdminPanel(name) {
     adminNameDisplay.innerText = name;
     fetchStudents(); 
     fetchRequests(); // Load requests when admin panel opens
+    fetchAdminFiles(); // Load files
 }
 
 // --- ADMIN FEATURES (Black List) ---
@@ -588,27 +590,97 @@ async function postNote() {
 async function fetchNotes() {
     const { data, error } = await supabaseClient.from('notes').select('*');
     if (error) return;
+    
+    // Check if Admin (for delete capability)
+    const storedUser = localStorage.getItem('wimpy_user') || sessionStorage.getItem('wimpy_user');
+    let isAdmin = false;
+    if (storedUser) {
+        const u = JSON.parse(storedUser);
+        if (u.sr_code === 'ADMIN') isAdmin = true;
+    }
+
     noteLayer.innerHTML = '';
     data.forEach(note => {
         const div = document.createElement('div');
         div.className = 'sticky-note';
-        div.innerText = note.content;
+        
+        // Content
+        const p = document.createElement('p');
+        p.innerText = note.content;
+        p.style.margin = '0';
+        p.style.pointerEvents = 'none'; // Let clicks pass to drag handler
+        div.appendChild(p);
+
         div.id = `note-${note.id}`;
         div.style.left = note.x_pos + '%';
         div.style.top = note.y_pos + '%';
         div.style.transform = `rotate(${note.rotation}deg)`;
         div.style.backgroundColor = note.color;
+        
+        // Delete Button (Only if Admin)
+        if (isAdmin) {
+            const btn = document.createElement('button');
+            btn.className = 'delete-note-btn';
+            btn.innerHTML = '<i class="fas fa-times"></i>';
+            btn.title = "Delete Note";
+            btn.style.width = '20px'; // Override global button styles
+            btn.style.padding = '0';
+            btn.style.marginTop = '0';
+            // Prevent drag when clicking button
+            btn.onmousedown = (e) => e.stopPropagation(); 
+            btn.onclick = () => deleteNote(note.id);
+            div.appendChild(btn);
+        }
+
         makeDraggable(div, note.id);
         noteLayer.appendChild(div);
     });
 }
+
+window.deleteNote = async function(id) {
+    if(!await showWimpyConfirm("Tear off this note?")) return;
+    const { error } = await supabaseClient.from('notes').delete().eq('id', id);
+    if(error) showToast("Could not delete note.", "error");
+    else {
+        showToast("Note removed.");
+        fetchNotes();
+    }
+}
+
 function makeDraggable(element, noteId) {
     let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     element.onmousedown = dragMouseDown;
     element.ontouchstart = dragMouseDown;
-    function dragMouseDown(e) { e = e || window.event; if (e.type !== 'touchstart') e.preventDefault(); pos3 = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX; pos4 = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY; document.onmouseup = closeDragElement; document.onmousemove = elementDrag; document.ontouchend = closeDragElement; document.ontouchmove = elementDrag; }
+    
+    function dragMouseDown(e) { 
+        e = e || window.event; 
+        
+        // Bring to front
+        element.style.zIndex = 1000;
+        
+        if (e.type !== 'touchstart') e.preventDefault(); 
+        pos3 = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX; 
+        pos4 = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY; 
+        document.onmouseup = closeDragElement; 
+        document.onmousemove = elementDrag; 
+        document.ontouchend = closeDragElement; 
+        document.ontouchmove = elementDrag; 
+    }
+    
     function elementDrag(e) { e = e || window.event; let clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX; let clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY; pos1 = pos3 - clientX; pos2 = pos4 - clientY; pos3 = clientX; pos4 = clientY; element.style.top = (element.offsetTop - pos2) + "px"; element.style.left = (element.offsetLeft - pos1) + "px"; }
-    function closeDragElement() { document.onmouseup = null; document.onmousemove = null; document.ontouchend = null; document.ontouchmove = null; const xPercent = (element.offsetLeft / window.innerWidth) * 100; const yPercent = (element.offsetTop / window.innerHeight) * 100; updateNotePosition(noteId, xPercent, yPercent); }
+    
+    function closeDragElement() { 
+        // Reset z-index slightly so it doesn't stay 'active' forever, or keep it high
+        element.style.zIndex = 'auto'; 
+        
+        document.onmouseup = null; 
+        document.onmousemove = null; 
+        document.ontouchend = null; 
+        document.ontouchmove = null; 
+        const xPercent = (element.offsetLeft / window.innerWidth) * 100; 
+        const yPercent = (element.offsetTop / window.innerHeight) * 100; 
+        updateNotePosition(noteId, xPercent, yPercent); 
+    }
 }
 async function updateNotePosition(id, x, y) {
     x = Math.max(0, Math.min(x, 95));
@@ -696,16 +768,18 @@ function showWelcomeNote() {
             </div>
         </div>
         <div style="text-align: left; background: #f9f9f9; border: 2px dashed #bbb; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
-            <p style="font-weight: bold; margin: 0 0 10px 0; border-bottom: 2px solid #ddd; padding-bottom: 5px;"><i class="fas fa-edit"></i> New Features Added:</p>
-            <ul style="padding-left: 20px; margin: 0; list-style-type: none; font-size: 1rem;">
-                <li><i class="fas fa-check-circle"></i> <b>Live Tracker:</b> See exactly which class is happening right now.</li>
-                <li><i class="fas fa-check-circle"></i> <b>Subject Cabinet:</b> Organized folders for reviewers & PDFs.</li>
-                <li><i class="fas fa-check-circle"></i> <b>Custom Avatars:</b> Upload your own profile picture.</li>
-                <li><i class="fas fa-check-circle"></i> <b>Binder UI:</b> New "notebook" design for better vibes.</li>
-                <li><i class="fas fa-check-circle"></i> <b>Auto-Schedule:</b> Classes automatically update daily.</li>
-                <li><i class="fas fa-check-circle"></i> <b>File Previewer:</b> Click to preview files directly in the browser.</li>
-                <li><i class="fas fa-check-circle"></i> <b>Secret Request Box:</b> Send anonymous requests/suggestions to the admin.</li>
-                <li><i class="fas fa-check-circle"></i> <b>Recent Uploads:</b> See the latest shared files directly on the login page.</li>
+            <p style="font-weight: bold; margin: 0 0 10px 0; border-bottom: 2px solid #ddd; padding-bottom: 5px;"><i class="fas fa-edit"></i> What's New in this Update:</p>
+            <ul style="padding-left: 20px; margin: 0; list-style-type: none; font-size: 1rem; line-height: 1.6;">
+                <li><i class="fas fa-camera-retro"></i> <b>Memories Gallery:</b> New photo gallery added to the login page!</li>
+                <li><i class="fas fa-question-circle"></i> <b>Help Guide:</b> Added a user guide tab inside the binder.</li>
+                <li><i class="fas fa-filter"></i> <b>Smart Filters:</b> Gallery photos no longer clutter your reviewer files.</li>
+                <li><i class="fas fa-magic"></i> <b>Wallpaper Generator V2:</b> Create wallpapers with <i>Glassmorphism</i> effects or upload your own background image!</li>
+                <li><i class="fas fa-tools"></i> <b>Admin Tools Tab:</b> (For Admin) All management tools are now in a dedicated binder tab.</li>
+                <li><i class="fas fa-sticky-note"></i> <b>Better Sticky Notes:</b> Improved tape visuals and smoother dragging.</li>
+                <li><i class="fas fa-eye"></i> <b>File Previewer:</b> Preview PDFs and images instantly before downloading.</li>
+                <li><i class="fas fa-clock"></i> <b>Live Class Tracker:</b> See exactly which class is happening right now.</li>
+                <li><i class="fas fa-folder"></i> <b>Subject Cabinet:</b> Files are now organized by subject folders.</li>
+                <li><i class="fas fa-paint-brush"></i> <b>New Look:</b> Added doodles, coffee stains, and a credits section to the login page.</li>
             </ul>
         </div>
         <p style="font-size:1.3rem; margin: 15px 0; color: #d32f2f; font-weight: bold;">"Login na kayo para makita niyo!"</p>
@@ -787,6 +861,7 @@ async function fetchNewUploads() {
     const { data, error } = await supabaseClient
         .from('shared_files')
         .select('title, subject, created_at, file_url')
+        .neq('subject', 'LandingGallery')
         .gte('created_at', dateLimit.toISOString())
         .order('created_at', { ascending: false })
         .limit(3); // Only show top 3
@@ -804,6 +879,33 @@ async function fetchNewUploads() {
     } else {
         container.classList.add('hidden'); // Keep hidden if empty
     }
+}
+
+// --- FETCH LANDING PAGE GALLERY ---
+async function fetchLandingGallery() {
+    const container = document.getElementById('wimpyGalleryContainer');
+    const section = document.getElementById('wimpyGallerySection');
+    if(!container || !section) return;
+
+    const { data, error } = await supabaseClient
+        .from('shared_files')
+        .select('*')
+        .eq('subject', 'LandingGallery')
+        .order('created_at', { ascending: false });
+
+    if(error || !data || data.length === 0) {
+        section.classList.add('hidden');
+        return;
+    }
+
+    section.classList.remove('hidden');
+    container.innerHTML = data.map(item => `
+        <div class="polaroid-card" onclick="viewFullImage('${item.file_url}')">
+            <div class="tape-strip"></div>
+            <img src="${item.file_url}" alt="${item.title}" loading="lazy">
+            <div class="polaroid-caption">${item.title}</div>
+        </div>
+    `).join('');
 }
 
 // --- CUSTOM WIMPY POP-UP ---
@@ -882,6 +984,51 @@ window.deleteRequest = async function(id) {
     if(!await showWimpyConfirm('Burn this note?')) return;
     await supabaseClient.from('requests').delete().eq('id', id);
     fetchRequests();
+}
+
+// --- ADMIN FILE MANAGER (To delete memories/uploads) ---
+async function fetchAdminFiles() {
+    const container = document.getElementById('adminFileList');
+    if(!container) return;
+    
+    container.innerHTML = '<p>Loading files...</p>';
+    
+    const { data, error } = await supabaseClient
+        .from('shared_files')
+        .select('*')
+        .neq('subject', 'LandingGallery')
+        .order('created_at', { ascending: false });
+        
+    if(error) return console.error(error);
+    
+    if(!data || data.length === 0) {
+        container.innerHTML = '<h3 style="text-align:center; color:#666;">No files uploaded.</h3>';
+        return;
+    }
+    
+    container.innerHTML = '<h3 style="text-decoration:underline wavy #0984e3;"><i class="fas fa-folder-open"></i> Manage Files</h3>' + data.map(file => `
+        <div class="student-strip" style="justify-content:space-between; align-items:center; background:#f0f8ff;">
+            <div style="display:flex; flex-direction:column; gap:2px; overflow:hidden; text-align:left;">
+                <strong>${file.title}</strong>
+                <small style="color:#666;">${file.subject} | ${new Date(file.created_at).toLocaleDateString()}</small>
+            </div>
+            <div style="display:flex; gap:5px;">
+                <a href="${file.file_url}" target="_blank" class="btn-icon" style="background:#0984e3; color:#fff; text-decoration:none; display:flex; align-items:center;"><i class="fas fa-eye"></i></a>
+                <button onclick="deleteAdminFile(${file.id})" class="btn-icon btn-delete"><i class="fas fa-trash"></i></button>
+            </div>
+        </div>
+    `).join('');
+}
+
+window.deleteAdminFile = async function(id) {
+    if(!await showWimpyConfirm('Delete this file permanently?')) return;
+    const { error } = await supabaseClient.from('shared_files').delete().eq('id', id);
+    if(error) showToast('Error deleting file.', 'error');
+    else {
+        showToast('File deleted.');
+        fetchAdminFiles();
+        fetchNewUploads(); // Refresh the public list too
+    }
 }
 
 // --- FILE PREVIEWER MODAL ---
