@@ -3,7 +3,7 @@ const SUPABASE_URL = 'https://egnyblflgppsosunnilq.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVnbnlibGZsZ3Bwc29zdW5uaWxxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY0OTYzMjksImV4cCI6MjA4MjA3MjMyOX0.HR9lt4oHuFjGcjwsF_fLoJMuG2OI8aCIoRCSyyu0zVE';
 
 // FIX: We use 'db' instead of 'supabase' to avoid conflict with the library name
-const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+window.db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); // Make 'db' a global variable
 
 // State
 let user = null;
@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log("Dashboard loaded...");
     checkSession();
     startClock();
+    await initLiveTracking(); // ADDED: Initialize live tracking here
     
     // Default load
     const day = new Date().toLocaleDateString('en-US', { weekday: 'long' });
@@ -356,6 +357,75 @@ function checkLiveClass() {
         // No class right now? Hide the container.
         container.style.display = 'none';
     }
+}
+
+// Global variable for the channel
+let roomChannel;
+
+async function initLiveTracking() {
+    if (!user) return;
+
+    const userPayload = {
+        user_id: user.id,
+        name: user.name,
+        avatar: user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`,
+        online_at: new Date().toISOString()
+    };
+
+    // 1. Create a channel for 'room-1' (Everyone connects here)
+    roomChannel = db.channel('room-1', {
+        config: {
+            presence: {
+                key: user.id, // Use User ID as key so duplicates (2 tabs) update the same entry
+            },
+        },
+    });
+
+    // 2. Subscribe to Presence Events (Sync)
+    roomChannel
+        .on('presence', { event: 'sync' }, () => {
+            const newState = roomChannel.presenceState();
+            renderActiveUsers(newState);
+        })
+        .subscribe(async (status) => {
+            if (status === 'SUBSCRIBED') {
+                // 3. Track (announce) ourselves to the room
+                await roomChannel.track(userPayload);
+            }
+        });
+}
+
+function renderActiveUsers(presenceState) {
+    const list = document.getElementById('active-users-list');
+    if (!list) return;
+
+    list.innerHTML = '';
+
+    const users = [];
+    for (const key in presenceState) {
+        if (presenceState[key].length > 0) {
+            users.push(presenceState[key][0]);
+        }
+    }
+
+    if (users.length === 0) {
+        list.innerHTML = '<small style="color:#bdc3c7;">Just you...</small>';
+        return;
+    }
+
+    users.forEach(u => {
+        const isMe = (u.user_id === user.id); 
+        const borderStyle = isMe ? 'border-color: #f1c40f;' : ''; // Gold border for self
+
+        const div = document.createElement('div');
+        div.className = 'live-user-bubble';
+        div.setAttribute('data-name', isMe ? `${u.name} (You)` : u.name);
+        div.style.cssText = borderStyle;
+
+        div.innerHTML = `<img src="${u.avatar}" alt="${u.name}">`;
+        
+        list.appendChild(div);
+    });
 }
 
 // --- AVATAR UPDATE LOGIC ---

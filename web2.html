@@ -642,6 +642,60 @@
                 transform: translateX(-50%);
             }
         }
+
+        /* --- LIVE ACTIVE USERS STYLES --- */
+        .live-user-bubble {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.2s;
+            background-color: #fff; /* Fallback */
+        }
+
+        .live-user-bubble:hover {
+            transform: scale(1.1);
+            z-index: 10;
+        }
+
+        .live-user-bubble img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        /* The Green Dot */
+        .live-user-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 12px;
+            height: 12px;
+            background-color: #2ecc71; /* Green */
+            border: 2px solid #2f3542; /* Dark border to match theme */
+            border-radius: 50%;
+        }
+
+        /* Tooltip for the name */
+        .live-user-bubble:hover::before {
+            content: attr(data-name);
+            position: absolute;
+            left: 60px; /* Push to the right of the sidebar */
+            top: 50%;
+            transform: translateY(-50%);
+            background: #000;
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-family: 'Patrick Hand';
+            white-space: nowrap;
+            z-index: 20;
+            font-size: 1rem;
+        }
     </style>
 </head>
 <body>
@@ -652,6 +706,18 @@
             <div class="binder-ring"></div>
             <div class="binder-ring"></div>
             <div class="binder-ring"></div>
+
+            <!-- START: Live Active Users -->
+            <div id="active-users-panel" style="margin-top: auto; padding-bottom: 20px; text-align: center; width: 100%;">
+                <p style="color: #fff; font-family: 'Patrick Hand'; font-size: 0.9rem; margin-bottom: 10px; border-bottom: 1px dashed #7f8c8d; padding-bottom: 5px;">
+                    <i class="fas fa-eye"></i> IN THE ROOM:
+                </p>
+                <div id="active-users-list" style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                    <!-- Avatars will appear here dynamically -->
+                    <small style="color: #bdc3c7;">Scanning...</small>
+                </div>
+            </div>
+            <!-- END: Live Active Users -->
         </div>
 
         <!-- The Tabs -->
@@ -900,7 +966,7 @@
         const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVnbnlibGZsZ3Bwc29zdW5uaWxxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY0OTYzMjksImV4cCI6MjA4MjA3MjMyOX0.HR9lt4oHuFjGcjwsF_fLoJMuG2OI8aCIoRCSyyu0zVE';
         
         // Use existing client if available, else create
-        const sb = window.supabaseClient || window.supabase.createClient(SB_URL, SB_KEY);
+        const sb = window.db; // Use the global Supabase client initialized in dashboard.js
         let globalFiles = [];
 
         // --- 1. PREVIEW MODAL ---
