@@ -18,6 +18,8 @@
           emailjs.init("KtQgxJvMwR6IfuU3_");
        })();
     </script>
+    <!-- html2canvas for Wallpaper Generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Permanent+Marker&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -775,6 +777,9 @@
                     <button class="sketch-btn" onclick="filterSchedule('Thursday')">Thursday</button>
                     <button class="sketch-btn" onclick="filterSchedule('Friday')">Friday</button>
                     <button class="sketch-btn" onclick="filterSchedule('All')">All</button>
+                    <button class="sketch-btn" onclick="openWallpaperModal()" style="margin-left:auto; border-color:#6c5ce7; color:#6c5ce7;">
+                        <i class="fas fa-camera-retro"></i> Wallpaper
+                    </button>
                 </div>
                 
                 <h3 id="current-day-label" style="text-align: center; font-size: 1.5rem; color: #57606f;">Weekly View</h3>
@@ -956,6 +961,26 @@
         </div>
     </div>
 
+    <!-- Wallpaper Generator Modal -->
+    <div id="wallpaperModal" class="wimpy-modal-overlay hidden">
+        <div class="wimpy-modal-box">
+            <h2><i class="fas fa-camera-retro"></i> Get Wallpaper</h2>
+            <p>Select your device size:</p>
+            <select id="wp-size-select" style="margin-bottom: 20px; font-family: 'Patrick Hand'; font-size: 1.2rem; padding: 10px; border: 2px solid #000; background: #fff; width: 100%;">
+                <option value="auto">Current Screen (Adaptive)</option>
+                <option value="1080,1920">Standard Phone (9:16)</option>
+                <option value="1170,2532">Tall Phone / iPhone (19.5:9)</option>
+                <option value="1290,2796">Max / Ultra Phone</option>
+                <option value="1536,2048">Tablet / iPad (Portrait)</option>
+                <option value="1920,1080">Desktop / Laptop (16:9)</option>
+            </select>
+            <button onclick="generateWallpaperFromSelect(event)" class="sketch-btn" style="background:#000; color:#fff; margin-bottom:10px; width:100%; justify-content:center;">
+                <i class="fas fa-magic"></i> Generate Wallpaper
+            </button>
+            <button onclick="document.getElementById('wallpaperModal').classList.add('hidden')" class="sketch-btn danger">Cancel</button>
+        </div>
+    </div>
+
     <!-- SCRIPTS -->
     <script src="dashboard.js"></script>
 
@@ -1076,6 +1101,126 @@
 
         // Load on start (Delayed slightly to ensure DOM is ready)
         document.addEventListener('DOMContentLoaded', () => setTimeout(refreshFiles, 1000));
+
+        // --- WALLPAPER GENERATOR LOGIC ---
+        window.openWallpaperModal = function() {
+            document.getElementById('wallpaperModal').classList.remove('hidden');
+        }
+
+        window.generateWallpaperFromSelect = function(e) {
+            const val = document.getElementById('wp-size-select').value;
+            let w, h;
+            if (val === 'auto') {
+                w = Math.round(window.screen.width * (window.devicePixelRatio || 1));
+                h = Math.round(window.screen.height * (window.devicePixelRatio || 1));
+            } else {
+                [w, h] = val.split(',').map(Number);
+            }
+            generateWallpaper(w, h, e);
+        }
+
+        window.generateWallpaper = async function(width, height, e) {
+            const btn = e.currentTarget;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Drawing...';
+            btn.disabled = true;
+
+            // 1. Create the Stage (Off-screen container)
+            const stage = document.createElement('div');
+            document.body.appendChild(stage);
+
+            const isPortrait = height > width;
+
+            // Apply Wimpy Styles to Stage
+            Object.assign(stage.style, {
+                width: width + 'px',
+                height: height + 'px',
+                position: 'fixed', top: '0', left: '-9999px', zIndex: '-9999',
+                backgroundColor: '#fdfbf7',
+                backgroundImage: 'repeating-linear-gradient(#fdfbf7 0px, #fdfbf7 29px, #a4b0be 30px)',
+                fontFamily: '"Patrick Hand", cursive',
+                padding: '80px',
+                boxSizing: 'border-box',
+                display: 'flex', flexDirection: 'column', alignItems: 'center'
+            });
+
+            // Add Header
+            const title = document.createElement('h1');
+            title.innerHTML = "MY CLASS SCHEDULE";
+            Object.assign(title.style, {
+                fontFamily: '"Permanent Marker", cursive',
+                fontSize: isPortrait ? '80px' : '100px',
+                marginBottom: '50px',
+                transform: 'rotate(-2deg)',
+                textShadow: '4px 4px 0px rgba(0,0,0,0.1)'
+            });
+            stage.appendChild(title);
+
+            // Clone Schedule Items
+            const grid = document.createElement('div');
+            Object.assign(grid.style, {
+                display: 'grid',
+                gridTemplateColumns: isPortrait ? '1fr' : 'repeat(3, 1fr)',
+                gap: '40px', width: '100%', alignContent: 'start'
+            });
+
+            const cards = document.querySelectorAll('#schedule-list .class-card');
+            if(cards.length === 0) {
+                grid.innerHTML = '<h2 style="text-align:center; width:100%;">No classes found! Go have fun!</h2>';
+            } else {
+                cards.forEach(card => {
+                    const clone = card.cloneNode(true);
+                    // Remove interactive elements (Buttons, Links) for wallpaper
+                    clone.querySelectorAll('button, a').forEach(el => el.remove());
+
+                    // Clean up styles for static image
+                    clone.style.animation = 'none';
+                    clone.style.opacity = '1';
+                    clone.style.transform = `rotate(${Math.random() * 4 - 2}deg)`;
+                    clone.style.boxShadow = '5px 5px 0 rgba(0,0,0,0.2)';
+                    clone.style.border = '3px solid #000';
+                    // Boost font size for wallpaper resolution
+                    clone.querySelectorAll('*').forEach(el => {
+                        const style = window.getComputedStyle(el);
+                        const fontSize = parseFloat(style.fontSize);
+                        if(fontSize) el.style.fontSize = (fontSize * 1.5) + 'px';
+                    });
+                    grid.appendChild(clone);
+                });
+            }
+            stage.appendChild(grid);
+
+            // Add Footer
+            const footer = document.createElement('div');
+            footer.innerText = "Generated by Sistema ni JV";
+            Object.assign(footer.style, {
+                marginTop: 'auto', fontSize: '40px', color: '#7f8c8d', fontFamily: '"Permanent Marker", cursive'
+            });
+            stage.appendChild(footer);
+
+            // Capture
+            try {
+                const canvas = await html2canvas(stage, { scale: 1, useCORS: true });
+                const link = document.createElement('a');
+                link.download = `WimpySchedule_${width}x${height}_${Date.now()}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                
+                // Success Toast
+                const toast = document.createElement('div');
+                toast.className = 'toast';
+                toast.innerText = "Wallpaper Saved!";
+                document.getElementById('toast-container').appendChild(toast);
+            } catch (err) {
+                console.error(err);
+                alert("Oops! Could not generate wallpaper.");
+            } finally {
+                stage.remove();
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                document.getElementById('wallpaperModal').classList.add('hidden');
+            }
+        }
     </script>
 </body>
 </html>
