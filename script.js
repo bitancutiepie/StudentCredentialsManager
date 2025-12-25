@@ -468,34 +468,44 @@ function openPortalWindow() {
 
 // --- OTHER FEATURES ---
 async function fetchMembers() {
-    const { data, error } = await supabaseClient.from('students').select('name, avatar_url');
+    // 1. Fetch Students
+    const { data: students, error } = await supabaseClient.from('students').select('id, name, avatar_url');
     if (error) return;
+
+    // 2. Fetch Statuses
+    const { data: statuses } = await supabaseClient.from('user_statuses').select('user_id, status');
+    
+    // Create a lookup map for statuses
+    const statusMap = {};
+    if (statuses) statuses.forEach(s => statusMap[s.user_id] = s.status);
+
     publicMemberList.innerHTML = '';
-    if (data.length === 0) {
+    if (students.length === 0) {
         publicMemberList.innerHTML = '<span style="font-style:italic">No members yet...</span>';
         return;
     }
-    data.forEach(student => {
+    students.forEach(student => {
         if(student.name === 'Principal User' || student.name.includes('Admin')) return;
+        
+        const userStatus = statusMap[student.id] || 'Member';
+
         const tag = document.createElement('div');
         tag.className = 'member-tag';
-        tag.style.display = 'inline-flex';
-        tag.style.alignItems = 'center';
-        tag.style.gap = '5px';
-        tag.style.cursor = 'pointer';
-        tag.onclick = () => showPublicProfile(student.name, student.avatar_url);
-        const img = document.createElement('img');
-        img.src = student.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random`;
-        img.style.width = '20px';
-        img.style.height = '20px';
-        img.style.borderRadius = '50%';
-        tag.appendChild(img);
-        tag.appendChild(document.createTextNode(student.name));
+        // Use flex row layout for the card content
+        tag.style.cssText = 'cursor: pointer; display: flex; align-items: center; gap: 10px; overflow: hidden;';
+        tag.onclick = () => showPublicProfile(student.name, student.avatar_url, userStatus);
+        
+        const safeAvatar = student.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random`;
+        
+        tag.innerHTML = `
+            <img src="${safeAvatar}" style="width:32px; height:32px; border-radius:50%; object-fit:cover; border:1px solid #333; flex-shrink: 0;">
+            <span style="font-weight:bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${student.name}</span>
+        `;
         publicMemberList.appendChild(tag);
     });
 }
 
-function showPublicProfile(name, avatarUrl) {
+function showPublicProfile(name, avatarUrl, status) {
     let modal = document.getElementById('publicProfileModal');
     if (!modal) {
         modal = document.createElement('div');
@@ -513,7 +523,7 @@ function showPublicProfile(name, avatarUrl) {
             <div style="padding:10px; border:2px dashed #ccc; display:inline-block; border-radius:50%;">
                 <img src="${safeAvatar}" style="width:120px; height:120px; border-radius:50%; object-fit:cover; border:2px solid #000;">
             </div>
-            <p style="margin-top:15px; font-style:italic;">"Certified Member"</p>
+            <p style="margin-top:15px; font-style:italic;">"${status || 'Member'}"</p>
             <button onclick="document.getElementById('publicProfileModal').style.display='none'">CLOSE</button>
         </div>
     `;
