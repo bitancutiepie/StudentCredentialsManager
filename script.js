@@ -900,7 +900,9 @@ async function fetchLandingGallery() {
 
     section.classList.remove('hidden');
     container.innerHTML = data.map(item => `
-        <div class="polaroid-card" onclick="viewFullImage('${item.file_url}')">
+        <div class="polaroid-card" onclick="viewFullImage('${item.file_url}')" 
+             tabindex="0" role="button" aria-label="View photo: ${item.title}"
+             onkeydown="if(event.key==='Enter'||event.key===' ') viewFullImage('${item.file_url}')">
             <div class="tape-strip"></div>
             <img src="${item.file_url}" alt="${item.title}" loading="lazy">
             <div class="polaroid-caption">${item.title}</div>
@@ -1111,6 +1113,8 @@ window.generateFileCard = function(file, isNew = false) {
     return `
         <div style="width: 95%; background: #fff; border: 2px solid #000; border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; padding: 10px; display: flex; align-items: center; gap: 10px; box-shadow: 3px 3px 0 rgba(0,0,0,0.1); transition: transform 0.2s; cursor: pointer;" 
              onclick="openFilePreview('${safeUrl}', '${safeTitle}')"
+             tabindex="0" role="button" aria-label="Preview file: ${safeTitle}"
+             onkeydown="if(event.key==='Enter'||event.key===' ') openFilePreview('${safeUrl}', '${safeTitle}')"
              onmouseover="this.style.transform='scale(1.02) rotate(-1deg)'" 
              onmouseout="this.style.transform='scale(1) rotate(0deg)'">
             <div style="font-size: 1.5rem; color: #000;"><i class="fas fa-file-alt"></i></div>

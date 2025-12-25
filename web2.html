@@ -188,6 +188,17 @@
             text-shadow: 2px 2px 0px rgba(0,0,0,0.1);
         }
 
+        /* --- TAB SWITCHING ANIMATION --- */
+        .tab-content {
+            animation: paperSlideIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transform-origin: top left;
+        }
+
+        @keyframes paperSlideIn {
+            0% { opacity: 0; transform: translateX(-40px) rotate(-3deg); }
+            100% { opacity: 1; transform: translateX(0) rotate(0deg); }
+        }
+
         /* --- NEW WIMPY ANIMATIONS --- */
         @keyframes paperDeal {
             0% { opacity: 0; transform: translateY(50px) rotate(-5deg) scale(0.9); }
@@ -324,6 +335,14 @@
             border-color: #d63031;
             color: #d63031;
             font-size: 0.9rem;
+        }
+        
+        /* Active State for Admin Menu */
+        .sketch-btn.active-tool {
+            background: var(--ink-color);
+            color: white;
+            transform: rotate(-2deg);
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
         }
         .sketch-btn.danger:hover { background: #d63031; color: white; }
 
@@ -620,14 +639,20 @@
             position: relative;
             margin: 0 auto 20px auto;
             background: #fff740; /* Post-it yellow */            
-            padding: 10px 15px; /* Keep padding */
-            width: 240px; /* Increased width to accommodate larger text */
+            padding: 15px; 
+            width: 280px; /* Fixed width */
+            height: 140px; /* Fixed height */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
             text-align: center;
             box-shadow: 4px 4px 5px rgba(0,0,0,0.2);
             transform: rotate(3deg); /* Taped crookedly */
             font-family: 'Permanent Marker', cursive;
             z-index: 10;
             border-bottom-right-radius: 30px 5px; /* Dog-ear effect */            
+            box-sizing: border-box;
         }
 
         .sticky-time .pin {
@@ -648,9 +673,12 @@
         }
 
         .sticky-time #live-clock {
-            font-size: 3rem; /* Significantly larger font size */
-            color: #000;            
-            line-height: 1;            
+            font-family: 'Patrick Hand', sans-serif;
+            font-size: 3rem; /* Adjusted to fit fixed box */
+            color: #2d3436;
+            line-height: 1;
+            font-weight: bold;
+            white-space: nowrap; /* Prevent wrapping */
         }
 
         /* Mobile */
@@ -658,14 +686,15 @@
             .sticky-time {
                 margin: 20px auto;                
                 transform: rotate(0deg);                
-                width: 150px; /* Smaller width for mobile */
-                padding: 8px 10px; /* Adjusted padding for mobile */
+                width: 220px; 
+                height: 110px;
+                padding: 10px;
             }
             .sticky-time small {
                 font-size: 0.9rem; /* Smaller font for mobile */
             }
             .sticky-time #live-clock {
-                font-size: 2.2rem; /* Smaller font for mobile */
+                font-size: 2.2rem; 
             }
             .sticky-time .pin {
                 left: 50%; /* Ensure pin remains centered */
@@ -725,6 +754,54 @@
             white-space: nowrap;
             z-index: 20;
             font-size: 1rem;
+        }
+
+        /* --- CALENDAR STYLES --- */
+        .calendar-wrapper {
+            background: #fff;
+            border: 2px solid #000;
+            border-radius: 5px;
+            padding: 15px;
+            box-shadow: 5px 5px 0 rgba(0,0,0,0.1);
+            transform: rotate(-1deg);
+        }
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            font-family: 'Permanent Marker', cursive;
+            font-size: 1.5rem;
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+        }
+        .cal-day-header {
+            text-align: center;
+            font-weight: bold;
+            padding: 5px;
+            background: #eee;
+            border-radius: 3px;
+        }
+        .cal-day {
+            background: #fff;
+            border: 1px solid #ddd;
+            min-height: 80px;
+            padding: 5px;
+            position: relative;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .cal-day:hover { background: #f9f9f9; transform: scale(1.05); z-index: 5; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .cal-day.today { background: #fff740; border: 2px solid #000; }
+        .cal-day.empty { background: transparent; border: none; cursor: default; }
+        .cal-event-dot {
+            font-size: 0.7rem; background: #d63031; color: white; padding: 1px 4px; border-radius: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
     </style>
 </head>
@@ -808,9 +885,21 @@
             <div id="admin-tools" class="tab-content hidden">
                 <h2><i class="fas fa-user-shield"></i> Admin Control Panel</h2>
                 
+                <!-- Admin Tool Navigation -->
+                <div class="filter-bar" style="justify-content: center; gap: 10px; margin-bottom: 20px;">
+                    <button class="sketch-btn" onclick="showAdminTool('admin-schedule-form', this)"><i class="fas fa-clock"></i> Class</button>
+                    <button class="sketch-btn" onclick="showAdminTool('admin-assignment-form', this)"><i class="fas fa-thumbtack"></i> Homework</button>
+                    <button class="sketch-btn" onclick="showAdminTool('admin-event-form', this)"><i class="fas fa-calendar-alt"></i> Event</button>
+                    <button class="sketch-btn" onclick="showAdminTool('admin-file-form', this)"><i class="fas fa-paperclip"></i> File</button>
+                    <button class="sketch-btn" onclick="showAdminTool('admin-email-form', this)"><i class="fas fa-envelope"></i> Email</button>
+                    <button class="sketch-btn" onclick="showAdminTool('admin-gallery-form', this)"><i class="fas fa-images"></i> Gallery</button>
+                </div>
+                <p style="text-align: center; font-style: italic; color: #666; margin-bottom: 20px;" id="admin-tool-hint">Select a tool above to get started.</p>
+
                 <div class="grid-container" style="grid-template-columns: 1fr;">
                     <!-- Moved Forms -->
-                    <div class="admin-controls" id="admin-schedule-form" style="display: block;">
+                    <div class="admin-controls" id="admin-schedule-form">
+                        <button onclick="showAdminTool(null)" class="sketch-btn danger" style="position: absolute; top: 10px; right: 10px; width: auto; margin: 0; padding: 5px 10px; font-size: 0.9rem;">Close</button>
                         <h3>Admin's Note: Add Class</h3>
                         <form onsubmit="addClass(event)" autocomplete="off">
                             <select id="s-day" required>
@@ -836,7 +925,8 @@
                         </form>
                     </div>
 
-                    <div class="admin-controls" id="admin-assignment-form" style="display: block;">
+                    <div class="admin-controls" id="admin-assignment-form">
+                        <button onclick="showAdminTool(null)" class="sketch-btn danger" style="position: absolute; top: 10px; right: 10px; width: auto; margin: 0; padding: 5px 10px; font-size: 0.9rem;">Close</button>
                         <h3>Admin's Note: Add Homework</h3>
                         <form onsubmit="addAssignment(event)" autocomplete="off">
                             <input type="text" id="a-title" placeholder="Title" required>
@@ -847,7 +937,8 @@
                         </form>
                     </div>
 
-                    <div class="admin-controls" id="admin-event-form" style="display: block;">
+                    <div class="admin-controls" id="admin-event-form">
+                        <button onclick="showAdminTool(null)" class="sketch-btn danger" style="position: absolute; top: 10px; right: 10px; width: auto; margin: 0; padding: 5px 10px; font-size: 0.9rem;">Close</button>
                         <h3>Admin's Note: Add Event</h3>
                         <form onsubmit="addEvent(event)" autocomplete="off">
                             <input type="text" id="e-title" placeholder="Event Name" required>
@@ -857,7 +948,8 @@
                         </form>
                     </div>
 
-                    <div class="admin-controls" id="admin-file-form" style="display: block;">
+                    <div class="admin-controls" id="admin-file-form">
+                        <button onclick="showAdminTool(null)" class="sketch-btn danger" style="position: absolute; top: 10px; right: 10px; width: auto; margin: 0; padding: 5px 10px; font-size: 0.9rem;">Close</button>
                         <h3>Admin's Note: Upload Resource</h3>
                         <form onsubmit="uploadFile(event)" autocomplete="off">
                             <input type="text" id="f-title" placeholder="File Title (e.g. Week 1 Reviewer)" required>
@@ -876,7 +968,8 @@
                         </form>
                     </div>
 
-                    <div class="admin-controls" id="admin-email-form" style="display: block;">
+                    <div class="admin-controls" id="admin-email-form">
+                        <button onclick="showAdminTool(null)" class="sketch-btn danger" style="position: absolute; top: 10px; right: 10px; width: auto; margin: 0; padding: 5px 10px; font-size: 0.9rem;">Close</button>
                         <h3>Admin's Note: Email Center <i class="fas fa-envelope"></i></h3>
                         <p style="font-size: 0.9rem; margin-bottom: 10px;">(Select a specific student or blast everyone)</p>
                         
@@ -897,7 +990,8 @@
                     </div>
 
                     <!-- NEW: Gallery Manager for Landing Page -->
-                    <div class="admin-controls" id="admin-gallery-form" style="display: block;">
+                    <div class="admin-controls" id="admin-gallery-form">
+                        <button onclick="showAdminTool(null)" class="sketch-btn danger" style="position: absolute; top: 10px; right: 10px; width: auto; margin: 0; padding: 5px 10px; font-size: 0.9rem;">Close</button>
                         <h3>Admin's Note: Landing Page Gallery <i class="fas fa-images"></i></h3>
                         <p style="font-size: 0.9rem; margin-bottom: 10px;">(Upload photos for the main login page)</p>
                         
@@ -950,9 +1044,7 @@
             <!-- ================= CALENDAR TAB ================= -->
             <div id="calendar" class="tab-content hidden">
                 <h2><i class="fas fa-calendar-alt"></i> Upcoming Events</h2>
-                <div id="events-list" class="grid-container">
-                    <div class="loader">Looking at the wall calendar...</div>
-                </div>
+                <div id="calendar-root"></div> <!-- New Calendar Container -->
             </div>
 
             <!-- ================= LINKS & FILES TAB ================= -->
@@ -1085,6 +1177,22 @@
                 <i class="fas fa-save"></i> Save Status
             </button>
             <button onclick="document.getElementById('statusModal').classList.add('hidden')" class="sketch-btn danger">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Add Event Modal (Calendar) -->
+    <div id="addEventModal" class="wimpy-modal-overlay hidden">
+        <div class="wimpy-modal-box">
+            <h2><i class="fas fa-calendar-plus"></i> New Event</h2>
+            <p id="addEventDateLabel" style="font-weight:bold; margin-bottom:15px;"></p>
+            <form onsubmit="addEventFromCalendar(event)" autocomplete="off">
+                <input type="hidden" id="cal-e-date">
+                <input type="text" id="cal-e-title" placeholder="Event Name" required style="margin-bottom: 10px; width: 100%; box-sizing: border-box;">
+                <input type="text" id="cal-e-desc" placeholder="Description (Optional)" style="margin-bottom: 20px; width: 100%; box-sizing: border-box;">
+                
+                <button type="submit" class="sketch-btn" style="background:#000; color:#fff; margin-bottom:10px; width:100%; justify-content:center;">Save Event</button>
+                <button type="button" onclick="document.getElementById('addEventModal').classList.add('hidden')" class="sketch-btn danger" style="width:100%; justify-content:center;">Cancel</button>
+            </form>
         </div>
     </div>
 

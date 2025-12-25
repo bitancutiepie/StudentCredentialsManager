@@ -8,6 +8,8 @@ window.db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); // Make 'd
 // State
 let user = null;
 let isAdmin = false;
+let currentCalDate = new Date();
+let globalEvents = [];
 
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', async () => {
@@ -56,7 +58,7 @@ function checkSession() {
     // Check if Admin
     if (user.sr_code === 'ADMIN') {
         isAdmin = true;
-        document.querySelectorAll('.admin-controls').forEach(el => el.style.display = 'block');
+        // document.querySelectorAll('.admin-controls').forEach(el => el.style.display = 'block'); // Removed to allow menu toggling
         document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
     }
 }
@@ -84,7 +86,10 @@ window.switchTab = function(tabId, event) {
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
     
     const selectedTab = document.getElementById(tabId);
-    if (selectedTab) selectedTab.classList.remove('hidden');
+    if (selectedTab) {
+        selectedTab.classList.remove('hidden');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
 
     if (targetBtn) targetBtn.classList.add('active');
 }
@@ -187,26 +192,90 @@ async function loadAssignments() {
 
 // --- EVENTS LOGIC ---
 async function loadEvents() {
-    const list = document.getElementById('events-list');
-    if (!list) return;
-
     const data = await fetchData('events', 'event_date');
-    if (!data || data.length === 0) {
-        list.innerHTML = '<p style="text-align:center;">Calendar is empty.</p>';
-        return;
+    globalEvents = data || [];
+    renderCalendar();
+}
+
+window.renderCalendar = function() {
+    const container = document.getElementById('calendar-root');
+    if (!container) return;
+
+    const year = currentCalDate.getFullYear();
+    const month = currentCalDate.getMonth();
+    
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+    let html = `
+        <div class="calendar-wrapper">
+            <div class="calendar-header">
+                <button class="sketch-btn" onclick="changeMonth(-1)" style="width:auto;"><i class="fas fa-chevron-left"></i></button>
+                <span>${monthNames[month]} ${year}</span>
+                <button class="sketch-btn" onclick="changeMonth(1)" style="width:auto;"><i class="fas fa-chevron-right"></i></button>
+            </div>
+            <div class="calendar-grid">
+                <div class="cal-day-header">Sun</div><div class="cal-day-header">Mon</div><div class="cal-day-header">Tue</div>
+                <div class="cal-day-header">Wed</div><div class="cal-day-header">Thu</div><div class="cal-day-header">Fri</div><div class="cal-day-header">Sat</div>
+    `;
+
+    for (let i = 0; i < firstDay; i++) html += `<div class="cal-day empty"></div>`;
+
+    const today = new Date();
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const isToday = (day === today.getDate() && month === today.getMonth() && year === today.getFullYear());
+        const dayEvents = globalEvents.filter(e => e.event_date === dateStr);
+        const eventHtml = dayEvents.map(e => `<div class="cal-event-dot" title="${e.title}">${e.title}</div>`).join('');
+
+        html += `<div class="cal-day ${isToday ? 'today' : ''}" onclick="showDayDetails('${dateStr}')">
+                    <span style="font-weight:bold; font-size:0.9rem;">${day}</span>${eventHtml}
+                 </div>`;
+    }
+    html += `</div></div><div id="day-details-view" style="margin-top:20px;"></div>`;
+    container.innerHTML = html;
+}
+
+window.changeMonth = function(offset) {
+    currentCalDate.setMonth(currentCalDate.getMonth() + offset);
+    renderCalendar();
+}
+
+window.showDayDetails = function(dateStr) {
+    const dayEvents = globalEvents.filter(e => e.event_date === dateStr);
+    const container = document.getElementById('day-details-view');
+    let html = '';
+
+    // Admin Add Button
+    if (isAdmin) {
+        html += `
+            <div style="text-align:center; margin-bottom:15px;">
+                <button onclick="openAddEventModal('${dateStr}')" class="sketch-btn" style="font-size:1rem; padding:8px 15px; background:#fff; border:2px dashed #000; width:auto;">
+                    <i class="fas fa-plus"></i> Add Event here
+                </button>
+            </div>
+        `;
     }
 
-    list.innerHTML = data.map((evt, index) => {
+    if (dayEvents.length === 0) {
+        html += `<p style="text-align:center; color:#666; font-style:italic;">No events on ${dateStr}.</p>`;
+    } else {
+        html += dayEvents.map(evt => {
         const deleteBtn = isAdmin ? `<button onclick="deleteEvent(${evt.id})" class="sketch-btn danger" style="float:right;">X</button>` : '';
         return `
-            <div class="class-card" style="border-left: 5px solid #1976d2; animation-delay: ${index * 0.1}s">
+            <div class="class-card" style="border-left: 5px solid #1976d2; margin-bottom:10px;">
                 ${deleteBtn}
                 <h3>${evt.title}</h3>
                 <p>${new Date(evt.event_date).toDateString()}</p>
                 <p>${evt.description || ''}</p>
             </div>
         `;
-    }).join('');
+        }).join('');
+    }
+
+    container.innerHTML = html;
+    container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 // --- ADMIN FUNCTIONS ---
@@ -283,13 +352,48 @@ window.deleteEvent = async function(id) {
     loadEvents();
 }
 
+// --- CALENDAR ADD EVENT MODAL ---
+window.openAddEventModal = function(dateStr) {
+    const modal = document.getElementById('addEventModal');
+    const dateLabel = document.getElementById('addEventDateLabel');
+    const dateInput = document.getElementById('cal-e-date');
+    
+    if(modal && dateLabel && dateInput) {
+        const [y, m, day] = dateStr.split('-').map(Number);
+        const localDate = new Date(y, m - 1, day);
+        dateLabel.innerText = "Date: " + localDate.toDateString();
+        dateInput.value = dateStr;
+        modal.classList.remove('hidden');
+        setTimeout(() => document.getElementById('cal-e-title').focus(), 100);
+    }
+}
+
+window.addEventFromCalendar = async function(e) {
+    e.preventDefault();
+    const title = document.getElementById('cal-e-title').value;
+    const date = document.getElementById('cal-e-date').value;
+    const desc = document.getElementById('cal-e-desc').value;
+    
+    const { error } = await db.from('events').insert([{ title, event_date: date, description: desc }]);
+    
+    if (error) {
+        showToast('Error adding event: ' + error.message);
+    } else {
+        showToast('Event added!');
+        document.getElementById('addEventModal').classList.add('hidden');
+        e.target.reset();
+        await loadEvents(); // Reload calendar
+        showDayDetails(date); // Re-open details for that day
+    }
+}
+
 // --- CLOCK ---
 function startClock() {
     setInterval(() => {
         const now = new Date();
         const clockEl = document.getElementById('live-clock');
         if (clockEl) {
-            clockEl.innerText = now.toLocaleTimeString('en-US', {hour12:false});
+            clockEl.innerText = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
         }
     }, 1000);
 }
@@ -1040,5 +1144,36 @@ window.showCongratsMessage = function(prevModal) {
         document.head.appendChild(script);
     } else {
         confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+    }
+}
+
+// --- ADMIN TOOL TOGGLE ---
+window.showAdminTool = function(toolId, btnElement) {
+    // 1. Reset all buttons
+    document.querySelectorAll('.filter-bar .sketch-btn').forEach(b => b.classList.remove('active-tool'));
+
+    // Hide all admin forms
+    const forms = ['admin-schedule-form', 'admin-assignment-form', 'admin-event-form', 'admin-file-form', 'admin-email-form', 'admin-gallery-form'];
+    let isAlreadyOpen = false;
+    
+    forms.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            if (el.id === toolId && el.style.display === 'block') isAlreadyOpen = true;
+            el.style.display = 'none';
+        }
+    });
+
+    const hint = document.getElementById('admin-tool-hint');
+    
+    // 2. Show selected if not already open (Toggle logic)
+    if (toolId && !isAlreadyOpen) {
+        const selected = document.getElementById(toolId);
+        if (selected) selected.style.display = 'block';
+        if (hint) hint.style.display = 'none';
+        if (btnElement) btnElement.classList.add('active-tool');
+    } else {
+        // If closing or clicking active, show hint
+        if (hint) hint.style.display = 'block';
     }
 }
