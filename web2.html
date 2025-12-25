@@ -11,6 +11,13 @@
     <meta property="og:image" content="logo.png">
     <meta name="twitter:image" content="logo.png">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- EmailJS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script>
+       (function(){
+          emailjs.init("KtQgxJvMwR6IfuU3_");
+       })();
+    </script>
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Permanent+Marker&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -722,6 +729,21 @@
                         </button>
                     </form>
                 </div>
+
+                <!-- ================= EMAIL BLAST FORM ================= -->
+                <div class="admin-controls" id="admin-email-form">
+                    <h3>Admin's Note: Email Blast 📧</h3>
+                    <p style="font-size: 0.9rem; margin-bottom: 10px;">(Sends to everyone securely via EmailJS)</p>
+                    <form onsubmit="sendEmailService(event)" autocomplete="off">
+                        <input type="text" id="email-subject" placeholder="Subject (e.g. No Classes)" required>
+                        <textarea id="email-body" placeholder="Write your announcement here..." style="height: 100px;"></textarea>
+                        <button type="submit" class="sketch-btn" style="background: #000; color: #fff;">
+                            <i class="fas fa-paper-plane"></i> Send Blast
+                        </button>
+                    </form>
+                </div>
+
+
             </div>
 
         </div> <!-- End Paper Content -->

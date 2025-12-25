@@ -1,4 +1,4 @@
-// script.js (Self-Healing Admin Menu Version)
+// script.js (Self-Healing Admin Menu Version + Email Auto-Fix)
 
 // --- CONFIGURATION ---
 const SUPABASE_URL = 'https://egnyblflgppsosunnilq.supabase.co';
@@ -239,6 +239,10 @@ authForm.addEventListener('submit', async (e) => {
 
 async function handleRegister(name, srCode, password, file) {
     let avatarUrl = null;
+    
+    // --- AUTO-GENERATE EMAIL ---
+    const generatedEmail = `${srCode}@g.batstate-u.edu.ph`;
+
     if (file) {
         const fileName = `${Date.now()}_${file.name.replace(/\s/g, '_')}`;
         const { error: uploadError } = await supabaseClient.storage
@@ -251,7 +255,13 @@ async function handleRegister(name, srCode, password, file) {
     }
     const { error } = await supabaseClient
         .from('students')
-        .insert([{ name: name, sr_code: srCode, password: password, avatar_url: avatarUrl }]);
+        .insert([{ 
+            name: name, 
+            sr_code: srCode, 
+            password: password, 
+            avatar_url: avatarUrl,
+            email: generatedEmail // Added email here
+        }]);
     if (error) throw error;
     showToast('Success! You are in.');
     fetchMembers(); 
@@ -275,11 +285,28 @@ async function handleLogin(srCode, password) {
         return;
     }
 
+    // --- SELF-HEALING: FIX MISSING EMAIL ---
+    if (data.sr_code !== 'ADMIN' && (!data.email || data.email === '')) {
+        const autoEmail = `${data.sr_code}@g.batstate-u.edu.ph`;
+        
+        // Update Supabase silently
+        await supabaseClient
+            .from('students')
+            .update({ email: autoEmail })
+            .eq('id', data.id);
+            
+        // Update local data variable so the session has it too
+        data.email = autoEmail;
+        console.log("System auto-corrected missing email.");
+    }
+    // ----------------------------------------
+
     const userPayload = JSON.stringify({
         id: data.id,
         name: data.name,
         sr_code: data.sr_code,
-        avatar_url: data.avatar_url
+        avatar_url: data.avatar_url,
+        email: data.email
     });
 
     const keepLoggedIn = document.getElementById('keepLoggedIn').checked;

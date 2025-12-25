@@ -592,3 +592,67 @@ window.deleteFile = async function(id) {
         loadFiles(); // Refresh
     }
 }
+
+// --- EMAIL BLAST LOGIC (EmailJS) ---
+
+window.sendEmailService = async function(e) {
+    e.preventDefault();
+
+    // 🔴 REPLACE THIS WITH YOUR SERVICE ID FROM EMAILJS DASHBOARD
+    const SERVICE_ID = 'service_crvq85j'; 
+    const TEMPLATE_ID = 'template_jhu61sc'; // Your Template ID
+
+    // Security Check
+    if (!isAdmin) return showToast("Admins only!");
+
+    const subjectInput = document.getElementById('email-subject');
+    const bodyInput = document.getElementById('email-body');
+    const btn = e.target.querySelector('button');
+
+    // UI Loading State
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerText = "Gathering emails...";
+
+    try {
+        // 1. Get Emails from Supabase
+        const { data, error } = await db
+            .from('students')
+            .select('email')
+            .neq('sr_code', 'ADMIN')     // Don't email the Admin account
+            .not('email', 'is', null)    // Ignore empty emails
+            .neq('email', '');           // Ignore blank strings
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+            throw new Error("No student emails found in database!");
+        }
+
+        // 2. Prepare the list (Comma separated for BCC)
+        // This makes it count as 1 email request instead of 50!
+        const emailList = data.map(s => s.email).join(',');
+
+        btn.innerText = "Sending...";
+
+        // 3. Send via EmailJS
+        const templateParams = {
+            subject: subjectInput.value,
+            message: bodyInput.value,
+            bcc: emailList,       // This hides students from each other
+            from_name: user.name  // Shows "Admin Greg" (or whoever is logged in)
+        };
+
+        await emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams);
+
+        showToast("Success! Announcement sent.");
+        e.target.reset();
+
+    } catch (err) {
+        console.error("Email Error:", err);
+        showToast(err.message || "Failed to send email.");
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
