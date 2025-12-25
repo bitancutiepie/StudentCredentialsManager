@@ -25,6 +25,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ADD THIS LINE HERE:
     await initLiveClassChecker();
     await populateSubjectOptions(); // <--- Updates buttons based on your actual schedule
+
+    // ADD THIS NEW LINE:
+    if (isAdmin) await populateEmailDropdown(); 
 });
 
 // --- AUTH CHECK ---
@@ -462,6 +465,34 @@ async function populateSubjectOptions() {
     }
 }
 
+// --- EMAIL DROPDOWN POPULATION ---
+async function populateEmailDropdown() {
+    const dropdown = document.getElementById('email-recipient');
+    if (!dropdown) return;
+
+    // Fetch Name, SR Code, and Email of all students
+    const { data, error } = await db
+        .from('students')
+        .select('name, sr_code, email')
+        .neq('sr_code', 'ADMIN') // Don't list the admin
+        .order('name', { ascending: true });
+
+    if (error) return console.error("Error loading recipients:", error);
+
+    // Keep the "Everyone" option, remove others to avoid duplicates if reloaded
+    dropdown.innerHTML = '<option value="ALL">📢 Send to Everyone (Blast)</option>';
+
+    data.forEach(student => {
+        // Only add if they have an email
+        if (student.email) {
+            const option = document.createElement('option');
+            option.value = student.email; // The value is the email address
+            option.innerText = `${student.name} (${student.sr_code})`;
+            dropdown.appendChild(option);
+        }
+    });
+}
+
 // --- FILE UPLOAD & FILTERING LOGIC ---
 
 // New Function: Filter the files when button is clicked
@@ -598,59 +629,75 @@ window.deleteFile = async function(id) {
 window.sendEmailService = async function(e) {
     e.preventDefault();
 
-    // 🔴 REPLACE THIS WITH YOUR SERVICE ID FROM EMAILJS DASHBOARD
+    // 🔴 YOUR SERVICE ID (Make sure this is correct)
     const SERVICE_ID = 'service_crvq85j'; 
-    const TEMPLATE_ID = 'template_jhu61sc'; // Your Template ID
+    const TEMPLATE_ID = 'template_jhu61sc'; 
 
-    // Security Check
     if (!isAdmin) return showToast("Admins only!");
 
+    const recipientSelect = document.getElementById('email-recipient');
     const subjectInput = document.getElementById('email-subject');
     const bodyInput = document.getElementById('email-body');
     const btn = e.target.querySelector('button');
-
-    // UI Loading State
     const originalText = btn.innerHTML;
+
+    // CHECK: Who are we sending to?
+    const selectedValue = recipientSelect.value; // This is either 'ALL' or a specific email
+    const selectedName = recipientSelect.options[recipientSelect.selectedIndex].text;
+
     btn.disabled = true;
-    btn.innerText = "Gathering emails...";
+    btn.innerText = "Processing...";
 
     try {
-        // 1. Get Emails from Supabase
-        const { data, error } = await db
-            .from('students')
-            .select('email')
-            .neq('sr_code', 'ADMIN')     // Don't email the Admin account
-            .not('email', 'is', null)    // Ignore empty emails
-            .neq('email', '');           // Ignore blank strings
+        let emailList = "";
 
-        if (error) throw error;
+        // SCENARIO 1: SEND TO EVERYONE
+        if (selectedValue === 'ALL') {
+            btn.innerText = "Gathering all emails...";
+            const { data, error } = await db
+                .from('students')
+                .select('email')
+                .neq('sr_code', 'ADMIN')
+                .not('email', 'is', null)
+                .neq('email', '');
 
-        if (!data || data.length === 0) {
-            throw new Error("No student emails found in database!");
+            if (error) throw error;
+            if (!data || data.length === 0) throw new Error("No emails found!");
+
+            // Join all emails with commas
+            emailList = data.map(s => s.email).join(',');
+        } 
+        // SCENARIO 2: SEND TO SPECIFIC PERSON
+        else {
+            // The value of the option is already the email address
+            emailList = selectedValue;
         }
 
-        // 2. Prepare the list (Comma separated for BCC)
-        // This makes it count as 1 email request instead of 50!
-        const emailList = data.map(s => s.email).join(',');
+        console.log("Sending to:", emailList);
 
-        btn.innerText = "Sending...";
-
-        // 3. Send via EmailJS
+        // Send via EmailJS
         const templateParams = {
             subject: subjectInput.value,
             message: bodyInput.value,
-            bcc: emailList,       // This hides students from each other
-            from_name: user.name  // Shows "Admin Greg" (or whoever is logged in)
+            bcc: emailList, // We still use BCC field (works for 1 person too)
+            from_name: user.name
         };
 
         await emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams);
 
-        showToast("Success! Announcement sent.");
+        if (selectedValue === 'ALL') {
+            showToast("Blast sent to everyone!");
+        } else {
+            showToast(`Sent to ${selectedName}!`);
+        }
+        
         e.target.reset();
+        // Reset dropdown to ALL
+        recipientSelect.value = "ALL";
 
     } catch (err) {
         console.error("Email Error:", err);
-        showToast(err.message || "Failed to send email.");
+        showToast(err.message || "Failed to send.");
     } finally {
         btn.disabled = false;
         btn.innerHTML = originalText;
