@@ -709,7 +709,7 @@ function showWelcomeNote() {
             </ul>
         </div>
         <p style="font-size:1.3rem; margin: 15px 0; color: #d32f2f; font-weight: bold;">"Login na kayo para makita niyo!"</p>
-        <button onclick="this.parentElement.parentElement.remove()" style="background: #000; color: #fff; border: 2px solid #000; font-family: 'Patrick Hand'; font-size: 1.2rem; cursor: pointer; width: 100%; border-radius: 5px; padding: 10px;">SHEESH!</button>
+        <button onclick="showCongratsMessage(this.parentElement.parentElement)" style="background: #000; color: #fff; border: 2px solid #000; font-family: 'Patrick Hand'; font-size: 1.2rem; cursor: pointer; width: 100%; border-radius: 5px; padding: 10px;">SHEESH!</button>
     `;
     modal.appendChild(note);
     document.body.appendChild(modal);
@@ -724,6 +724,51 @@ window.viewFullImage = function(src) {
     overlay.appendChild(img);
     overlay.onclick = function() { overlay.remove(); };
     document.body.appendChild(overlay);
+}
+
+// --- CONGRATS MESSAGE ---
+window.showCongratsMessage = function(prevModal) {
+    if (prevModal) prevModal.remove();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'wimpy-modal-overlay';
+    
+    const box = document.createElement('div');
+    box.className = 'wimpy-modal-box';
+    
+    box.innerHTML = `
+        <h2 style="margin:0 0 15px 0; font-size:2rem;">🎉 CONGRATS!</h2>
+        <p style="font-size:1.3rem; margin-bottom:20px;">Congrays Guys at naipasa natin ang First Sem, Goodluck sa Second Sem!<br><br>- Jv</p>
+        <button onclick="this.closest('.wimpy-modal-overlay').remove()" style="background: #000; color: #fff; border: 2px solid #000; font-family: 'Patrick Hand'; font-size: 1.2rem; cursor: pointer; width: 100%; border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; padding: 10px;">LET'S GO!</button>
+    `;
+    
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    // --- CONFETTI EFFECT ---
+    const startConfetti = () => {
+        var duration = 3 * 1000;
+        var animationEnd = Date.now() + duration;
+        var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 10001 };
+        var random = (min, max) => Math.random() * (max - min) + min;
+
+        var interval = setInterval(function() {
+            var timeLeft = animationEnd - Date.now();
+            if (timeLeft <= 0) return clearInterval(interval);
+            var particleCount = 50 * (timeLeft / duration);
+            confetti(Object.assign({}, defaults, { particleCount, origin: { x: random(0.1, 0.3), y: Math.random() - 0.2 } }));
+            confetti(Object.assign({}, defaults, { particleCount, origin: { x: random(0.7, 0.9), y: Math.random() - 0.2 } }));
+        }, 250);
+    };
+
+    if (typeof confetti === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js';
+        script.onload = startConfetti;
+        document.head.appendChild(script);
+    } else {
+        startConfetti();
+    }
 }
 
 // --- NEW FEATURE: CHECK RECENT UPLOADS ---
