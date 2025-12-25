@@ -1121,15 +1121,22 @@
             const list = document.getElementById('file-list');
             if(!files.length) { list.innerHTML = '<p>No files found.</p>'; return; }
             
+            // Check Admin
+            const currentUser = window.user || JSON.parse(localStorage.getItem('wimpy_user') || 'null');
+            const isAdmin = currentUser && currentUser.sr_code === 'ADMIN';
+
             list.innerHTML = files.map(file => {
                 const safeUrl = (file.file_url || '').replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;");
                 const safeTitle = (file.title || 'File').replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;");
                 const subject = file.subject || 'General';
+                const deleteBtn = isAdmin ? `<button onclick="event.stopPropagation(); deleteFile(${file.id})" class="sketch-btn danger" style="position:absolute; top:10px; right:10px; padding: 5px 10px; font-size: 0.9rem; z-index: 50; border-radius: 5px;">X</button>` : '';
+
                 return `
-                <div style="width: 100%; background: #fff; border: 2px solid #000; border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; padding: 10px; display: flex; align-items: center; gap: 10px; box-shadow: 3px 3px 0 rgba(0,0,0,0.1); transition: transform 0.2s; cursor: pointer; margin-bottom: 15px;" 
+                <div style="width: 100%; background: #fff; border: 2px solid #000; border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; padding: 10px; display: flex; align-items: center; gap: 10px; box-shadow: 3px 3px 0 rgba(0,0,0,0.1); transition: transform 0.2s; cursor: pointer; margin-bottom: 15px; position: relative;" 
                      onclick="openFilePreview('${safeUrl}', '${safeTitle}')"
                      onmouseover="this.style.transform='scale(1.02) rotate(-1deg)'" 
                      onmouseout="this.style.transform='scale(1) rotate(0deg)'">
+                    ${deleteBtn}
                     <div style="font-size: 1.5rem; color: #000;"><i class="fas fa-file-alt"></i></div>
                     <div style="text-align: left; flex: 1;">
                         <div style="font-size: 0.8rem; text-transform: uppercase; font-weight: bold; color: #666;">${subject}</div>
@@ -1143,6 +1150,27 @@
         // Override Search/Filter
         window.searchFiles = function() { const q = document.getElementById('file-search').value.toLowerCase(); renderFileList(globalFiles.filter(f => f.title.toLowerCase().includes(q) || f.subject.toLowerCase().includes(q))); }
         window.filterFiles = function(s) { document.getElementById('file-filter-label').innerText = 'Showing: ' + s; renderFileList(s === 'All' ? globalFiles : globalFiles.filter(f => f.subject === s)); }
+
+        // Override deleteFile to use the inline refresh logic
+        window.deleteFile = async function(id) {
+            if(window.showWimpyConfirm && !await showWimpyConfirm('Delete this file?')) return;
+            if(!window.showWimpyConfirm && !confirm('Delete this file?')) return;
+
+            const { error } = await sb.from('shared_files').delete().eq('id', id);
+            if (error) {
+                if(window.showToast) showToast('Error deleting file.');
+                else alert('Error deleting file.');
+            } else {
+                if(window.showToast) showToast('File removed.');
+                refreshFiles();
+            }
+        }
+
+        // Override loadFiles to maintain consistency with dashboard.js calls
+        window.loadFiles = async function(subject) {
+            await refreshFiles();
+            if(subject && subject !== 'All') filterFiles(subject);
+        }
 
         // Load on start (Delayed slightly to ensure DOM is ready)
         document.addEventListener('DOMContentLoaded', () => setTimeout(refreshFiles, 1000));
