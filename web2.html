@@ -81,7 +81,9 @@
             position: relative;
             min-height: 85vh;
             overflow: hidden; /* For rounded corners */
+            transition: max-width 0.3s ease;
         }
+        .binder.wide-mode { max-width: 98%; }
 
         /* Left Sidebar (The Rings & Tabs) */
         .sidebar {
@@ -183,6 +185,25 @@
             text-shadow: 2px 2px 0px rgba(0,0,0,0.1);
         }
 
+        /* --- NEW WIMPY ANIMATIONS --- */
+        @keyframes paperDeal {
+            0% { opacity: 0; transform: translateY(50px) rotate(-5deg) scale(0.9); }
+            100% { opacity: 1; transform: translateY(0) rotate(0deg) scale(1); }
+        }
+
+        @keyframes buttonWiggle {
+            0% { transform: rotate(0deg); }
+            25% { transform: rotate(-3deg); }
+            50% { transform: rotate(3deg); }
+            75% { transform: rotate(-1deg); }
+            100% { transform: rotate(0deg); }
+        }
+
+        /* Scribble effect for headers on hover */
+        h2:hover {
+            animation: buttonWiggle 0.5s ease-in-out infinite;
+        }
+
         /* --- CARDS & ITEMS --- */
         .grid-container {
             display: grid;
@@ -200,6 +221,9 @@
             position: relative;
             transition: all 0.3s ease;
             border: 1px solid #d1ccc0;
+            /* Default hidden for animation */
+            opacity: 0; 
+            animation: paperDeal 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
 
         /* Tape Effect on top of cards */
@@ -284,6 +308,7 @@
             background: var(--ink-color);
             color: white;
             transform: rotate(-2deg);
+            animation: buttonWiggle 0.4s ease-in-out;
         }
 
         .sketch-btn.meet { border-color: #0984e3; color: #0984e3; }
@@ -352,7 +377,10 @@
         }
 
         .loader::before {
-            content: '✏️ '; /* Pencil Icon */
+            content: '\f303'; /* Pencil Icon */
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            margin-right: 5px;
         }
 
         @keyframes pencilFloat {
@@ -539,12 +567,28 @@
                 font-size: 16px !important; 
             }
         }
+
+        /* --- WIMPY POP-UP MODAL --- */
+        .wimpy-modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); z-index: 10000;
+            display: flex; justify-content: center; align-items: center;
+            backdrop-filter: blur(3px);
+        }
+        .wimpy-modal-box {
+            background: #fff; border: 3px solid #000;
+            border-radius: 2% 6% 5% 4% / 1% 1% 2% 4%;
+            padding: 30px; width: 90%; max-width: 400px;
+            text-align: center; box-shadow: 10px 10px 0 rgba(0,0,0,0.2);
+            transform: rotate(-1deg);
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes popIn { from { transform: scale(0.8) rotate(-5deg); opacity: 0; } to { transform: scale(1) rotate(-1deg); opacity: 1; } }
     </style>
     <style>
         .sticky-time {
-            position: absolute;
-            top: 20px;
-            right: 20px;
+            position: relative;
+            margin: 0 auto 20px auto;
             background: #fff740; /* Post-it yellow */            
             padding: 10px 15px; /* Keep padding */
             width: 240px; /* Increased width to accommodate larger text */
@@ -582,8 +626,6 @@
         /* Mobile */
         @media (max-width: 768px) {
             .sticky-time {
-                position: relative;
-                top: 0; right: 0;                
                 margin: 20px auto;                
                 transform: rotate(0deg);                
                 width: 150px; /* Smaller width for mobile */
@@ -623,9 +665,12 @@
         <!-- The Main Paper Content -->
         <div class="paper-content">
             
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap;">
-                <!-- Application Logo - Moved to a more prominent, separate position -->
-                <img src="logo.png" alt="Sistema ni JV Logo" style="height: 60px; margin-bottom: 20px; display: block; margin-left: auto; margin-right: auto;"> 
+            <div style="display: flex; justify-content: center; align-items: flex-start; flex-wrap: wrap;">
+                <div class="sticky-time">
+                    <span class="pin"><i class="fas fa-thumbtack"></i></span>
+                    <small>TIME CHECK:</small>
+                    <div id="live-clock">00:00</div>
+                </div>
             </div>
 
             <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap;">
@@ -633,12 +678,6 @@
                 <div style="display: flex; align-items: center; gap: 15px;">
                     <img id="userAvatarDisplay" style="width: 60px; height: 60px; border-radius: 50%; border: 2px solid #000; cursor: pointer; object-fit: cover;" title="Click to change profile picture">
                     <p id="welcome-msg" style="background: yellow; display: inline-block; transform: rotate(-1deg); padding: 0 5px;">Loading User...</p>
-                </div>
-                
-                <div class="sticky-time">
-                    <span class="pin">📍</span>
-                    <small>TIME CHECK:</small>
-                    <div id="live-clock">00:00</div>
                 </div>
             </div>
 
@@ -648,7 +687,10 @@
             </div>
 
             <!-- Logout Button (Hidden in plain sight as a doodle button) -->
-            <div style="margin-top: 10px; text-align: right;">
+            <div style="margin-top: 10px; text-align: right; display: flex; justify-content: flex-end; gap: 10px;">
+                <button onclick="toggleWideMode()" class="sketch-btn" style="border: none; text-decoration: underline;" title="Stretch View">
+                    <i class="fas fa-expand-arrows-alt"></i> Wide View
+                </button>
                 <button onclick="logout()" class="sketch-btn danger" style="border: none; text-decoration: underline;">
                     <i class="fas fa-door-open"></i> Go Home
                 </button>
@@ -775,10 +817,10 @@
                         <h3 style="margin-top: 10px;">Old Archive</h3>
                     </a>
                     
-                    <a href="https://onlinequestions.org/" target="_blank" class="class-card" style="text-decoration: none; color: inherit; text-align: center; border: 2px dashed #0984e3;">
+                    <div onclick="openRequestModal()" class="class-card" style="cursor: pointer; text-align: center; border: 2px dashed #0984e3;">
                         <i class="fas fa-user-secret" style="font-size: 3rem; color: #0984e3;"></i>
-                        <h3 style="margin-top: 10px;">Secret Questions</h3>
-                    </a>
+                        <h3 style="margin-top: 10px;">Secret Request</h3>
+                    </div>
                 </div>
                 <!-- Admin Upload Form -->
                 <div class="admin-controls" id="admin-file-form">
@@ -802,13 +844,13 @@
 
                 <!-- ================= EMAIL BLAST FORM (UPDATED) ================= -->
                 <div class="admin-controls" id="admin-email-form">
-                    <h3>Admin's Note: Email Center 📧</h3>
+                    <h3>Admin's Note: Email Center <i class="fas fa-envelope"></i></h3>
                     <p style="font-size: 0.9rem; margin-bottom: 10px;">(Select a specific student or blast everyone)</p>
                     
                     <form onsubmit="sendEmailService(event)" autocomplete="off">
                         <!-- NEW: Recipient Dropdown -->
                         <select id="email-recipient" style="width: 100%; padding: 10px; margin-bottom: 10px; border: none; border-bottom: 2px solid #333; font-family: 'Patrick Hand'; font-size: 1.2rem; background: transparent;">
-                            <option value="ALL">📢 Send to Everyone (Blast)</option>
+                            <option value="ALL">Send to Everyone (Blast)</option>
                             <!-- JavaScript will load student names here -->
                         </select>
 
@@ -834,6 +876,19 @@
 
     <!-- Toast Notification Container -->
     <div id="toast-container"></div>
+
+    <!-- Request Modal -->
+    <div id="requestModal" class="wimpy-modal-overlay hidden">
+        <div class="wimpy-modal-box" style="text-align: left;">
+            <h2 style="margin-top:0;">Drop a Note</h2>
+            <p>Got a request or a secret question for the admin?</p>
+            <textarea id="req-content" placeholder="Type here..." style="width:100%; height:100px; font-family:'Patrick Hand'; font-size:1.2rem; padding:10px; border:2px solid #000;"></textarea>
+            <div style="margin-top:10px; display:flex; gap:10px;">
+                <button onclick="closeRequestModal()" class="sketch-btn">Cancel</button>
+                <button onclick="submitRequest()" class="sketch-btn" style="background:#000; color:#fff;">Send</button>
+            </div>
+        </div>
+    </div>
 
     <!-- SCRIPTS -->
     <script src="dashboard.js"></script>

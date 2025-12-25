@@ -57,11 +57,18 @@ function checkSession() {
 }
 
 // FIX: Explicitly attach logout to window
-window.logout = function() {
+window.logout = async function() {
+    if (!await showWimpyConfirm("Pack up and leave?")) return;
     localStorage.removeItem('wimpy_user');
     // Clear BOTH to be safe
     sessionStorage.removeItem('wimpy_user');
     window.location.href = 'index.html';
+}
+
+window.toggleWideMode = function() {
+    const binder = document.querySelector('.binder');
+    binder.classList.toggle('wide-mode');
+    showToast(binder.classList.contains('wide-mode') ? "Expanded View!" : "Normal View");
 }
 
 // --- TABS LOGIC ---
@@ -113,7 +120,7 @@ async function loadSchedule(dayFilter) {
         return;
     }
 
-    list.innerHTML = data.map(cls => {
+    list.innerHTML = data.map((cls, index) => {
         const start = cls.start_time.substring(0, 5); 
         const end = cls.end_time.substring(0, 5);
         
@@ -128,7 +135,7 @@ async function loadSchedule(dayFilter) {
             : '';
 
         return `
-            <div class="class-card">
+            <div class="class-card" style="animation-delay: ${index * 0.1}s">
                 ${deleteBtn}
                 <div class="class-header">
                     <span class="subject-code">${cls.subject_code}</span>
@@ -158,12 +165,12 @@ async function loadAssignments() {
         return;
     }
 
-    list.innerHTML = data.map(task => {
+    list.innerHTML = data.map((task, index) => {
         const date = task.due_date ? new Date(task.due_date).toLocaleDateString() : 'No date';
         const deleteBtn = isAdmin ? `<button onclick="deleteAssignment(${task.id})" class="sketch-btn danger" style="float:right;">X</button>` : '';
         
         return `
-            <div class="class-card" style="border-left: 5px solid #d32f2f;">
+            <div class="class-card" style="border-left: 5px solid #d32f2f; animation-delay: ${index * 0.1}s">
                 ${deleteBtn}
                 <h3>${task.title} <span style="font-size:0.8rem; background:#ddd; padding:2px 5px;">${task.subject}</span></h3>
                 <p>${task.description || ''}</p>
@@ -184,10 +191,10 @@ async function loadEvents() {
         return;
     }
 
-    list.innerHTML = data.map(evt => {
+    list.innerHTML = data.map((evt, index) => {
         const deleteBtn = isAdmin ? `<button onclick="deleteEvent(${evt.id})" class="sketch-btn danger" style="float:right;">X</button>` : '';
         return `
-            <div class="class-card" style="border-left: 5px solid #1976d2;">
+            <div class="class-card" style="border-left: 5px solid #1976d2; animation-delay: ${index * 0.1}s">
                 ${deleteBtn}
                 <h3>${evt.title}</h3>
                 <p>${new Date(evt.event_date).toDateString()}</p>
@@ -226,7 +233,7 @@ window.addClass = async function(e) {
 }
 
 window.deleteClass = async function(id) {
-    if(!confirm('Delete this class?')) return;
+    if(!await showWimpyConfirm('Delete this class?')) return;
     await db.from('schedule').delete().eq('id', id);
     // Refresh current view (grab the day from the label or just reload 'All')
     loadSchedule('All');
@@ -247,7 +254,7 @@ window.addAssignment = async function(e) {
 }
 
 window.deleteAssignment = async function(id) {
-    if(!confirm('Delete task?')) return;
+    if(!await showWimpyConfirm('Delete task?')) return;
     await db.from('assignments').delete().eq('id', id);
     loadAssignments();
 }
@@ -266,7 +273,7 @@ window.addEvent = async function(e) {
 }
 
 window.deleteEvent = async function(id) {
-    if(!confirm('Delete event?')) return;
+    if(!await showWimpyConfirm('Delete event?')) return;
     await db.from('events').delete().eq('id', id);
     loadEvents();
 }
@@ -490,7 +497,7 @@ async function populateEmailDropdown() {
     if (error) return console.error("Error loading recipients:", error);
 
     // Keep the "Everyone" option, remove others to avoid duplicates if reloaded
-    dropdown.innerHTML = '<option value="ALL">📢 Send to Everyone (Blast)</option>';
+    dropdown.innerHTML = '<option value="ALL">Send to Everyone (Blast)</option>';
 
     data.forEach(student => {
         // Only add if they have an email
@@ -539,7 +546,7 @@ async function loadFiles(subjectFilter = 'All') {
         return;
     }
 
-    list.innerHTML = data.map(file => {
+    list.innerHTML = data.map((file, index) => {
         const deleteBtn = isAdmin ? `<button onclick="deleteFile(${file.id})" class="sketch-btn danger" style="position:absolute; top:5px; right:5px; padding: 2px 8px; font-size: 0.8rem;">X</button>` : '';
         
         // Choose icon
@@ -553,7 +560,7 @@ async function loadFiles(subjectFilter = 'All') {
         const subjectTag = file.subject ? `<span style="background:#dfe6e9; font-size:0.8rem; padding:2px 6px; border-radius:4px;">${file.subject}</span>` : '';
 
         return `
-            <div class="class-card" style="text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:space-between;">
+            <div class="class-card" style="text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:space-between; animation-delay: ${index * 0.1}s">
                 ${deleteBtn}
                 <div style="width:100%;">
                     <div style="font-size: 2.5rem; color: #57606f; margin-top:10px;">
@@ -625,7 +632,7 @@ window.uploadFile = async function(e) {
 }
 
 window.deleteFile = async function(id) {
-    if(!confirm('Delete this file?')) return;
+    if(!await showWimpyConfirm('Delete this file?')) return;
     const { error } = await db.from('shared_files').delete().eq('id', id);
     if (error) showToast('Error deleting file.');
     else {
@@ -732,5 +739,64 @@ window.searchFiles = function() {
                 cards[i].style.display = "none";
             }
         }       
+    }
+}
+
+// --- CUSTOM WIMPY POP-UP ---
+function showWimpyConfirm(message) {
+    return new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.className = 'wimpy-modal-overlay';
+        
+        const box = document.createElement('div');
+        box.className = 'wimpy-modal-box';
+        
+        box.innerHTML = `
+            <h2 style="margin:0 0 10px 0; font-size:2rem;">WAIT!</h2>
+            <p style="font-size:1.3rem; margin-bottom:20px;">${message}</p>
+            <div style="display:flex; gap:10px; justify-content:center;">
+                <button id="wimpy-no" class="sketch-btn" style="flex:1;">NAH</button>
+                <button id="wimpy-yes" class="sketch-btn danger" style="flex:1; background:#000; color:#fff;">YEAH</button>
+            </div>
+        `;
+        
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+        
+        document.getElementById('wimpy-no').onclick = () => {
+            overlay.remove();
+            resolve(false);
+        };
+        
+        document.getElementById('wimpy-yes').onclick = () => {
+            overlay.remove();
+            resolve(true);
+        };
+    });
+}
+
+// --- REQUEST / SECRET BOX LOGIC ---
+window.openRequestModal = function() {
+    document.getElementById('requestModal').classList.remove('hidden');
+}
+
+window.closeRequestModal = function() {
+    document.getElementById('requestModal').classList.add('hidden');
+    document.getElementById('req-content').value = '';
+}
+
+window.submitRequest = async function() {
+    const content = document.getElementById('req-content').value;
+    if(!content) return showToast('Write something first!');
+    
+    const { error } = await db.from('requests').insert([{
+        content: content,
+        sender: user ? user.name : 'Anonymous'
+    }]);
+    
+    if(error) showToast('Error sending: ' + error.message);
+    else {
+        showToast('Request sent to Admin!');
+        closeRequestModal();
     }
 }

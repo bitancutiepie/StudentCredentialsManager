@@ -4,7 +4,7 @@
 const SUPABASE_URL = 'https://egnyblflgppsosunnilq.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVnbnlibGZsZ3Bwc29zdW5uaWxxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY0OTYzMjksImV4cCI6MjA4MjA3MjMyOX0.HR9lt4oHuFjGcjwsF_fLoJMuG2OI8aCIoRCSyyu0zVE';
 
-if (typeof window.supabase === 'undefined') alert('Error: Supabase not loaded. Check internet.');
+if (typeof window.supabase === 'undefined') console.error('Error: Supabase not loaded. Check internet.');
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // DOM Elements
@@ -25,7 +25,7 @@ const studentDashboard = document.getElementById('studentDashboard');
 let adminChoiceModal = document.getElementById('adminChoiceModal');
 
 const adminNameDisplay = document.getElementById('adminNameDisplay');
-const studentTableBody = document.getElementById('studentTableBody');
+const studentListContainer = document.getElementById('studentListContainer'); // Renamed from studentTableBody
 const studentNameDisplay = document.getElementById('studentNameDisplay');
 const studentCodeDisplay = document.getElementById('studentCodeDisplay');
 const toastContainer = document.getElementById('toast-container');
@@ -117,6 +117,7 @@ const initApp = () => {
     fetchMembers();
     fetchNotes(); 
     fetchRecentLogins();
+    fetchNewUploads(); // <--- ADD THIS LINE HERE
     showWelcomeNote();
 
     // --- PASSWORD TOGGLE ---
@@ -126,8 +127,8 @@ const initApp = () => {
             const passwordInput = document.getElementById('password');
             const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
             passwordInput.setAttribute('type', type);
-            // Toggle icon between monkey covering eyes and open eyes
-            this.innerText = type === 'password' ? '🙈' : '👀'; 
+            // Toggle icon
+            this.innerHTML = type === 'password' ? '<i class="fas fa-eye-slash"></i>' : '<i class="fas fa-eye"></i>'; 
         });
     }
 };
@@ -147,14 +148,14 @@ function injectAdminModal() {
 
     const modalHTML = `
         <div id="adminChoiceModal" class="sketch-box hidden" style="text-align: center;">
-            <h2>🔐 ADMIN ACCESS GRANTED</h2>
+            <h2><i class="fas fa-user-lock"></i> ADMIN ACCESS GRANTED</h2>
             <p>"Where do you want to go, Boss?"</p>
             <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 20px;">
                 <button onclick="chooseAdminPath('manage')" style="background: #2d3436; color: white;">
-                    📋 MANAGE USERS (Black List)
+                    <i class="fas fa-clipboard-list"></i> MANAGE USERS (Black List)
                 </button>
                 <button onclick="chooseAdminPath('dashboard')" style="background: #d63031; color: white;">
-                    📒 GO TO BINDER (As Admin)
+                    <i class="fas fa-book"></i> GO TO BINDER (As Admin)
                 </button>
             </div>
             <p style="font-size: 0.9rem; margin-top: 15px;">(As Admin in Binder, you can add classes & events)</p>
@@ -361,6 +362,7 @@ function showAdminPanel(name) {
     adminDashboard.classList.remove('hidden');
     adminNameDisplay.innerText = name;
     fetchStudents(); 
+    fetchRequests(); // Load requests when admin panel opens
 }
 
 // --- ADMIN FEATURES (Black List) ---
@@ -384,7 +386,9 @@ searchInput.addEventListener('input', debounce((e) => {
 }, 300));
 
 function displayStudents(students) {
-    studentTableBody.innerHTML = students
+    if (!studentListContainer) return;
+    
+    studentListContainer.innerHTML = students
         .filter(s => s.sr_code !== 'ADMIN')
         .map(student => {
             const safeName = student.name.replace(/'/g, "\\'");
@@ -393,38 +397,33 @@ function displayStudents(students) {
             const avatar = student.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random`;
 
             return `
-                <tr>
-                    <td>
-                        <div class="flex-cell">
-                            <img src="${avatar}" style="width:35px; height:35px; border-radius:50%; object-fit:cover; border:1px solid #333;">
-                            <span style="font-weight:bold;">${student.name}</span>
+                <div class="student-strip">
+                    <div class="student-info">
+                        <img src="${avatar}" class="student-avatar">
+                        <div class="student-text">
+                            <h4>${student.name}</h4>
+                            <p onclick="copyToClipboard('${safeCode}')" style="cursor:pointer; display:inline-flex; align-items:center; gap:5px;" title="Click to Copy Code">
+                                <i class="fas fa-id-card"></i> ${student.sr_code}
+                            </p>
                         </div>
-                    </td>
-                    <td>
-                        <div class="flex-cell">
-                            <span style="font-family:monospace; font-size:1.1rem;">${student.sr_code}</span>
-                            <button class="btn-icon btn-copy" onclick="copyToClipboard('${safeCode}')" title="Copy Code">📋</button>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="flex-cell">
-                            <span style="font-family:monospace; font-size:1.1rem;">${student.password}</span>
-                            <button class="btn-icon btn-copy" onclick="copyToClipboard('${student.password}')" title="Copy Password">🔑</button>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="flex-cell">
-                            <button class="btn-icon btn-delete" onclick="deleteStudent('${student.id}')" title="Delete">🗑️</button>
-                            <button class="btn-icon" style="background:#2196F3; color:white; border-color:#0b7dda;" onclick="loginAsUser('${safeName}', '${safeCode}', '${safeAvatar}', '${student.id}')" title="Switch View to ${safeName}">🚀</button>
-                        </div>
-                    </td>
-                </tr>
+                    </div>
+
+                    <div class="student-creds">
+                        <span>${student.password}</span>
+                        <button class="btn-icon btn-copy" onclick="copyToClipboard('${student.password}')" title="Copy Password"><i class="fas fa-key"></i></button>
+                    </div>
+
+                    <div class="student-actions">
+                        <button class="btn-icon btn-delete" onclick="deleteStudent('${student.id}')" title="Delete"><i class="fas fa-trash"></i></button>
+                        <button class="btn-icon" style="background:#2196F3; color:white; border-color:#0b7dda;" onclick="loginAsUser('${safeName}', '${safeCode}', '${safeAvatar}', '${student.id}')" title="Switch View to ${safeName}"><i class="fas fa-rocket"></i></button>
+                    </div>
+                </div>
             `;
         }).join('');
 }
 
 async function deleteStudent(id) {
-    if(!confirm('Scratch this person out specifically?')) return;
+    if(!await showWimpyConfirm('Scratch this person out specifically?')) return;
     const { error } = await supabaseClient.from('students').delete().eq('id', id);
     if (error) showToast('Could not delete.', 'error');
     else {
@@ -435,8 +434,8 @@ async function deleteStudent(id) {
 }
 
 // IMPERSONATION LOGIC
-function loginAsUser(name, code, avatarUrl, id) {
-    if(!confirm('Switch view to ' + name + '?')) return;
+async function loginAsUser(name, code, avatarUrl, id) {
+    if(!await showWimpyConfirm('Switch view to ' + name + '?')) return;
     const targetUserPayload = JSON.stringify({
         id: id,
         name: name,
@@ -605,7 +604,8 @@ async function updateNotePosition(id, x, y) {
 }
 
 // LOGOUT
-function logout() {
+async function logout() {
+    if (!await showWimpyConfirm("Pack up and leave?")) return;
     currentStudentId = null;
     localStorage.removeItem('wimpy_user');
     sessionStorage.removeItem('wimpy_user');
@@ -669,7 +669,7 @@ function showWelcomeNote() {
                 }
             }
         </style>
-        <h2 style="margin-top:0; text-decoration: underline wavy #000;">✨ SYSTEM UPDATE</h2>
+        <h2 style="margin-top:0; text-decoration: underline wavy #000;"><i class="fas fa-star"></i> SYSTEM UPDATE</h2>
         <p style="font-size:1.1rem; margin: 10px 0;">"Look at the upgrade guys! (Click pics to zoom)"</p>
         <div class="update-flex">
             <div class="update-img-container" onclick="viewFullImage('Beforeimg.png')">
@@ -683,13 +683,13 @@ function showWelcomeNote() {
             </div>
         </div>
         <div style="text-align: left; background: #f9f9f9; border: 2px dashed #bbb; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
-            <p style="font-weight: bold; margin: 0 0 10px 0; border-bottom: 2px solid #ddd; padding-bottom: 5px;">📝 New Features Added:</p>
-            <ul style="padding-left: 20px; margin: 0; list-style-type: '✅ '; font-size: 1rem;">
-                <li><b>Live Tracker:</b> See exactly which class is happening right now.</li>
-                <li><b>Subject Cabinet:</b> Organized folders for reviewers & PDFs.</li>
-                <li><b>Custom Avatars:</b> Upload your own profile picture.</li>
-                <li><b>Binder UI:</b> New "notebook" design for better vibes.</li>
-                <li><b>Auto-Schedule:</b> Classes automatically update daily.</li>
+            <p style="font-weight: bold; margin: 0 0 10px 0; border-bottom: 2px solid #ddd; padding-bottom: 5px;"><i class="fas fa-edit"></i> New Features Added:</p>
+            <ul style="padding-left: 20px; margin: 0; list-style-type: none; font-size: 1rem;">
+                <li><i class="fas fa-check-circle"></i> <b>Live Tracker:</b> See exactly which class is happening right now.</li>
+                <li><i class="fas fa-check-circle"></i> <b>Subject Cabinet:</b> Organized folders for reviewers & PDFs.</li>
+                <li><i class="fas fa-check-circle"></i> <b>Custom Avatars:</b> Upload your own profile picture.</li>
+                <li><i class="fas fa-check-circle"></i> <b>Binder UI:</b> New "notebook" design for better vibes.</li>
+                <li><i class="fas fa-check-circle"></i> <b>Auto-Schedule:</b> Classes automatically update daily.</li>
             </ul>
         </div>
         <p style="font-size:1.3rem; margin: 15px 0; color: #d32f2f; font-weight: bold;">"Login na kayo para makita niyo!"</p>
@@ -708,4 +708,128 @@ window.viewFullImage = function(src) {
     overlay.appendChild(img);
     overlay.onclick = function() { overlay.remove(); };
     document.body.appendChild(overlay);
+}
+
+// --- NEW FEATURE: CHECK RECENT UPLOADS ---
+async function fetchNewUploads() {
+    const container = document.getElementById('newUpdatesSection');
+    const list = document.getElementById('newUpdatesList');
+    
+    // Safety check: if elements don't exist, stop (prevents errors)
+    if (!container || !list) return;
+
+    // Calculate date 3 days ago
+    const dateLimit = new Date();
+    dateLimit.setDate(dateLimit.getDate() - 3); 
+
+    // Use 'supabaseClient' (which is defined in script.js)
+    const { data, error } = await supabaseClient
+        .from('shared_files')
+        .select('title, subject, created_at')
+        .gte('created_at', dateLimit.toISOString())
+        .order('created_at', { ascending: false })
+        .limit(3); // Only show top 3
+
+    if (error) {
+        console.error("Error fetching updates:", error);
+        return;
+    }
+
+    // Only show the section if we actually have data
+    if (data && data.length > 0) {
+        container.classList.remove('hidden'); // Show the container
+        
+        list.innerHTML = data.map(file => `
+            <div style="width: 95%; background: #fff; border: 2px solid #000; border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; padding: 10px; display: flex; align-items: center; gap: 10px; box-shadow: 3px 3px 0 rgba(0,0,0,0.1); transition: transform 0.2s; cursor: default;" 
+                 onmouseover="this.style.transform='scale(1.02) rotate(-1deg)'" 
+                 onmouseout="this.style.transform='scale(1) rotate(0deg)'">
+                <div style="font-size: 1.5rem; color: #000;"><i class="fas fa-file-alt"></i></div>
+                <div style="text-align: left; flex: 1;">
+                    <div style="font-size: 0.8rem; text-transform: uppercase; font-weight: bold; color: #666;">${file.subject}</div>
+                    <div style="font-size: 1.1rem; line-height: 1.1; font-weight: bold;">${file.title}</div>
+                </div>
+                <div style="font-size: 0.8rem; background: #d63031; color: white; padding: 2px 6px; border-radius: 4px; transform: rotate(5deg);">NEW!</div>
+            </div>
+        `).join('');
+    } else {
+        container.classList.add('hidden'); // Keep hidden if empty
+    }
+}
+
+// --- CUSTOM WIMPY POP-UP ---
+function showWimpyConfirm(message) {
+    return new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.className = 'wimpy-modal-overlay';
+        
+        const box = document.createElement('div');
+        box.className = 'wimpy-modal-box';
+        
+        box.innerHTML = `
+            <h2 style="margin:0 0 10px 0; font-size:2rem;">WAIT!</h2>
+            <p style="font-size:1.3rem; margin-bottom:20px;">${message}</p>
+            <div style="display:flex; gap:10px; justify-content:center;">
+                <button id="wimpy-no" style="flex:1; background:#fff; color:#000;">NAH</button>
+                <button id="wimpy-yes" style="flex:1; background:#000; color:#fff;">YEAH</button>
+            </div>
+        `;
+        
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+        
+        document.getElementById('wimpy-no').onclick = () => {
+            overlay.remove();
+            resolve(false);
+        };
+        
+        document.getElementById('wimpy-yes').onclick = () => {
+            overlay.remove();
+            resolve(true);
+        };
+    });
+}
+
+// --- WIDE MODE TOGGLE ---
+function toggleWideMode() {
+    const boxes = document.querySelectorAll('.sketch-box');
+    boxes.forEach(box => {
+        box.classList.toggle('wide-mode');
+    });
+}
+
+// --- ADMIN REQUESTS LOGIC ---
+async function fetchRequests() {
+    const container = document.getElementById('adminRequestsList');
+    if(!container) return;
+    
+    container.innerHTML = '<p>Checking suggestion box...</p>';
+    
+    const { data, error } = await supabaseClient
+        .from('requests')
+        .select('*')
+        .order('created_at', { ascending: false });
+        
+    if(error) return console.error(error);
+    
+    if(!data || data.length === 0) {
+        container.innerHTML = '<h3 style="text-align:center; color:#666;">No new requests.</h3>';
+        return;
+    }
+    
+    container.innerHTML = '<h3 style="text-decoration:underline wavy #d63031;"><i class="fas fa-envelope-open-text"></i> Inbox / Requests</h3>' + data.map(req => `
+        <div class="student-strip" style="flex-direction:column; align-items:flex-start; gap:5px; background:#fffde7;">
+            <div style="width:100%; display:flex; justify-content:space-between; border-bottom:1px dashed #ccc; padding-bottom:5px;">
+                <strong><i class="fas fa-user"></i> ${req.sender || 'Anonymous'}</strong>
+                <small>${new Date(req.created_at).toLocaleDateString()} ${new Date(req.created_at).toLocaleTimeString()}</small>
+            </div>
+            <p style="margin:10px 0; font-family:'Patrick Hand'; font-size:1.2rem; white-space: pre-wrap;">${req.content}</p>
+            <button onclick="deleteRequest(${req.id})" class="btn-icon btn-delete" style="align-self:flex-end; font-size:0.9rem;"><i class="fas fa-trash"></i> Dismiss</button>
+        </div>
+    `).join('');
+}
+
+window.deleteRequest = async function(id) {
+    if(!await showWimpyConfirm('Burn this note?')) return;
+    await supabaseClient.from('requests').delete().eq('id', id);
+    fetchRequests();
 }

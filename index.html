@@ -11,6 +11,7 @@
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
     <style>
         /* --- WIMPY KID THEME & ANIMATIONS --- */
@@ -81,6 +82,16 @@
             position: relative;
             animation: slideUp 0.6s ease-out;
             z-index: 100; 
+            transition: max-width 0.3s ease;
+        }
+
+        /* --- NEW: Nervous Pencil Animation --- */
+        @keyframes nervousWrite {
+            0% { transform: scale(1); }
+            25% { transform: scale(1.01) rotate(0.5deg); }
+            50% { transform: scale(1.01) rotate(-0.5deg); }
+            75% { transform: scale(1.01) rotate(0.5deg); }
+            100% { transform: scale(1); }
         }
 
         .sketch-box::before {
@@ -95,6 +106,8 @@
             transform: rotate(-2deg);
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
+        
+        .sketch-box.wide-mode { max-width: 95%; }
 
         h2 { font-size: 2.5rem; text-align: center; margin-top: 0; text-decoration: underline; text-decoration-style: wavy; text-decoration-skip-ink: none; }
 
@@ -111,7 +124,10 @@
             transition: border-color 0.3s;
             box-sizing: border-box;
         }
-        input:focus { border-bottom: 3px solid #000; }
+        input:focus { 
+            border-bottom: 3px solid #000; 
+            animation: nervousWrite 0.3s ease-in-out;
+        }
 
         button {
             width: 100%;
@@ -130,6 +146,7 @@
             background: #fff;
             color: #000;
             transform: rotate(-2deg) scale(1.05);
+            animation: nervousWrite 0.4s infinite; /* Wiggle on hover */
             box-shadow: 3px 3px 0px rgba(0,0,0,0.2);
         }
         button:active { transform: scale(0.95); }
@@ -228,6 +245,80 @@
             margin: 15px 0 5px 0;
             padding-left: 5px;
         }
+
+        /* --- WIMPY POP-UP MODAL --- */
+        .wimpy-modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); z-index: 10000;
+            display: flex; justify-content: center; align-items: center;
+            backdrop-filter: blur(3px);
+        }
+        .wimpy-modal-box {
+            background: #fff; border: 3px solid #000;
+            border-radius: 2% 6% 5% 4% / 1% 1% 2% 4%;
+            padding: 30px; width: 90%; max-width: 400px;
+            text-align: center; box-shadow: 10px 10px 0 rgba(0,0,0,0.2);
+            transform: rotate(-1deg);
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes popIn { from { transform: scale(0.8) rotate(-5deg); opacity: 0; } to { transform: scale(1) rotate(-1deg); opacity: 1; } }
+
+        /* --- NEW BLACK LIST CARD STYLES --- */
+        .student-strip {
+            background: #fff;
+            border: 2px solid #000;
+            /* Sketchy border radius */
+            border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            box-shadow: 3px 3px 0 rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+            margin-bottom: 15px;
+        }
+        .student-strip:hover {
+            transform: scale(1.01);
+            box-shadow: 5px 5px 0 rgba(0,0,0,0.15);
+        }
+        .student-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex: 1.5;
+            text-align: left;
+        }
+        .student-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #000;
+            flex-shrink: 0;
+        }
+        .student-creds {
+            flex: 1;
+            background: #f1f2f6;
+            padding: 8px 15px;
+            border-radius: 5px;
+            border: 1px dashed #999;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-family: monospace;
+            font-size: 1.1rem;
+        }
+        .student-actions {
+            display: flex;
+            gap: 10px;
+        }
+        @media (max-width: 700px) {
+            .student-strip { flex-direction: column; align-items: stretch; text-align: center; gap: 15px; }
+            .student-info { flex-direction: column; text-align: center; }
+            .student-creds { justify-content: center; gap: 10px; }
+            .student-actions { justify-content: center; }
+        }
     </style>
 </head>
 <body>
@@ -253,8 +344,8 @@
             <!-- REPLACE the existing password input line with this block -->
             <div style="position: relative; width: 100%;">
                 <input type="password" id="password" placeholder="PASSWORD" required style="padding-right: 40px;">
-                <span id="togglePassword" style="position: absolute; right: 10px; top: 20px; cursor: pointer; font-size: 1.2rem; user-select: none;">
-                    🙈
+                <span id="togglePassword" style="position: absolute; right: 10px; top: 20px; cursor: pointer; font-size: 1.2rem; user-select: none; color: #555;">
+                    <i class="fas fa-eye-slash"></i>
                 </span>
             </div>
             
@@ -269,18 +360,28 @@
         <span class="toggle-link" id="toggleAuth">Magpapalista? <b>Come here mga kosa click this</b></span>
 
         <div class="member-list-section">
-            <div class="member-list-title">📋 Members currently in the club:</div>
+            <div class="member-list-title"><i class="fas fa-clipboard-list"></i> Members currently in the club:</div>
             <div class="member-tags" id="publicMemberList">
                 <span style="color:#666;">Loading list...</span>
             </div>
         </div>
 
         <div class="member-list-section" style="border-top: none; margin-top: 10px;">
-            <div class="member-list-title">👀 Just Spotted:</div>
+            <div class="member-list-title"><i class="fas fa-eye"></i> Just Spotted:</div>
             <div id="recentLoginsList" style="display:flex; flex-direction:column; gap:5px; align-items:center; font-size: 0.9rem;">
                 <span style="color:#666; font-style:italic;">No recent activity...</span>
             </div>
         </div>
+
+        <!-- === ADD THIS NEW BLOCK BELOW === -->
+        <div id="newUpdatesSection" class="hidden" style="margin-top: 20px; border-top: 2px dashed #000; padding-top: 15px; animation: slideUp 0.5s;">
+            <div class="member-list-title" style="background: #000; color: #fff; display: inline-block; padding: 3px 12px; transform: rotate(-2deg); border-radius: 3px; margin-bottom: 10px;"><i class="fas fa-fire"></i> FRESH DROPS</div>
+            <div id="newUpdatesList" style="display:flex; flex-direction:column; gap:10px; align-items:center; width: 100%;">
+                <!-- Javascript will put files here -->
+            </div>
+        </div>
+        <!-- === END NEW BLOCK === -->
+
     </div>
 
     <div class="sketch-box hidden" id="adminDashboard">
@@ -288,42 +389,36 @@
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
             <p style="margin:0;">Current Admin: <b id="adminNameDisplay">Greg</b></p>
             <div>
-                <button onclick="openPortalWindow()" style="width:auto; font-size:1rem; background:#4CAF50; border-color:green; color:white; padding:5px 10px; margin:0;">🌍 OPEN PORTAL</button>
-                <button onclick="returnToAdminChoice()" style="width:auto; font-size:1rem; background:#6c757d; border-color:#5a6268; color:white; padding:5px 10px; margin:0;">↩️ ADMIN MENU</button>
+                <button onclick="toggleWideMode()" style="width:auto; font-size:1rem; background:#fff; color:#000; padding:5px 10px; margin:0;" title="Expand"><i class="fas fa-expand"></i></button>
+                <button onclick="openPortalWindow()" style="width:auto; font-size:1rem; background:#4CAF50; border-color:green; color:white; padding:5px 10px; margin:0;"><i class="fas fa-globe"></i> OPEN PORTAL</button>
+                <button onclick="returnToAdminChoice()" style="width:auto; font-size:1rem; background:#6c757d; border-color:#5a6268; color:white; padding:5px 10px; margin:0;"><i class="fas fa-undo"></i> ADMIN MENU</button>
                 <button onclick="logout()" style="width:auto; font-size:1rem; padding:5px 10px; margin:0;">EXIT</button>
             </div>
         </div>
         
         <input type="text" id="searchInput" placeholder="Search by name or SR code..." style="margin-bottom: 15px;">
 
-        <div style="overflow-x:auto;">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Code</th>
-                        <th>Password (Real)</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody id="studentTableBody">
-                    </tbody>
-            </table>
+        <!-- INCOMING REQUESTS SECTION (Moved to Top) -->
+        <div id="adminRequestsList" style="margin-bottom:30px; border-bottom:3px dashed #000; padding-bottom:20px;"></div>
+
+        <!-- REPLACED TABLE WITH THIS CONTAINER -->
+        <div id="studentListContainer" style="display: flex; flex-direction: column; gap: 5px;">
+            <!-- JS will inject student strips here -->
         </div>
     </div>
 
     <!-- NEW ADMIN CHOICE MODAL -->
     <div id="adminChoiceModal" class="sketch-box hidden" style="text-align: center;">
-        <h2>🔐 ADMIN ACCESS GRANTED</h2>
+        <h2><i class="fas fa-user-lock"></i> ADMIN ACCESS GRANTED</h2>
         <p>"Where do you want to go, Boss?"</p>
         
         <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 20px;">
             <button onclick="chooseAdminPath('manage')" style="background: #2d3436; color: white;">
-                📋 MANAGE USERS (Black List)
+                <i class="fas fa-clipboard-list"></i> MANAGE USERS (Black List)
             </button>
             
             <button onclick="chooseAdminPath('dashboard')" style="background: #d63031; color: white;">
-                📒 GO TO BINDER (As Admin)
+                <i class="fas fa-book"></i> GO TO BINDER (As Admin)
             </button>
         </div>
         <p style="font-size: 0.9rem; margin-top: 15px;">(As Admin in Binder, you can add classes & events)</p>
@@ -344,7 +439,7 @@
         </div>
 
         <div class="note-input-area">
-            <h3>📝 Leave a Sticky Note</h3>
+            <h3><i class="fas fa-sticky-note"></i> Leave a Sticky Note</h3>
             <div style="display:flex; gap:10px; flex-wrap: wrap;">
                 <input type="text" id="noteInput" placeholder="Write something..." maxlength="30" style="flex:1;">
                 <button onclick="postNote()" style="width:auto; margin-top:10px;">POST</button>
