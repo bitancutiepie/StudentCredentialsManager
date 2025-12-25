@@ -1153,7 +1153,7 @@ window.showAdminTool = function(toolId, btnElement) {
     document.querySelectorAll('.filter-bar .sketch-btn').forEach(b => b.classList.remove('active-tool'));
 
     // Hide all admin forms
-    const forms = ['admin-schedule-form', 'admin-assignment-form', 'admin-event-form', 'admin-file-form', 'admin-email-form', 'admin-gallery-form'];
+    const forms = ['admin-schedule-form', 'admin-assignment-form', 'admin-event-form', 'admin-file-form', 'admin-email-form', 'admin-gallery-form', 'admin-storage-view'];
     let isAlreadyOpen = false;
     
     forms.forEach(id => {
@@ -1176,4 +1176,67 @@ window.showAdminTool = function(toolId, btnElement) {
         // If closing or clicking active, show hint
         if (hint) hint.style.display = 'block';
     }
+}
+
+// --- STORAGE MONITOR ---
+window.fetchStorageStats = async function() {
+    const display = document.getElementById('storage-stats-display');
+    if(!display) return;
+    
+    display.innerHTML = '<div class="loader">Scanning crates...</div>';
+    
+    const buckets = ['class-resources', 'avatars']; 
+    let bucketHtml = '';
+    let grandTotalBytes = 0;
+    
+    for (const bucket of buckets) {
+        // Fetch list of files (limit 1000 to get a good count)
+        const { data, error } = await db.storage.from(bucket).list('', { limit: 1000 });
+        
+        if (error) {
+            bucketHtml += `<div class="class-card" style="border-left: 5px solid #d63031; margin-bottom: 10px;"><p>Error scanning <b>${bucket}</b>: ${error.message}</p></div>`;
+            continue;
+        }
+
+        const count = data.length;
+        let totalSize = 0;
+        data.forEach(f => totalSize += (f.metadata ? f.metadata.size : 0));
+        grandTotalBytes += totalSize;
+
+        const sizeMB = (totalSize / (1024 * 1024)).toFixed(2);
+        
+        bucketHtml += `
+            <div class="class-card" style="margin-bottom: 10px; border-left: 5px solid #6c5ce7;">
+                <h3 style="margin-top:0;">Bucket: ${bucket}</h3>
+                <div style="display:flex; justify-content:space-between; font-size:1.1rem;">
+                    <span><b>Files:</b> ${count}</span>
+                    <span><b>Size:</b> ${sizeMB} MB</span>
+                </div>
+            </div>
+        `;
+    }
+
+    // Calculate Totals
+    const totalMB = (grandTotalBytes / (1024 * 1024)).toFixed(2);
+    const limitGB = 1; // 1GB Limit
+    const limitBytes = limitGB * 1024 * 1024 * 1024;
+    const percent = Math.min(100, ((grandTotalBytes / limitBytes) * 100)).toFixed(1);
+    
+    const summaryHtml = `
+        <div class="class-card" style="margin-bottom: 20px; border: 2px solid #000; background: #fff740; transform: rotate(-1deg);">
+            <h3 style="margin-top:0; text-align:center; border-bottom: 2px dashed #000; padding-bottom: 10px;">
+                <i class="fas fa-chart-pie"></i> TOTAL CONSUMPTION
+            </h3>
+            <div style="text-align: center; margin: 15px 0;">
+                <span style="font-size: 2.5rem; font-family: 'Permanent Marker'; line-height: 1;">${totalMB} MB</span>
+                <span style="font-size: 1.2rem; color: #555;"> / ${limitGB} GB</span>
+            </div>
+            <div style="width: 100%; background: #fff; border: 2px solid #000; height: 25px; border-radius: 15px; overflow: hidden; position: relative;">
+                <div style="width: ${percent}%; background: ${percent > 80 ? '#d63031' : '#00b894'}; height: 100%; transition: width 0.5s ease;"></div>
+                <span style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 0.8rem; font-weight: bold; color: #000;">${percent}%</span>
+            </div>
+        </div>
+    `;
+
+    display.innerHTML = summaryHtml + bucketHtml;
 }

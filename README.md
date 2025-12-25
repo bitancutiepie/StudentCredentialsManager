@@ -30,23 +30,29 @@ Diverging from sterile, corporate interfaces, this project adopts a **hand-drawn
 ### 🎓 Student Dashboard (The Binder)
 *   **Dynamic Schedule:** Weekly class viewer with filtering by day.
 *   **Live Class Tracker:** A pulsing "Happening Now" card appears automatically when a class is currently in session.
+*   **Interactive Calendar:** Monthly view of events; Admins can click days to add events instantly.
 *   **Digital Backpack:** Centralized access to homework assignments and deadlines.
-*   **Resource Cabinet:** Organized file repository for PDFs, reviewers, and slide decks.
+*   **Resource Cabinet:** Organized file repository with **Smart Filters** (separating gallery photos from study materials) and **File Previews**.
+*   **Help Guide:** A dedicated tab explaining how to navigate the system.
 *   **Real-time Clock:** A retro Casio-style watch displaying the current time.
 
 ### 🔐 Authentication & Profiles
+*   **Memories Gallery:** A "Diary of a Wimpy Kid" style photo gallery on the login page.
 *   **Dual-Role Access:** Distinct flows for **Students** (Binder View) and **Admins** (Management View).
 *   **Custom Avatars:** Users can upload profile pictures that are stored in the cloud.
 *   **Session Management:** "Keep me logged in" functionality for persistent access.
+*   **System Update Log:** A visual changelog modal to keep users informed of new features.
 
 ### 🛠️ Administrator Controls
+*   **Admin Tool Menu:** A centralized navigation bar for managing classes, homework, events, files, and emails.
+*   **Storage Monitor:** Real-time visualization of Supabase storage usage (MB/GB) with breakdown by bucket.
 *   **User Management:** A "Black List" view to manage registered students, view credentials (for recovery), and delete accounts.
-*   **Content Management:** Forms to add classes, assignments, events, and upload files directly to the dashboard.
 *   **Impersonation Mode:** Admins can "Login as User" to view the dashboard from a specific student's perspective.
 *   **Portal Gateway:** A calculated pop-up window to access the official university portal (`dione`) side-by-side.
 
 ### 🎨 Interactive UI Elements
-*   **Sticky Notes:** draggable, real-time sticky notes that users can post on the "cover" of the app.
+*   **Sticky Notes:** Draggable, real-time sticky notes with improved physics.
+*   **Wallpaper Generator V2:** Create custom wallpapers with *Glassmorphism* effects or custom backgrounds.
 *   **Sketchy Aesthetics:** CSS-driven wobbly borders, hand-written fonts (*Patrick Hand*), and paper textures.
 *   **Responsive Design:** Fully functional on desktop and mobile devices.
 
@@ -81,9 +87,9 @@ Diverging from sterile, corporate interfaces, this project adopts a **hand-drawn
 The application requires the following tables in Supabase:
 
 1.  **`students`**: User credentials and profile data.
-    *   `id` (uuid), `sr_code` (text), `password` (text), `name` (text), `avatar_url` (text), `last_login` (timestamp).
+    *   `id` (uuid), `sr_code` (text), `password` (text), `name` (text), `avatar_url` (text), `last_login` (timestamp), `email` (text).
 2.  **`schedule`**: Class timetables.
-    *   `id`, `subject_code`, `subject_name`, `start_time`, `end_time`, `day_of_week`, `instructor`, `room`, `meet_link`.
+    *   `id`, `subject_code`, `subject_name`, `start_time`, `end_time`, `day_of_week`, `instructor`, `room`, `meet_link`, `classroom_link`.
 3.  **`assignments`**: Homework tracking.
     *   `id`, `title`, `subject`, `description`, `due_date`.
 4.  **`events`**: Calendar events.
@@ -92,6 +98,10 @@ The application requires the following tables in Supabase:
     *   `id`, `title`, `subject`, `file_url`, `file_type`.
 6.  **`notes`**: Public sticky notes.
     *   `id`, `content`, `x_pos`, `y_pos`, `rotation`, `color`.
+7.  **`requests`**: Anonymous messages to admin.
+    *   `id`, `content`, `sender`, `created_at`.
+8.  **`user_statuses`**: Custom status messages for users.
+    *   `user_id`, `status`.
 
 ---
 
