@@ -351,7 +351,8 @@ async function handleLogin(srCode, password) {
         sr_code: data.sr_code,
         avatar_url: data.avatar_url,
         email: data.email,
-        role: data.role
+        role: data.role,
+        enrollment_status: data.enrollment_status || 'Not Enrolled'
     });
 
     const keepLoggedIn = document.getElementById('keepLoggedIn').checked;
@@ -404,7 +405,7 @@ function showAdminPanel(name) {
 async function fetchStudents() {
     const { data, error } = await supabaseClient
         .from('students')
-        .select('id, name, sr_code, password, avatar_url');
+        .select('id, name, sr_code, password, avatar_url, enrollment_status');
     if (error) return console.error(error);
     allStudents = data;
     displayStudents(allStudents);
@@ -503,6 +504,7 @@ window.openStudentDetails = function(id) {
     const safeName = student.name.replace(/'/g, "\\'");
     const safeCode = student.sr_code.replace(/'/g, "\\'");
     const safeAvatar = (student.avatar_url || '').replace(/'/g, "\\'");
+    const currentStatus = student.enrollment_status || 'Not Enrolled';
 
     content.innerHTML = `
         <img src="${avatar}" style="width:100px; height:100px; border-radius:50%; border:3px solid #000; margin-bottom:15px; object-fit:cover;">
@@ -522,6 +524,16 @@ window.openStudentDetails = function(id) {
             </div>
         </div>
 
+        <div style="margin-bottom:15px; text-align:left; border-top:1px dashed #ccc; padding-top:10px;">
+            <strong><i class="fas fa-user-check"></i> Enrollment Status:</strong>
+            <select onchange="updateStudentStatus('${student.id}', this.value)" style="width:100%; padding:8px; margin-top:5px; font-family:'Patrick Hand'; border:2px solid #000; background:#fff;">
+                <option value="Not Enrolled" ${currentStatus === 'Not Enrolled' ? 'selected' : ''}>Not Enrolled</option>
+                <option value="Pending" ${currentStatus === 'Pending' ? 'selected' : ''}>Pending</option>
+                <option value="Enrolled" ${currentStatus === 'Enrolled' ? 'selected' : ''}>Enrolled</option>
+                <option value="Irregular" ${currentStatus === 'Irregular' ? 'selected' : ''}>Irregular</option>
+            </select>
+        </div>
+
         <div style="display:flex; gap:10px; flex-direction:column;">
             <button onclick="loginAsUser('${safeName}', '${safeCode}', '${safeAvatar}', '${student.id}')" class="sketch-btn" style="background:#0984e3; color:#fff;">
                 <i class="fas fa-rocket"></i> Login as User
@@ -532,6 +544,16 @@ window.openStudentDetails = function(id) {
         </div>
     `;
     modal.classList.remove('hidden');
+}
+
+window.updateStudentStatus = async function(id, status) {
+    const { error } = await supabaseClient.from('students').update({ enrollment_status: status }).eq('id', id);
+    if(error) showToast("Error updating status: " + error.message, "error");
+    else {
+        showToast("Status updated to " + status);
+        const s = allStudents.find(st => st.id == id);
+        if(s) s.enrollment_status = status;
+    }
 }
 
 window.closeStudentDetails = function() {
@@ -554,7 +576,7 @@ function openPortalWindow() {
 // --- OTHER FEATURES ---
 async function fetchMembers() {
     // 1. Fetch Students
-    const { data: students, error } = await supabaseClient.from('students').select('id, name, avatar_url, sr_code, role');
+    const { data: students, error } = await supabaseClient.from('students').select('id, name, avatar_url, sr_code, role, enrollment_status');
     if (error) return;
 
     // 2. Fetch Statuses
@@ -627,6 +649,34 @@ async function fetchMembers() {
         `;
         publicMemberList.appendChild(tag);
     });
+
+    // --- POPULATE ENROLLMENT BOARD (Right Side) ---
+    const enrolledList = document.getElementById('enrolled-list');
+    const notEnrolledList = document.getElementById('not-enrolled-list');
+
+    if (enrolledList && notEnrolledList) {
+        const enrolled = students.filter(s => s.enrollment_status === 'Enrolled');
+        const notEnrolled = students.filter(s => s.enrollment_status !== 'Enrolled' && s.sr_code !== 'ADMIN' && s.role !== 'admin');
+
+        // Update Counts
+        const countIn = document.getElementById('count-in');
+        const countOut = document.getElementById('count-out');
+        if(countIn) countIn.innerText = enrolled.length;
+        if(countOut) countOut.innerText = notEnrolled.length;
+
+        const generateTag = (s) => {
+             const safeAvatar = s.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=random`;
+             return `
+                <div class="member-tag" style="cursor: default;">
+                    <img src="${safeAvatar}" style="width:24px; height:24px; border-radius:50%; object-fit:cover; border:1px solid #333; flex-shrink: 0;">
+                    <span style="font-weight:bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">${s.name}</span>
+                </div>
+             `;
+        };
+
+        enrolledList.innerHTML = enrolled.length ? enrolled.map(generateTag).join('') : '<div style="width:100%; text-align:center; color:#666;">None yet</div>';
+        notEnrolledList.innerHTML = notEnrolled.length ? notEnrolled.map(generateTag).join('') : '<div style="width:100%; text-align:center; color:#666;">Everyone is in!</div>';
+    }
 }
 
 function showPublicProfile(name, avatarUrl, status) {
@@ -1632,6 +1682,15 @@ window.toggleMemberList = function() {
     if (icon) {
         icon.style.transform = list.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
     }
+}
+
+// --- CLASS LIST MODAL ---
+window.openClassList = function() {
+    document.getElementById('classListModal').classList.remove('hidden');
+    fetchMembers(); // Refresh data when opening
+}
+window.closeClassList = function() {
+    document.getElementById('classListModal').classList.add('hidden');
 }
 
 // --- PUBLIC REQUEST MODAL ---

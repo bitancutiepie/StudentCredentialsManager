@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log("Dashboard loaded...");
     checkSession();
     startClock();
+    await refreshUserProfile(); // NEW: Fetch fresh data immediately
     await initLiveTracking(); // ADDED: Initialize live tracking here
     
     // Default load
@@ -34,6 +35,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         await populateEmailDropdown();
         await fetchAdminGalleryList(); // Load gallery items for admin
         await populatePromoteDropdown(); // Load users for promotion
+        if (user.sr_code === 'ADMIN') {
+            await populateRevokeDropdown(); // Load admins to revoke
+        }
     }
 });
 
@@ -55,12 +59,76 @@ function checkSession() {
     if (welcomeEl) {
         welcomeEl.innerText = `Hey ${user.name}! 2nd Sem na, aral mabuti.`;
     }
+
+    // Enrollment Status Badge
+    updateEnrollmentBadge();
     
     // Check if Admin
     if (user.sr_code === 'ADMIN' || user.role === 'admin') {
         isAdmin = true;
         // document.querySelectorAll('.admin-controls').forEach(el => el.style.display = 'block'); // Removed to allow menu toggling
         document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+        
+        // Show Revoke button only for Main Admin
+        if (user.sr_code === 'ADMIN') {
+            const revokeBtn = document.getElementById('btn-revoke-admin');
+            if (revokeBtn) revokeBtn.classList.remove('hidden');
+        }
+    }
+}
+
+// --- NEW: REFRESH USER DATA & BADGE ANIMATION ---
+async function refreshUserProfile() {
+    if (!user) return;
+    // Fetch fresh status from DB to ensure it's up to date
+    const { data, error } = await db
+        .from('students')
+        .select('enrollment_status, role, avatar_url')
+        .eq('id', user.id)
+        .single();
+
+    if (data && !error) {
+        user.enrollment_status = data.enrollment_status || 'Not Enrolled';
+        user.role = data.role;
+        user.avatar_url = data.avatar_url;
+        
+        // Update Storage
+        const key = localStorage.getItem('wimpy_user') ? 'wimpy_user' : null;
+        if(key) localStorage.setItem('wimpy_user', JSON.stringify(user));
+        else sessionStorage.setItem('wimpy_user', JSON.stringify(user));
+        
+        updateEnrollmentBadge(); // Re-render badge with fresh data
+    }
+}
+
+function updateEnrollmentBadge() {
+    const statusEl = document.getElementById('enrollment-badge');
+    if(!statusEl || !user) return;
+
+    // Reset animation
+    statusEl.classList.remove('rubber-stamp');
+    void statusEl.offsetWidth; // Trigger reflow
+
+    statusEl.style.display = 'inline-block';
+    statusEl.classList.add('rubber-stamp');
+    
+    // Stamp Styling (Ink Look)
+    if (user.sr_code === 'ADMIN' || user.role === 'admin') {
+        statusEl.style.color = '#2d3436';
+        statusEl.style.borderColor = '#2d3436';
+        statusEl.innerHTML = 'SYSTEM ADMIN';
+    } else if(user.enrollment_status === 'Enrolled') {
+        statusEl.style.color = '#00b894';
+        statusEl.style.borderColor = '#00b894';
+        statusEl.innerHTML = 'OFFICIALLY ENROLLED';
+    } else if (user.enrollment_status === 'Pending') {
+        statusEl.style.color = '#e67e22'; 
+        statusEl.style.borderColor = '#e67e22';
+        statusEl.innerHTML = 'ENROLLMENT PENDING';
+    } else {
+        statusEl.style.color = '#d63031';
+        statusEl.style.borderColor = '#d63031';
+        statusEl.innerHTML = 'NOT ENROLLED';
     }
 }
 
@@ -1193,7 +1261,7 @@ window.showAdminTool = function(toolId, btnElement) {
     document.querySelectorAll('.filter-bar .sketch-btn').forEach(b => b.classList.remove('active-tool'));
 
     // Hide all admin forms
-    const forms = ['admin-schedule-form', 'admin-assignment-form', 'admin-event-form', 'admin-file-form', 'admin-email-form', 'admin-gallery-form', 'admin-storage-view', 'admin-promote-form'];
+    const forms = ['admin-schedule-form', 'admin-assignment-form', 'admin-event-form', 'admin-file-form', 'admin-email-form', 'admin-gallery-form', 'admin-storage-view', 'admin-promote-form', 'admin-revoke-form'];
     let isAlreadyOpen = false;
     
     forms.forEach(id => {
@@ -1317,5 +1385,49 @@ window.promoteUser = async function(e) {
     } else {
         showToast("User promoted to Admin!");
         e.target.reset();
+    }
+}
+
+// --- REVOKE ADMIN LOGIC ---
+window.populateRevokeDropdown = async function() {
+    const dropdown = document.getElementById('revoke-user-select');
+    if (!dropdown) return;
+
+    const { data, error } = await db
+        .from('students')
+        .select('id, name, sr_code')
+        .eq('role', 'admin')
+        .neq('sr_code', 'ADMIN') // Exclude Main Admin
+        .order('name', { ascending: true });
+
+    if (error) return console.error("Error loading admins:", error);
+
+    dropdown.innerHTML = '<option value="" disabled selected>Select Admin to Remove</option>';
+    if (data.length === 0) {
+        dropdown.innerHTML += '<option disabled>No other admins found.</option>';
+    }
+    data.forEach(student => {
+        const option = document.createElement('option');
+        option.value = student.id;
+        option.innerText = `${student.name} (${student.sr_code})`;
+        dropdown.appendChild(option);
+    });
+}
+
+window.revokeAdmin = async function(e) {
+    e.preventDefault();
+    const userId = document.getElementById('revoke-user-select').value;
+    if(!userId) return showToast("Select a user first!");
+
+    if(!await showWimpyConfirm("Revoke admin access?")) return;
+
+    const { error } = await db.from('students').update({ role: 'student' }).eq('id', userId);
+    
+    if(error) {
+        showToast("Error: " + error.message);
+    } else {
+        showToast("Access revoked.");
+        e.target.reset();
+        populateRevokeDropdown(); // Refresh list
     }
 }

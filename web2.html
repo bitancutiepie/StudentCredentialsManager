@@ -812,6 +812,27 @@
         .cal-event-dot {
             font-size: 0.7rem; background: #d63031; color: white; padding: 1px 4px; border-radius: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
+
+        /* --- RUBBER STAMP ANIMATION --- */
+        @keyframes stamp-slam {
+            0% { opacity: 0; transform: scale(5) rotate(-10deg); }
+            50% { opacity: 1; transform: scale(0.8) rotate(-10deg); }
+            70% { transform: scale(1.1) rotate(-10deg); }
+            100% { transform: scale(1) rotate(-10deg); }
+        }
+        .rubber-stamp {
+            animation: stamp-slam 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+            font-family: 'Permanent Marker', cursive !important;
+            border: 3px solid;
+            background: transparent !important;
+            padding: 2px 8px !important;
+            border-radius: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transform: rotate(-10deg);
+            display: inline-block;
+            mix-blend-mode: multiply; /* Blends nicely with paper */
+        }
     </style>
 </head>
 <body>
@@ -860,8 +881,14 @@
             <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap;">
                 <!-- User Info (Avatar + Welcome Message) -->
                 <div style="display: flex; align-items: center; gap: 15px;">
-                    <img id="userAvatarDisplay" style="width: 60px; height: 60px; border-radius: 50%; border: 2px solid #000; cursor: pointer; object-fit: cover;" title="Click to change profile picture">
+                    <div style="position: relative;">
+                        <img id="userAvatarDisplay" style="width: 60px; height: 60px; border-radius: 50%; border: 2px solid #000; cursor: pointer; object-fit: cover;" title="Click to change profile picture">
+                        <div onclick="document.getElementById('userAvatarDisplay').click()" style="position: absolute; bottom: -2px; right: -5px; background: #2d3436; color: #fff; border: 2px solid #fff; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; box-shadow: 2px 2px 0 rgba(0,0,0,0.2); cursor: pointer;" title="Change Photo">
+                            <i class="fas fa-camera"></i>
+                        </div>
+                    </div>
                     <div>
+                        <div id="enrollment-badge" style="display:none; font-size: 0.8rem; font-weight:bold; padding: 2px 6px; border-radius: 4px; margin-bottom: 2px;"></div>
                         <p id="welcome-msg" style="background: yellow; display: inline-block; transform: rotate(-1deg); padding: 0 5px; margin: 0;">Loading User...</p>
                         <div onclick="editUserStatus()" style="cursor: pointer; margin-top: 5px; transform: rotate(1deg);" title="Click to edit status">
                             <small style="font-family: 'Patrick Hand'; color: #2f3542; border-bottom: 1px dashed #a4b0be;"><span id="user-status-text">Certified Member</span> <i class="fas fa-pencil-alt" style="font-size: 0.8rem;"></i></small>
@@ -904,6 +931,7 @@
                     <button class="sketch-btn" onclick="showAdminTool('admin-gallery-form', this)"><i class="fas fa-images"></i> Gallery</button>
                     <button class="sketch-btn" onclick="showAdminTool('admin-storage-view', this)"><i class="fas fa-hdd"></i> Storage</button>
                     <button class="sketch-btn" onclick="showAdminTool('admin-promote-form', this)"><i class="fas fa-crown"></i> Privileges</button>
+                    <button id="btn-revoke-admin" class="sketch-btn hidden" onclick="showAdminTool('admin-revoke-form', this)" style="border-color: #d63031; color: #d63031;"><i class="fas fa-user-slash"></i> Revoke</button>
                 </div>
                 <p style="text-align: center; font-style: italic; color: #666; margin-bottom: 20px;" id="admin-tool-hint">Select a tool above to get started.</p>
 
@@ -1043,6 +1071,20 @@
                             <option value="" disabled selected>Loading users...</option>
                         </select>
                         <button type="submit" class="sketch-btn" style="background: #000; color: #fff;"><i class="fas fa-check-circle"></i> Make Admin</button>
+                    </form>
+                </div>
+
+                <!-- NEW: Revoke Admin (Main Admin Only) -->
+                <div class="admin-controls" id="admin-revoke-form">
+                    <button onclick="showAdminTool(null)" class="sketch-btn danger" style="position: absolute; top: 10px; right: 10px; width: auto; margin: 0; padding: 5px 10px; font-size: 0.9rem;">Close</button>
+                    <h3>Admin's Note: Revoke Access <i class="fas fa-user-slash"></i></h3>
+                    <p style="font-size: 0.9rem; margin-bottom: 10px;">(Demote an Admin back to Student)</p>
+                    
+                    <form onsubmit="revokeAdmin(event)" autocomplete="off">
+                        <select id="revoke-user-select" style="width: 100%; padding: 10px; margin-bottom: 10px; border: none; border-bottom: 2px solid #333; font-family: 'Patrick Hand'; font-size: 1.2rem; background: transparent;">
+                            <option value="" disabled selected>Loading admins...</option>
+                        </select>
+                        <button type="submit" class="sketch-btn danger" style="width: 100%; justify-content: center;"><i class="fas fa-ban"></i> Revoke Access</button>
                     </form>
                 </div>
             </div>
