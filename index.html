@@ -26,36 +26,44 @@
             min-height: 100vh;
         }
 
-        /* --- STICKY NOTES LAYER --- */
-        #note-layer {
-            position: absolute;
-            top: 0;
-            left: 0;
+        /* --- FREEDOM WALL BOARD --- */
+        #freedom-wall-board {
+            position: relative;
             width: 100%;
-            height: 100%;
-            z-index: 50; 
-            pointer-events: none; 
+            /* height: 100%; Removed to prevent overflow in flex container */
+            background-color: #fff;
+            background-image: radial-gradient(#bdc3c7 1px, transparent 1px);
+            background-size: 20px 20px;
+            border: 2px solid #000;
+            /* Sketchy border radius */
+            border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+            overflow: hidden;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
         }
 
         .sticky-note {
             position: absolute;
-            width: 150px;
-            padding: 15px;
-            font-size: 1.1rem;
-            color: #000;
-            box-shadow: 5px 5px 7px rgba(0,0,0,0.2);
-            font-weight: bold;
+            width: 180px;
+            padding: 20px 15px;
+            font-family: 'Patrick Hand', cursive;
+            font-size: 1.2rem;
+            color: #2d3436;
+            background: #fff;
+            border: 2px solid #2d3436;
+            /* Sketchy border radius */
+            border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+            box-shadow: 4px 4px 0 rgba(0,0,0,0.1);
             pointer-events: auto; 
-            transition: transform 0.1s, box-shadow 0.1s;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
             cursor: grab;
             user-select: none;
-            overflow: hidden; /* Keep content inside */
+            word-wrap: break-word;
         }
 
         .sticky-note:active {
             cursor: grabbing;
-            transform: scale(1.05);
-            box-shadow: 10px 10px 15px rgba(0,0,0,0.3);
+            transform: scale(1.05) !important;
+            box-shadow: 8px 8px 0 rgba(0,0,0,0.2);
             z-index: 1000 !important; 
         }
 
@@ -63,14 +71,35 @@
             content: '';
             position: absolute;
             top: -10px;
-            left: 35%;
-            width: 40px;
-            height: 15px;
-            background-color: rgba(255,255,255,0.3); /* More transparent tape */
-            border: none;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            left: 40%;
+            width: 50px;
+            height: 25px;
+            background: rgba(255,255,255,0.5);
+            border: 1px solid #ddd;
+            box-shadow: 0 1px 1px rgba(0,0,0,0.1);
             transform: rotate(-3deg);
         }
+
+        /* Lined Paper Variant */
+        .sticky-note.lined {
+            background-image: repeating-linear-gradient(transparent, transparent 29px, #a4b0be 30px);
+            line-height: 30px;
+        }
+
+        /* Color Variants */
+        .sticky-note.yellow { background-color: #fff740; }
+        .sticky-note.pink { background-color: #ff7eb9; }
+        .sticky-note.blue { background-color: #7afcff; }
+        .sticky-note.green { background-color: #98ff98; }
+        .sticky-note.white, .sticky-note.plain { background-color: #ffffff; }
+
+        /* Color Picker Styles */
+        .color-option {
+            width: 30px; height: 30px; border-radius: 50%; cursor: pointer; 
+            border: 2px solid rgba(0,0,0,0.1); transition: transform 0.2s;
+        }
+        .color-option:hover { transform: scale(1.2); }
+        .color-option.selected { border: 2px solid #000; transform: scale(1.1); }
 
         /* Delete Button for Notes */
         .sticky-note .delete-note-btn {
@@ -96,6 +125,28 @@
             background: #d63031;
             color: white;
         }
+
+        /* Like Sticker (Heart/Star) */
+        .like-sticker {
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            font-size: 1.1rem;
+            color: #b2bec3;
+            cursor: pointer;
+            transition: transform 0.2s, color 0.2s;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(255,255,255,0.6);
+            padding: 2px 6px;
+            border-radius: 15px;
+            border: 1px solid transparent;
+        }
+        .like-sticker:hover { transform: scale(1.1); color: #ff7675; background: #fff; border-color: #ff7675; }
+        .like-sticker.liked { color: #ff7675; background: #fff; border-color: #ff7675; }
+        .like-count { font-size: 0.9rem; font-weight: bold; color: #2d3436; font-family: 'Patrick Hand'; }
 
         /* --- MAIN APP BOX --- */
         .sketch-box {
@@ -179,7 +230,7 @@
         button:active { transform: scale(0.95); }
 
         .toggle-link { text-align: center; display: block; margin-top: 15px; cursor: pointer; font-size: 1.2rem; color: #444; }
-        .hidden { display: none; }
+        .hidden { display: none !important; }
 
         table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 1.1rem; }
         th { border-bottom: 2px solid #000; text-align: left; padding: 12px 10px; background: rgba(0,0,0,0.05); }
@@ -236,7 +287,7 @@
 
         .note-input-area { margin-top: 20px; border-top: 2px dashed #000; padding-top: 15px; }
 
-        #toast-container { position: fixed; top: 20px; right: 20px; z-index: 2000; }
+        #toast-container { position: fixed; top: 20px; right: 20px; z-index: 20000; }
         .toast {
             background: #fff740;
             color: #000;
@@ -440,6 +491,34 @@
             border-right: 1px dashed rgba(0,0,0,0.1);
             z-index: 2;
         }
+
+        /* --- GALLERY NAV BUTTONS --- */
+        .gallery-nav-btn {
+            position: absolute;
+            top: 50%;
+            z-index: 20;
+            width: 50px !important;
+            height: 50px !important;
+            border-radius: 50% !important;
+            padding: 0 !important;
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 3px 3px 8px rgba(0,0,0,0.3) !important;
+            background: #fff740 !important; /* Sticky note yellow for visibility */
+            color: #000 !important;
+            border: 3px solid #000 !important;
+            cursor: pointer;
+            margin: 0 !important;
+            transform: translateY(-50%) !important; /* Keep centered vertically */
+            transition: transform 0.2s, background 0.2s !important;
+        }
+        .gallery-nav-btn:hover {
+            background: #000 !important;
+            color: #fff !important;
+            transform: translateY(-50%) scale(1.1) !important; /* Scale but keep centered */
+            animation: none !important; /* Stop nervous wiggle */
+        }
     </style>
 </head>
 <body>
@@ -449,8 +528,12 @@
         <i class="fas fa-bullhorn"></i> UPDATES
     </div>
 
+    <!-- FIXED FREEDOM WALL BUTTON -->
+    <div onclick="openFreedomWall()" style="position: fixed; top: 80px; left: 20px; background: #55efc4; color: #2d3436; padding: 10px 15px; border: 2px solid #000; transform: rotate(2deg); cursor: pointer; z-index: 1000; box-shadow: 3px 3px 0 rgba(0,0,0,0.2); font-size: 1.2rem; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.1) rotate(0deg)'" onmouseout="this.style.transform='scale(1) rotate(2deg)'">
+        <i class="fas fa-sticky-note"></i> FREEDOM WALL
+    </div>
+
     <div id="toast-container"></div>
-    <div id="note-layer"></div>
 
     <!-- BACKGROUND DECORATIONS (Fills empty space) -->
     <div id="background-decorations" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; overflow: hidden;">
@@ -543,8 +626,10 @@
       <!-- === WIMPY GALLERY SECTION (Separate Space) === -->
       <div id="wimpyGallerySection" class="sketch-box hidden" style="margin-top: 20px; animation: slideUp 0.7s;">
           <div class="member-list-title" style="background: #fff740; color: #000; display: inline-block; padding: 3px 12px; transform: rotate(1deg); border: 2px solid #000; margin-bottom: 10px;"><i class="fas fa-camera-retro"></i> MEMORIES</div>
-          <div id="wimpyGalleryContainer" class="gallery-scroll-container">
-              <!-- Photos will be injected here -->
+          <div style="position: relative;">
+              <div id="wimpyGalleryContainer" class="gallery-scroll-container">
+                  <!-- Photos will be injected here -->
+              </div>
           </div>
       </div>
     </div>
@@ -565,6 +650,16 @@
 
         <!-- INCOMING REQUESTS SECTION (Moved to Top) -->
         <div id="adminRequestsList" style="margin-bottom:30px; border-bottom:3px dashed #000; padding-bottom:20px;"></div>
+
+        <!-- GALLERY UPLOAD SECTION (New) -->
+        <div style="margin-bottom:30px; border-bottom:3px dashed #000; padding-bottom:20px;">
+            <h3><i class="fas fa-camera"></i> Upload to Memories</h3>
+            <form onsubmit="uploadGalleryItemIndex(event)" style="display:flex; gap:10px; flex-wrap:wrap; align-items: center;">
+                <input type="text" id="idx-g-caption" placeholder="Caption" required style="flex:1; margin:0;">
+                <input type="file" id="idx-g-file" required accept="image/*" style="flex:1; margin:0;">
+                <button type="submit" id="idx-upload-btn" style="width:auto; margin:0;">Upload</button>
+            </form>
+        </div>
 
         <!-- FILE MANAGER SECTION (New) -->
         <div id="adminFileList" style="margin-bottom:30px; border-bottom:3px dashed #000; padding-bottom:20px;"></div>
@@ -616,6 +711,35 @@
         </div>
 
         <button onclick="logout()">LOGOUT</button>
+    </div>
+
+    <!-- FREEDOM WALL MODAL (Landing Page) -->
+    <div id="freedomWallModal" class="wimpy-modal-overlay hidden">
+        <div class="wimpy-modal-box" style="width: 95%; max-width: 1200px; height: 85vh; display: flex; flex-direction: column; padding: 20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <h2 style="margin:0; font-size: 2rem;"><i class="fas fa-sticky-note"></i> FREEDOM WALL</h2>
+                <button onclick="closeFreedomWall()" class="sketch-btn danger" style="width:auto; margin:0; padding: 5px 15px;">CLOSE</button>
+            </div>
+            <div id="freedom-wall-board" style="flex: 1; width: 100%; position: relative; border: 2px solid #000; background-color: #fff; background-image: radial-gradient(#bdc3c7 1px, transparent 1px); background-size: 20px 20px; border-radius: 5px; overflow: hidden; box-shadow: inset 0 0 20px rgba(0,0,0,0.05);">
+                <!-- Notes injected here -->
+            </div>
+            <!-- Color Picker -->
+            <div style="margin-top: 10px; display:flex; gap:10px; justify-content:center; align-items:center;">
+                <div class="color-option selected" onclick="selectColor(this, 'white')" style="background:#fff;" title="Plain"></div>
+                <div class="color-option" onclick="selectColor(this, 'lined')" style="background: repeating-linear-gradient(transparent, transparent 4px, #a4b0be 5px); background-color: #fff;" title="Lined"></div>
+                <div class="color-option" onclick="selectColor(this, 'yellow')" style="background:#fff740;" title="Yellow"></div>
+                <div class="color-option" onclick="selectColor(this, 'pink')" style="background:#ff7eb9;" title="Pink"></div>
+                <div class="color-option" onclick="selectColor(this, 'blue')" style="background:#7afcff;" title="Blue"></div>
+                <div class="color-option" onclick="selectColor(this, 'green')" style="background:#98ff98;" title="Green"></div>
+                <input type="hidden" id="fw-landing-color" value="white">
+            </div>
+            <!-- New Instant Input Section -->
+            <div style="margin-top: 15px; display: flex; gap: 10px; align-items: center; background: #f1f2f6; padding: 10px; border: 2px dashed #000; border-radius: 5px;">
+                <i class="fas fa-pencil-alt" style="font-size: 1.5rem;"></i>
+                <input type="text" id="fw-landing-input" placeholder="Write on the wall..." maxlength="60" style="flex: 1; border: none; background: transparent; border-bottom: 2px solid #000; font-family: 'Patrick Hand'; font-size: 1.3rem; outline: none;" onkeydown="if(event.key === 'Enter') postLandingNote()">
+                <button id="fw-landing-btn" onclick="postLandingNote()" class="sketch-btn" style="width: auto; margin: 0; background: #2d3436; color: #fff; transform: rotate(-1deg);">STICK IT</button>
+            </div>
+        </div>
     </div>
 
     <script src="script.js"></script>

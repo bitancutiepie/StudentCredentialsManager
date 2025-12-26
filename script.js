@@ -31,12 +31,15 @@ const authModeMessage = document.getElementById('authModeMessage');
 const studentCodeDisplay = document.getElementById('studentCodeDisplay');
 const toastContainer = document.getElementById('toast-container');
 const publicMemberList = document.getElementById('publicMemberList');
-const noteLayer = document.getElementById('note-layer');
+const noteLayer = document.getElementById('freedom-wall-board');
 const noteInput = document.getElementById('noteInput');
 const searchInput = document.getElementById('searchInput');
 let currentStudentId = null;
 let avatarInput; 
 
+let galleryItems = []; // Store gallery images for lightbox navigation
+let galleryInterval;
+let galleryAnimationFrame;
 let isLoginMode = true;
 let allStudents = [];
 
@@ -120,6 +123,7 @@ const initApp = () => {
     fetchRecentLogins();
     fetchNewUploads(); // <--- ADD THIS LINE HERE
     fetchLandingGallery(); // <--- AND THIS ONE
+    setupRealtimeNotes(); // <--- Initialize Realtime Listener
     if (authModeMessage) {
         authModeMessage.innerText = 'Enter your credentials to log in.';
     }
@@ -575,15 +579,13 @@ function timeAgo(dateString) {
 async function postNote() {
     const text = noteInput.value.trim();
     if (!text) return showToast('Please write something!', 'error');
-    let randomX;
-    if (window.innerWidth < 600) randomX = Math.floor(Math.random() * 80) + 5; 
-    else if (Math.random() > 0.5) randomX = Math.floor(Math.random() * 20) + 2; 
-    else randomX = Math.floor(Math.random() * 20) + 75; 
+    const randomX = Math.floor(Math.random() * 80) + 10; // 10% to 90%
     const randomY = Math.floor(Math.random() * 90) + 5; 
     const rotation = Math.floor(Math.random() * 20) - 10;
-    const colors = ['#fff740', '#ff7eb9', '#7afcff', '#98ff98'];
-    const randomColor = colors[Math.floor(Math.random() * colors.length)];
-    const { error } = await supabaseClient.from('notes').insert([{ content: text, x_pos: randomX, y_pos: randomY, rotation: rotation, color: randomColor }]);
+    // Wimpy Theme: Use 'plain' or 'lined' instead of colors
+    const styles = ['plain', 'lined'];
+    const randomStyle = styles[Math.floor(Math.random() * styles.length)];
+    const { error } = await supabaseClient.from('notes').insert([{ content: text, x_pos: randomX, y_pos: randomY, rotation: rotation, color: randomStyle, likes: 0 }]);
     if (error) showToast('Failed to stick note.', 'error');
     else { showToast('Note posted!'); noteInput.value = ''; fetchNotes(); }
 }
@@ -615,7 +617,9 @@ async function fetchNotes() {
         div.style.left = note.x_pos + '%';
         div.style.top = note.y_pos + '%';
         div.style.transform = `rotate(${note.rotation}deg)`;
-        div.style.backgroundColor = note.color;
+        
+        // Apply Wimpy Style (Color or Lined)
+        if (note.color) div.classList.add(note.color);
         
         // Delete Button (Only if Admin)
         if (isAdmin) {
@@ -632,9 +636,130 @@ async function fetchNotes() {
             div.appendChild(btn);
         }
 
+        // Like Sticker
+        const likeBtn = document.createElement('div');
+        likeBtn.className = 'like-sticker';
+        // Check if user liked this locally
+        let likedNotes = [];
+        try {
+            likedNotes = JSON.parse(localStorage.getItem('liked_notes') || '[]');
+        } catch (e) {
+            localStorage.removeItem('liked_notes'); // Reset if corrupted
+        }
+        if(likedNotes.includes(note.id)) likeBtn.classList.add('liked');
+        
+        likeBtn.innerHTML = `<i class="fas fa-heart"></i> <span class="like-count">${note.likes || 0}</span>`;
+        // Stop propagation to prevent dragging when clicking like
+        likeBtn.onmousedown = (e) => e.stopPropagation();
+        likeBtn.onclick = (e) => { e.stopPropagation(); toggleLike(note.id); };
+        div.appendChild(likeBtn);
+
         makeDraggable(div, note.id);
         noteLayer.appendChild(div);
     });
+}
+
+window.toggleLike = async function(id) {
+    let likedNotes = [];
+    try {
+        likedNotes = JSON.parse(localStorage.getItem('liked_notes') || '[]');
+    } catch (e) {
+        localStorage.removeItem('liked_notes');
+    }
+    const isLiked = likedNotes.includes(id);
+    const el = document.getElementById(`note-${id}`);
+    
+    // Optimistic UI Update (Immediate feedback)
+    if(el) {
+        const btn = el.querySelector('.like-sticker');
+        const countSpan = el.querySelector('.like-count');
+        let count = parseInt(countSpan.innerText) || 0;
+        
+        if(isLiked) {
+            // Unlike
+            const newLiked = likedNotes.filter(n => n !== id);
+            try { localStorage.setItem('liked_notes', JSON.stringify(newLiked)); } catch(e) {}
+            btn.classList.remove('liked');
+            countSpan.innerText = Math.max(0, count - 1);
+            
+            // Update DB - Revert if failed
+            const success = await updateLikesInDb(id, -1);
+            if(!success) {
+                // Revert UI
+                try { localStorage.setItem('liked_notes', JSON.stringify(likedNotes)); } catch(e) {} // Put back
+                btn.classList.add('liked');
+                countSpan.innerText = count;
+                showToast("Connection failed. Like not saved.", "error");
+            }
+        } else {
+            // Like
+            likedNotes.push(id);
+            try { localStorage.setItem('liked_notes', JSON.stringify(likedNotes)); } catch(e) {}
+            btn.classList.add('liked');
+            countSpan.innerText = count + 1;
+            
+            // Update DB - Revert if failed
+            const success = await updateLikesInDb(id, 1);
+            if(!success) {
+                // Revert UI
+                const revertedLiked = likedNotes.filter(n => n !== id);
+                try { localStorage.setItem('liked_notes', JSON.stringify(revertedLiked)); } catch(e) {}
+                btn.classList.remove('liked');
+                countSpan.innerText = count;
+                showToast("Connection failed. Like not saved.", "error");
+            }
+        }
+    }
+}
+
+async function updateLikesInDb(id, change) {
+    try {
+        // Fetch current count to ensure accuracy
+        const { data, error: fetchError } = await supabaseClient.from('notes').select('likes').eq('id', id).single();
+        
+        if(fetchError) {
+            console.error("Error fetching like count:", fetchError.message, fetchError.details || '');
+            return false;
+        }
+
+        const newCount = Math.max(0, (data?.likes || 0) + change);
+        const { error: updateError } = await supabaseClient.from('notes').update({ likes: newCount }).eq('id', id);
+        
+        if(updateError) {
+            console.error("Error updating like count:", updateError.message, updateError.details || '');
+            return false;
+        }
+        return true;
+    } catch (err) {
+        console.error("Unexpected error updating likes:", err);
+        return false;
+    }
+}
+
+// --- REALTIME LISTENER FOR NOTES ---
+function setupRealtimeNotes() {
+    supabaseClient
+        .channel('public:notes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'notes' }, payload => {
+            if(payload.eventType === 'INSERT') {
+                fetchNotes(); // New note added, refresh board
+            } else if (payload.eventType === 'DELETE') {
+                const el = document.getElementById(`note-${payload.old.id}`);
+                if(el) el.remove();
+            } else if (payload.eventType === 'UPDATE') {
+                const el = document.getElementById(`note-${payload.new.id}`);
+                if(el) {
+                    // Update Like Count
+                    const countSpan = el.querySelector('.like-count');
+                    if(countSpan) countSpan.innerText = payload.new.likes || 0;
+                    
+                    // Update Position (Only if changed significantly, to avoid jitter)
+                    // We skip this if the user is currently dragging it (checked via class or state if needed)
+                    // For now, we just update likes to be "responsive" as requested.
+                }
+            }
+        })
+        .subscribe();
 }
 
 window.deleteNote = async function(id) {
@@ -672,13 +797,14 @@ function makeDraggable(element, noteId) {
     function closeDragElement() { 
         // Reset z-index slightly so it doesn't stay 'active' forever, or keep it high
         element.style.zIndex = 'auto'; 
+        const parent = element.parentElement;
         
         document.onmouseup = null; 
         document.onmousemove = null; 
         document.ontouchend = null; 
         document.ontouchmove = null; 
-        const xPercent = (element.offsetLeft / window.innerWidth) * 100; 
-        const yPercent = (element.offsetTop / window.innerHeight) * 100; 
+        const xPercent = (element.offsetLeft / parent.offsetWidth) * 100; 
+        const yPercent = (element.offsetTop / parent.offsetHeight) * 100; 
         updateNotePosition(noteId, xPercent, yPercent); 
     }
 }
@@ -686,6 +812,49 @@ async function updateNotePosition(id, x, y) {
     x = Math.max(0, Math.min(x, 95));
     y = Math.max(0, Math.min(y, 95));
     await supabaseClient.from('notes').update({ x_pos: x, y_pos: y }).eq('id', id);
+}
+
+// --- FREEDOM WALL MODAL (Landing Page) ---
+window.openFreedomWall = function() {
+    document.getElementById('freedomWallModal').classList.remove('hidden');
+    // Auto-focus the input for instant accessibility
+    setTimeout(() => {
+        const input = document.getElementById('fw-landing-input');
+        if(input) input.focus();
+    }, 100);
+}
+window.closeFreedomWall = function() {
+    document.getElementById('freedomWallModal').classList.add('hidden');
+}
+
+// --- COLOR SELECTION ---
+window.selectColor = function(el, color) {
+    document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
+    el.classList.add('selected');
+    document.getElementById('fw-landing-color').value = color;
+}
+
+window.postLandingNote = async function() {
+    const input = document.getElementById('fw-landing-input');
+    const btn = document.getElementById('fw-landing-btn');
+    const text = input.value.trim();
+    
+    if (!text) return showToast('Write something first!', 'error');
+
+    if(btn) btn.disabled = true; // Prevent spam
+
+    // Random Position & Style
+    const randomX = Math.floor(Math.random() * 80) + 10; 
+    const randomY = Math.floor(Math.random() * 80) + 10; 
+    const rotation = Math.floor(Math.random() * 20) - 10;
+    const selectedColor = document.getElementById('fw-landing-color').value || 'white';
+
+    const { error } = await supabaseClient.from('notes').insert([{ content: text, x_pos: randomX, y_pos: randomY, rotation: rotation, color: selectedColor, likes: 0 }]);
+    
+    if(btn) btn.disabled = false;
+
+    if (error) showToast('Failed to post.', 'error');
+    else { showToast('Note posted!'); input.value = ''; fetchNotes(); }
 }
 
 // LOGOUT
@@ -898,16 +1067,88 @@ async function fetchLandingGallery() {
         return;
     }
 
+    galleryItems = data; // Store for lightbox
     section.classList.remove('hidden');
-    container.innerHTML = data.map(item => `
-        <div class="polaroid-card" onclick="viewFullImage('${item.file_url}')" 
+    container.innerHTML = data.map((item, index) => `
+        <div class="polaroid-card" onclick="openGalleryLightbox(${index})" 
              tabindex="0" role="button" aria-label="View photo: ${item.title}"
-             onkeydown="if(event.key==='Enter'||event.key===' ') viewFullImage('${item.file_url}')">
+             onkeydown="if(event.key==='Enter'||event.key===' ') openGalleryLightbox(${index})">
             <div class="tape-strip"></div>
             <img src="${item.file_url}" alt="${item.title}" loading="lazy">
             <div class="polaroid-caption">${item.title}</div>
         </div>
     `).join('');
+
+    startGallerySlideshow();
+}
+
+// --- GALLERY LIGHTBOX WITH NAVIGATION ---
+window.openGalleryLightbox = function(startIndex) {
+    if (!galleryItems || galleryItems.length === 0) return;
+    let currentIndex = startIndex;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'galleryLightbox';
+    overlay.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:10000; display:flex; justify-content:center; align-items:center; flex-direction:column; animation: fadeIn 0.3s;';
+    
+    const imgContainer = document.createElement('div');
+    imgContainer.style.cssText = 'position:relative; max-width:90%; max-height:80%; display:flex; justify-content:center; align-items:center;';
+    
+    const img = document.createElement('img');
+    img.style.cssText = 'max-width:100%; max-height:80vh; border: 5px solid #fff; box-shadow: 0 0 30px rgba(0,0,0,0.5); object-fit: contain; transition: opacity 0.2s;';
+    
+    const caption = document.createElement('div');
+    caption.style.cssText = 'color:#fff; font-family:"Patrick Hand"; font-size:1.5rem; margin-top:15px; text-align:center; text-shadow: 1px 1px 2px #000;';
+
+    // Navigation Buttons
+    const btnStyle = 'position:absolute; top:50%; transform:translateY(-50%) !important; background:rgba(255,255,255,0.1); color:#fff; border:2px solid #fff; width:50px; height:50px; border-radius:50%; font-size:1.5rem; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:0.2s; animation: none !important;';
+    
+    const prevBtn = document.createElement('button');
+    prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+    prevBtn.style.cssText = btnStyle + 'left:20px;';
+    prevBtn.onmouseover = () => { prevBtn.style.background = '#fff'; prevBtn.style.color = '#000'; prevBtn.style.setProperty('transform', 'translateY(-50%) scale(1.1)', 'important'); };
+    prevBtn.onmouseout = () => { prevBtn.style.background = 'rgba(255,255,255,0.1)'; prevBtn.style.color = '#fff'; prevBtn.style.setProperty('transform', 'translateY(-50%)', 'important'); };
+    
+    const nextBtn = document.createElement('button');
+    nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+    nextBtn.style.cssText = btnStyle + 'right:20px;';
+    nextBtn.onmouseover = () => { nextBtn.style.background = '#fff'; nextBtn.style.color = '#000'; nextBtn.style.setProperty('transform', 'translateY(-50%) scale(1.1)', 'important'); };
+    nextBtn.onmouseout = () => { nextBtn.style.background = 'rgba(255,255,255,0.1)'; nextBtn.style.color = '#fff'; nextBtn.style.setProperty('transform', 'translateY(-50%)', 'important'); };
+
+    const closeBtn = document.createElement('button');
+    closeBtn.innerHTML = '<i class="fas fa-times"></i>';
+    closeBtn.style.cssText = 'position:absolute; top:20px; right:20px; background:transparent; color:#fff; border:none; font-size:2rem; cursor:pointer; animation: none !important; transform: none !important;';
+    
+    const updateImage = (idx) => {
+        img.style.opacity = '0.5';
+        setTimeout(() => {
+            img.src = galleryItems[idx].file_url;
+            caption.innerText = `${galleryItems[idx].title} (${idx + 1}/${galleryItems.length})`;
+            img.onload = () => img.style.opacity = '1';
+        }, 150);
+    };
+
+    // Event Listeners
+    const next = (e) => { if(e) e.stopPropagation(); currentIndex = (currentIndex + 1) % galleryItems.length; updateImage(currentIndex); };
+    const prev = (e) => { if(e) e.stopPropagation(); currentIndex = (currentIndex - 1 + galleryItems.length) % galleryItems.length; updateImage(currentIndex); };
+    const close = () => { document.removeEventListener('keydown', keyHandler); overlay.remove(); };
+
+    prevBtn.onclick = prev;
+    nextBtn.onclick = next;
+    closeBtn.onclick = close;
+    overlay.onclick = (e) => { if(e.target === overlay) close(); };
+
+    const keyHandler = (e) => {
+        if(e.key === 'ArrowLeft') prev();
+        if(e.key === 'ArrowRight') next();
+        if(e.key === 'Escape') close();
+    };
+    document.addEventListener('keydown', keyHandler);
+
+    imgContainer.appendChild(img);
+    overlay.append(closeBtn, prevBtn, imgContainer, nextBtn, caption);
+    document.body.appendChild(overlay);
+    updateImage(currentIndex);
 }
 
 // --- CUSTOM WIMPY POP-UP ---
@@ -1126,4 +1367,91 @@ window.generateFileCard = function(file, isNew = false) {
             ${badgeHtml}
         </div>
     `;
+}
+
+// --- GALLERY SCROLL LOGIC ---
+window.scrollGallery = function(direction) {
+    const container = document.getElementById('wimpyGalleryContainer');
+    if(container) {
+        const scrollAmount = 300;
+        container.scrollBy({ left: direction * scrollAmount, behavior: 'smooth' });
+    }
+}
+
+// --- AUTO SCROLL SLIDESHOW ---
+function startGallerySlideshow() {
+    const container = document.getElementById('wimpyGalleryContainer');
+    if (!container) return;
+    
+    if (galleryInterval) clearInterval(galleryInterval);
+    if (galleryAnimationFrame) cancelAnimationFrame(galleryAnimationFrame);
+    
+    let scrollPos = container.scrollLeft;
+    const speed = 0.5; // Pixels per frame (adjust for speed)
+
+    function animate() {
+        // Pause if user is hovering or if the lightbox is open
+        if (!container.matches(':hover') && !document.getElementById('galleryLightbox')) {
+            scrollPos += speed;
+            
+            // Loop back to start if we reach the end
+            if (scrollPos >= container.scrollWidth - container.clientWidth) {
+                scrollPos = 0;
+            }
+            container.scrollLeft = scrollPos;
+        } else {
+            // Sync scrollPos with manual scroll position
+            scrollPos = container.scrollLeft;
+        }
+        galleryAnimationFrame = requestAnimationFrame(animate);
+    }
+    
+    galleryAnimationFrame = requestAnimationFrame(animate);
+}
+
+// --- ADMIN GALLERY UPLOAD (INDEX PAGE) ---
+window.uploadGalleryItemIndex = async function(e) {
+    e.preventDefault();
+    const captionInput = document.getElementById('idx-g-caption');
+    const fileInput = document.getElementById('idx-g-file');
+    const btn = document.getElementById('idx-upload-btn');
+    const file = fileInput.files[0];
+
+    if (!file) return showToast('Select an image.', 'error');
+
+    btn.disabled = true;
+    const originalText = btn.innerText;
+    btn.innerText = 'Uploading...';
+
+    try {
+        const fileName = `gallery_${Date.now()}_${file.name.replace(/\s/g, '_')}`;
+        const { error: uploadError } = await supabaseClient.storage
+            .from('class-resources')
+            .upload(fileName, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabaseClient.storage
+            .from('class-resources')
+            .getPublicUrl(fileName);
+
+        const { error: dbError } = await supabaseClient.from('shared_files').insert([{
+            title: captionInput.value || 'Untitled',
+            subject: 'LandingGallery',
+            file_url: urlData.publicUrl,
+            file_type: file.type
+        }]);
+
+        if (dbError) throw dbError;
+
+        showToast('Posted to Gallery!');
+        e.target.reset();
+        fetchLandingGallery(); // Refresh gallery on login page
+    } catch (err) {
+        console.error(err);
+        showToast('Upload failed: ' + err.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerText = originalText;
+    }
 }

@@ -1048,6 +1048,39 @@ window.submitRequest = async function() {
     }
 }
 
+// --- FREEDOM WALL LOGIC (Binder Side) ---
+window.openFreedomWallModal = function() {
+    document.getElementById('freedomWallModal').classList.remove('hidden');
+    setTimeout(() => document.getElementById('fw-content').focus(), 100);
+}
+
+// --- COLOR SELECTION (Binder) ---
+window.selectColor = function(el, color) {
+    document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
+    el.classList.add('selected');
+    document.getElementById('fw-binder-color').value = color;
+}
+
+window.postFreedomWallNote = async function() {
+    const text = document.getElementById('fw-content').value.trim();
+    if (!text) return showToast('Write something first!');
+
+    // Random Position & Style
+    const randomX = Math.floor(Math.random() * 80) + 10; 
+    const randomY = Math.floor(Math.random() * 80) + 10; 
+    const rotation = Math.floor(Math.random() * 20) - 10;
+    const selectedColor = document.getElementById('fw-binder-color').value || 'white';
+
+    const { error } = await db.from('notes').insert([{ content: text, x_pos: randomX, y_pos: randomY, rotation: rotation, color: selectedColor, likes: 0 }]);
+    
+    if (error) showToast('Failed to post: ' + error.message);
+    else {
+        showToast('Note stuck to the wall!');
+        document.getElementById('freedomWallModal').classList.add('hidden');
+        document.getElementById('fw-content').value = '';
+    }
+}
+
 // --- SYSTEM UPDATE MODAL (Ported for Binder) ---
 window.showWelcomeNote = function() {
     const modal = document.createElement('div');

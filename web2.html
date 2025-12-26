@@ -633,6 +633,14 @@
             animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         @keyframes popIn { from { transform: scale(0.8) rotate(-5deg); opacity: 0; } to { transform: scale(1) rotate(-1deg); opacity: 1; } }
+
+        /* Color Picker */
+        .color-option {
+            width: 30px; height: 30px; border-radius: 50%; cursor: pointer; 
+            border: 2px solid rgba(0,0,0,0.1); transition: transform 0.2s;
+        }
+        .color-option:hover { transform: scale(1.2); }
+        .color-option.selected { border: 2px solid #000; transform: scale(1.1); }
     </style>
     <style>
         .sticky-time {
@@ -1097,6 +1105,11 @@
                         <i class="fas fa-user-secret" style="font-size: 3rem; color: #0984e3;"></i>
                         <h3 style="margin-top: 10px;">Secret Request</h3>
                     </div>
+
+                    <div onclick="openFreedomWallModal()" class="class-card" style="cursor: pointer; text-align: center; border: 2px dashed #2d3436;">
+                        <i class="fas fa-sticky-note" style="font-size: 3rem; color: #2d3436;"></i>
+                        <h3 style="margin-top: 10px;">Post to Freedom Wall</h3>
+                    </div>
                 </div>
 
 
@@ -1146,6 +1159,30 @@
             <div style="margin-top:10px; display:flex; gap:10px;">
                 <button onclick="closeRequestModal()" class="sketch-btn">Cancel</button>
                 <button onclick="submitRequest()" class="sketch-btn" style="background:#000; color:#fff;">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Freedom Wall Modal -->
+    <div id="freedomWallModal" class="wimpy-modal-overlay hidden">
+        <div class="wimpy-modal-box">
+            <h2><i class="fas fa-pen-fancy"></i> Freedom Wall</h2>
+            <p>Write something for the landing page!</p>
+            <textarea id="fw-content" placeholder="Scribble here..." maxlength="50" style="width:100%; height:100px; font-family:'Patrick Hand'; font-size:1.5rem; padding:10px; border:2px solid #000; background: #fff;"></textarea>
+            
+            <div style="margin-top: 10px; display:flex; gap:10px; justify-content:center; align-items:center;">
+                <div class="color-option selected" onclick="selectColor(this, 'white')" style="background:#fff;" title="Plain"></div>
+                <div class="color-option" onclick="selectColor(this, 'lined')" style="background: repeating-linear-gradient(transparent, transparent 4px, #a4b0be 5px); background-color: #fff;" title="Lined"></div>
+                <div class="color-option" onclick="selectColor(this, 'yellow')" style="background:#fff740;" title="Yellow"></div>
+                <div class="color-option" onclick="selectColor(this, 'pink')" style="background:#ff7eb9;" title="Pink"></div>
+                <div class="color-option" onclick="selectColor(this, 'blue')" style="background:#7afcff;" title="Blue"></div>
+                <div class="color-option" onclick="selectColor(this, 'green')" style="background:#98ff98;" title="Green"></div>
+                <input type="hidden" id="fw-binder-color" value="white">
+            </div>
+
+            <div style="margin-top:10px; display:flex; gap:10px;">
+                <button onclick="document.getElementById('freedomWallModal').classList.add('hidden')" class="sketch-btn danger">Cancel</button>
+                <button onclick="postFreedomWallNote()" class="sketch-btn" style="background:#000; color:#fff;">Stick It!</button>
             </div>
         </div>
     </div>
