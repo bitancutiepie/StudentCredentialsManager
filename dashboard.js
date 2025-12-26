@@ -33,6 +33,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (isAdmin) {
         await populateEmailDropdown();
         await fetchAdminGalleryList(); // Load gallery items for admin
+        await populatePromoteDropdown(); // Load users for promotion
     }
 });
 
@@ -56,7 +57,7 @@ function checkSession() {
     }
     
     // Check if Admin
-    if (user.sr_code === 'ADMIN') {
+    if (user.sr_code === 'ADMIN' || user.role === 'admin') {
         isAdmin = true;
         // document.querySelectorAll('.admin-controls').forEach(el => el.style.display = 'block'); // Removed to allow menu toggling
         document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
@@ -1192,7 +1193,7 @@ window.showAdminTool = function(toolId, btnElement) {
     document.querySelectorAll('.filter-bar .sketch-btn').forEach(b => b.classList.remove('active-tool'));
 
     // Hide all admin forms
-    const forms = ['admin-schedule-form', 'admin-assignment-form', 'admin-event-form', 'admin-file-form', 'admin-email-form', 'admin-gallery-form', 'admin-storage-view'];
+    const forms = ['admin-schedule-form', 'admin-assignment-form', 'admin-event-form', 'admin-file-form', 'admin-email-form', 'admin-gallery-form', 'admin-storage-view', 'admin-promote-form'];
     let isAlreadyOpen = false;
     
     forms.forEach(id => {
@@ -1278,4 +1279,43 @@ window.fetchStorageStats = async function() {
     `;
 
     display.innerHTML = summaryHtml + bucketHtml;
+}
+
+// --- PROMOTE USER LOGIC ---
+window.populatePromoteDropdown = async function() {
+    const dropdown = document.getElementById('promote-user-select');
+    if (!dropdown) return;
+
+    const { data, error } = await db
+        .from('students')
+        .select('id, name, sr_code')
+        .neq('sr_code', 'ADMIN')
+        .order('name', { ascending: true });
+
+    if (error) return console.error("Error loading users:", error);
+
+    dropdown.innerHTML = '<option value="" disabled selected>Select User</option>';
+    data.forEach(student => {
+        const option = document.createElement('option');
+        option.value = student.id;
+        option.innerText = `${student.name} (${student.sr_code})`;
+        dropdown.appendChild(option);
+    });
+}
+
+window.promoteUser = async function(e) {
+    e.preventDefault();
+    const userId = document.getElementById('promote-user-select').value;
+    if(!userId) return showToast("Select a user first!");
+
+    const { error } = await db.from('students').update({ role: 'admin' }).eq('id', userId.trim());
+    
+    if(error) {
+        console.error(error);
+        if(error.message && error.message.includes('role')) showToast("Error: DB missing 'role' column.");
+        else showToast("Error: " + error.message);
+    } else {
+        showToast("User promoted to Admin!");
+        e.target.reset();
+    }
 }

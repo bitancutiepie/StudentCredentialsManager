@@ -88,7 +88,7 @@ const initApp = () => {
         const user = JSON.parse(storedUser);
         
         // IF ADMIN: Show the choice menu
-        if (user.sr_code === 'ADMIN') {
+        if (user.sr_code === 'ADMIN' || user.role === 'admin') {
             // Switch to Admin Mode on Landing Page
             const loginUI = document.getElementById('loginUI');
             const adminControls = document.getElementById('adminLandingControls');
@@ -330,14 +330,18 @@ async function handleLogin(srCode, password) {
         const autoEmail = `${data.sr_code}@g.batstate-u.edu.ph`;
         
         // Update Supabase silently
-        await supabaseClient
-            .from('students')
-            .update({ email: autoEmail })
-            .eq('id', data.id);
-            
-        // Update local data variable so the session has it too
-        data.email = autoEmail;
-        console.log("System auto-corrected missing email.");
+        try {
+            await supabaseClient
+                .from('students')
+                .update({ email: autoEmail })
+                .eq('id', data.id);
+                
+            // Update local data variable so the session has it too
+            data.email = autoEmail;
+            console.log("System auto-corrected missing email.");
+        } catch (err) {
+            console.warn("Auto-email fix failed:", err);
+        }
     }
     // ----------------------------------------
 
@@ -346,7 +350,8 @@ async function handleLogin(srCode, password) {
         name: data.name,
         sr_code: data.sr_code,
         avatar_url: data.avatar_url,
-        email: data.email
+        email: data.email,
+        role: data.role
     });
 
     const keepLoggedIn = document.getElementById('keepLoggedIn').checked;
@@ -362,7 +367,7 @@ async function handleLogin(srCode, password) {
         .eq('id', data.id);
 
     // === ADMIN CHECK ===
-    if (data.sr_code === 'ADMIN') {
+    if (data.sr_code === 'ADMIN' || data.role === 'admin') {
         // Switch to Admin Mode on Landing Page
         const loginUI = document.getElementById('loginUI');
         const adminControls = document.getElementById('adminLandingControls');
@@ -420,53 +425,41 @@ function displayStudents(students) {
     studentListContainer.innerHTML = '';
     const validStudents = students.filter(s => s.sr_code !== 'ADMIN');
 
-    // Group by Batch (SR Code Prefix)
-    const batches = {};
-    validStudents.forEach(s => {
-        const prefix = s.sr_code.split('-')[0] || 'Unknown';
-        if(!batches[prefix]) batches[prefix] = [];
-        batches[prefix].push(s);
-    });
-
-    const sortedPrefixes = Object.keys(batches).sort().reverse();
-
-    if (sortedPrefixes.length === 0) {
+    if (validStudents.length === 0) {
         studentListContainer.innerHTML = '<p style="text-align:center; color:#666;">No students found.</p>';
         return;
     }
 
-    sortedPrefixes.forEach(prefix => {
-        const batchSection = document.createElement('div');
-        batchSection.style.marginBottom = '20px';
+    const batchSection = document.createElement('div');
+    batchSection.style.marginBottom = '20px';
+    
+    const title = document.createElement('h4');
+    title.style.cssText = 'margin: 0 0 10px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px; color: #555; text-align: left;';
+    title.innerText = `BSIT 2106`;
+    batchSection.appendChild(title);
+
+    const grid = document.createElement('div');
+    grid.style.cssText = 'display: flex; flex-wrap: wrap; gap: 10px;';
+    
+    validStudents.forEach(student => {
+        const avatar = student.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random`;
         
-        const title = document.createElement('h4');
-        title.style.cssText = 'margin: 0 0 10px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px; color: #555; text-align: left;';
-        title.innerText = `Batch 20${prefix}`;
-        batchSection.appendChild(title);
+        const chip = document.createElement('div');
+        chip.className = 'member-tag';
+        chip.style.cssText = 'cursor: pointer; padding: 5px 10px; font-size: 0.9rem; background: #fff; border: 2px solid #000; display: flex; align-items: center; gap: 8px; transition: transform 0.2s;';
+        chip.onmouseover = () => chip.style.transform = 'scale(1.05)';
+        chip.onmouseout = () => chip.style.transform = 'scale(1)';
+        chip.onclick = () => openStudentDetails(student.id);
 
-        const grid = document.createElement('div');
-        grid.style.cssText = 'display: flex; flex-wrap: wrap; gap: 10px;';
-        
-        batches[prefix].forEach(student => {
-            const avatar = student.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random`;
-            
-            const chip = document.createElement('div');
-            chip.className = 'member-tag';
-            chip.style.cssText = 'cursor: pointer; padding: 5px 10px; font-size: 0.9rem; background: #fff; border: 2px solid #000; display: flex; align-items: center; gap: 8px; transition: transform 0.2s;';
-            chip.onmouseover = () => chip.style.transform = 'scale(1.05)';
-            chip.onmouseout = () => chip.style.transform = 'scale(1)';
-            chip.onclick = () => openStudentDetails(student.id);
-
-            chip.innerHTML = `
-                <img src="${avatar}" style="width:24px; height:24px; border-radius:50%; object-fit:cover; border:1px solid #000;">
-                <span style="font-weight:bold; white-space: nowrap; max-width: 150px; overflow: hidden; text-overflow: ellipsis;">${student.name}</span>
-            `;
-            grid.appendChild(chip);
-        });
-
-        batchSection.appendChild(grid);
-        studentListContainer.appendChild(batchSection);
+        chip.innerHTML = `
+            <img src="${avatar}" style="width:24px; height:24px; border-radius:50%; object-fit:cover; border:1px solid #000;">
+            <span style="font-weight:bold; white-space: nowrap; max-width: 150px; overflow: hidden; text-overflow: ellipsis;">${student.name}</span>
+        `;
+        grid.appendChild(chip);
     });
+
+    batchSection.appendChild(grid);
+    studentListContainer.appendChild(batchSection);
 }
 
 async function deleteStudent(id) {
@@ -561,7 +554,7 @@ function openPortalWindow() {
 // --- OTHER FEATURES ---
 async function fetchMembers() {
     // 1. Fetch Students
-    const { data: students, error } = await supabaseClient.from('students').select('id, name, avatar_url, sr_code');
+    const { data: students, error } = await supabaseClient.from('students').select('id, name, avatar_url, sr_code, role');
     if (error) return;
 
     // 2. Fetch Statuses
@@ -572,7 +565,7 @@ async function fetchMembers() {
     if (statuses) statuses.forEach(s => statusMap[s.user_id] = s.status);
 
     // --- ADMIN SECTION ---
-    const admins = students.filter(s => s.sr_code === 'ADMIN');
+    const admins = students.filter(s => s.sr_code === 'ADMIN' || s.role === 'admin');
     const adminList = document.getElementById('adminList');
     const adminSection = document.getElementById('adminSection');
 
@@ -602,7 +595,7 @@ async function fetchMembers() {
     publicMemberList.innerHTML = '';
     
     // Filter valid members first (Exclude Admin/Principal)
-    const validMembers = students.filter(s => s.sr_code !== 'ADMIN' && s.name !== 'Principal User' && !s.name.includes('Admin'));
+    const validMembers = students.filter(s => s.sr_code !== 'ADMIN' && s.role !== 'admin' && s.name !== 'Principal User' && !s.name.includes('Admin'));
     
     // Update Badge with Animation
     const badge = document.getElementById('memberCountBadge');

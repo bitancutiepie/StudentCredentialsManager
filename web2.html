@@ -903,6 +903,7 @@
                     <button class="sketch-btn" onclick="showAdminTool('admin-email-form', this)"><i class="fas fa-envelope"></i> Email</button>
                     <button class="sketch-btn" onclick="showAdminTool('admin-gallery-form', this)"><i class="fas fa-images"></i> Gallery</button>
                     <button class="sketch-btn" onclick="showAdminTool('admin-storage-view', this)"><i class="fas fa-hdd"></i> Storage</button>
+                    <button class="sketch-btn" onclick="showAdminTool('admin-promote-form', this)"><i class="fas fa-crown"></i> Privileges</button>
                 </div>
                 <p style="text-align: center; font-style: italic; color: #666; margin-bottom: 20px;" id="admin-tool-hint">Select a tool above to get started.</p>
 
@@ -1029,6 +1030,20 @@
                         </button>
                         <div id="storage-stats-display" style="margin-top: 15px;"></div>
                     </div>
+                </div>
+
+                <!-- NEW: Promote User -->
+                <div class="admin-controls" id="admin-promote-form">
+                    <button onclick="showAdminTool(null)" class="sketch-btn danger" style="position: absolute; top: 10px; right: 10px; width: auto; margin: 0; padding: 5px 10px; font-size: 0.9rem;">Close</button>
+                    <h3>Admin's Note: Grant Privileges <i class="fas fa-crown"></i></h3>
+                    <p style="font-size: 0.9rem; margin-bottom: 10px;">(Give a user Admin access)</p>
+                    
+                    <form onsubmit="promoteUser(event)" autocomplete="off">
+                        <select id="promote-user-select" style="width: 100%; padding: 10px; margin-bottom: 10px; border: none; border-bottom: 2px solid #333; font-family: 'Patrick Hand'; font-size: 1.2rem; background: transparent;">
+                            <option value="" disabled selected>Loading users...</option>
+                        </select>
+                        <button type="submit" class="sketch-btn" style="background: #000; color: #fff;"><i class="fas fa-check-circle"></i> Make Admin</button>
+                    </form>
                 </div>
             </div>
 
