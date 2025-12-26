@@ -719,6 +719,12 @@ async function loadFiles(subjectFilter = 'All') {
         return;
     }
 
+    // FIX: Use the superior renderer from web2.html if available (supports Previews)
+    if (typeof window.renderFileList === 'function') {
+        window.renderFileList(data);
+        return;
+    }
+
     if (!data || data.length === 0) {
         list.innerHTML = '<p style="text-align:center; width:100%;">No files found in this folder.</p>';
         return;

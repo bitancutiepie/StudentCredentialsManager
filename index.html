@@ -268,23 +268,47 @@
         .member-list-section { margin-top: 30px; border-top: 2px dashed #999; padding-top: 20px; }
         .member-list-title { text-align: center; font-weight: bold; font-size: 1.3rem; margin-bottom: 10px; transform: rotate(-1deg); }
         
+        /* --- MEMBER COUNT BADGE --- */
+        .member-count-badge {
+            display: inline-block;
+            background: #d63031;
+            color: #fff;
+            border: 2px solid #000;
+            border-radius: 12px;
+            padding: 1px 8px;
+            font-size: 0.9rem;
+            margin: 0 5px;
+            vertical-align: middle;
+            opacity: 0;
+            transform: scale(0.5) rotate(-10deg);
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); /* Bouncy spring effect */
+        }
+        .member-count-badge.pop {
+            opacity: 1;
+            transform: scale(1) rotate(5deg);
+        }
+
         /* UPDATED GRID LAYOUT */
         .member-tags { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); 
-            gap: 12px; 
+            display: flex; 
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px; 
             padding: 5px;
         }
         .member-tag { 
             background: #fff; 
             border: 2px solid #333; 
-            padding: 8px 12px; 
-            border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; 
-            font-size: 1rem; 
-            box-shadow: 3px 3px 0 rgba(0,0,0,0.1); 
+            padding: 4px 10px; 
+            border-radius: 20px; 
+            font-size: 0.9rem; 
+            box-shadow: 2px 2px 0 rgba(0,0,0,0.1); 
             transition: transform 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
-        .member-tag:hover { transform: scale(1.05) rotate(-1deg); z-index: 5; }
+        .member-tag:hover { transform: scale(1.05); z-index: 5; }
 
         .note-input-area { margin-top: 20px; border-top: 2px dashed #000; padding-top: 15px; }
 
@@ -563,32 +587,58 @@
             box-shadow: 5px 5px 0px rgba(0,0,0,0.1); /* Hand-drawn shadow */
             transform: rotate(-2deg); /* Slight tilt */
         ">
-        <h2 id="formTitle">Sistema ni Jv</h2>
-        <p id="authModeMessage" style="text-align: center; font-size: 1.1rem; margin-top: -10px; margin-bottom: 15px; color: #555;"></p>
-        <form id="authForm">
-            <input type="text" id="name" placeholder="YOUR NAME (Full Name)" class="hidden">
-            <input type="text" id="srCode" placeholder="SR CODE" required>
-            <!-- REPLACE the existing password input line with this block -->
-            <div style="position: relative; width: 100%;">
-                <input type="password" id="password" placeholder="PASSWORD" required style="padding-right: 40px;">
-                <span id="togglePassword" style="position: absolute; right: 10px; top: 20px; cursor: pointer; font-size: 1.2rem; user-select: none; color: #555;">
-                    <i class="fas fa-eye-slash"></i>
-                </span>
+        
+        <!-- ADMIN CONTROLS (Hidden by default) -->
+        <div id="adminLandingControls" class="hidden" style="text-align: center; margin-bottom: 20px; border-bottom: 2px dashed #000; padding-bottom: 20px;">
+            <h3><i class="fas fa-user-shield"></i> ADMIN MODE</h3>
+            <p>Welcome back, Boss! What's the plan?</p>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button onclick="showAdminPanel('Admin')" style="background: #2d3436; color: white; font-size: 1.1rem;">
+                    <i class="fas fa-users-cog"></i> Manage Users (Black List)
+                </button>
+                <button onclick="window.location.href='web2.html'" style="background: #0984e3; color: white; font-size: 1.1rem;">
+                    <i class="fas fa-book"></i> Go to Binder
+                </button>
+                <button onclick="logout()" style="background: #d63031; color: white; font-size: 1.1rem;">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
             </div>
-            
-            <!-- FIXED CHECKBOX LAYOUT - Re-added for login functionality -->
-            <div class="checkbox-container" id="keepLoggedInContainer">
-                <input type="checkbox" id="keepLoggedIn" checked> 
-                <label for="keepLoggedIn" style="cursor: pointer; font-size: 1.2rem; margin: 0;">Keep me logged in</label>
-            </div>
+        </div>
 
-            <button type="submit" id="submitBtn">ENTER &rarr;</button>
-        </form>
-        <span class="toggle-link" id="toggleAuth">Magpapalista? <b>Come here mga kosa click this</b></span>
+        <!-- LOGIN UI WRAPPER -->
+        <div id="loginUI">
+            <h2 id="formTitle">Sistema ni Jv</h2>
+            <p id="authModeMessage" style="text-align: center; font-size: 1.1rem; margin-top: -10px; margin-bottom: 15px; color: #555;"></p>
+            <form id="authForm">
+                <input type="text" id="name" placeholder="YOUR NAME (Full Name)" class="hidden">
+                <input type="text" id="srCode" placeholder="SR CODE" required>
+                <!-- REPLACE the existing password input line with this block -->
+                <div style="position: relative; width: 100%;">
+                    <input type="password" id="password" placeholder="PASSWORD" required style="padding-right: 40px;">
+                    <span id="togglePassword" style="position: absolute; right: 10px; top: 20px; cursor: pointer; font-size: 1.2rem; user-select: none; color: #555;">
+                        <i class="fas fa-eye-slash"></i>
+                    </span>
+                </div>
+                
+                <!-- FIXED CHECKBOX LAYOUT - Re-added for login functionality -->
+                <div class="checkbox-container" id="keepLoggedInContainer">
+                    <input type="checkbox" id="keepLoggedIn" checked> 
+                    <label for="keepLoggedIn" style="cursor: pointer; font-size: 1.2rem; margin: 0;">Keep me logged in</label>
+                </div>
+
+                <button type="submit" id="submitBtn">ENTER &rarr;</button>
+            </form>
+            <span class="toggle-link" id="toggleAuth">Magpapalista? <b>Come here mga kosa click this</b></span>
+        </div>
+
+        <div id="adminSection" class="member-list-section hidden" style="border-top: 2px dashed #d63031; margin-top: 20px;">
+            <div class="member-list-title" onclick="toggleAdminList()" style="cursor: pointer; color: #d63031; transform: rotate(-1deg);" title="Click to show/hide"><i class="fas fa-user-shield"></i> Admin <i class="fas fa-chevron-down" id="adminToggleIcon" style="transition: transform 0.3s; transform: rotate(180deg);"></i></div>
+            <div class="member-tags" id="adminList" style="justify-content: center;"></div>
+        </div>
 
         <div class="member-list-section">
-            <div class="member-list-title"><i class="fas fa-clipboard-list"></i> Members currently in the club:</div>
-            <div class="member-tags" id="publicMemberList">
+            <div class="member-list-title" onclick="toggleMemberList()" style="cursor: pointer;" title="Click to show/hide"><i class="fas fa-clipboard-list"></i> Members currently in the club <span id="memberCountBadge" class="member-count-badge">0</span> <i class="fas fa-chevron-down" id="memberToggleIcon" style="transition: transform 0.3s;"></i></div>
+            <div class="member-tags hidden" id="publicMemberList">
                 <span style="color:#666;">Loading list...</span>
             </div>
         </div>
@@ -666,7 +716,7 @@
         <div id="adminFileList" style="margin-bottom:30px; border-bottom:3px dashed #000; padding-bottom:20px;"></div>
 
         <!-- REPLACED TABLE WITH THIS CONTAINER -->
-        <div id="studentListContainer" style="display: flex; flex-direction: column; gap: 5px;">
+        <div id="studentListContainer">
             <!-- JS will inject student strips here -->
         </div>
     </div>
@@ -712,6 +762,29 @@
         </div>
 
         <button onclick="logout()">LOGOUT</button>
+    </div>
+
+    <!-- Request Modal (Public) -->
+    <div id="requestModal" class="wimpy-modal-overlay hidden">
+        <div class="wimpy-modal-box" style="text-align: left;">
+            <h2 style="margin-top:0;">Drop a Note</h2>
+            <p>Got a request or a secret question for the admin?</p>
+            <textarea id="req-content" placeholder="Type here..." style="width:100%; height:100px; font-family:'Patrick Hand'; font-size:1.2rem; padding:10px; border:2px solid #000;"></textarea>
+            <div style="margin-top:10px; display:flex; gap:10px;">
+                <button onclick="closeRequestModal()" style="background:#fff; color:#000;">Cancel</button>
+                <button onclick="submitRequest()" style="background:#000; color:#fff;">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Student Details Modal (Admin) -->
+    <div id="studentDetailsModal" class="wimpy-modal-overlay hidden">
+        <div class="wimpy-modal-box" style="max-width: 400px; text-align: center;">
+            <div style="text-align: right; margin-bottom: -20px;">
+                <button onclick="closeStudentDetails()" class="sketch-btn danger" style="width: auto; padding: 2px 8px; font-size: 0.9rem; border-radius: 50%;">X</button>
+            </div>
+            <div id="studentDetailsContent" style="margin-top: 20px;"></div>
+        </div>
     </div>
 
     <!-- FREEDOM WALL MODAL (Landing Page) -->

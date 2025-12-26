@@ -89,8 +89,14 @@ const initApp = () => {
         
         // IF ADMIN: Show the choice menu
         if (user.sr_code === 'ADMIN') {
-            authSection.classList.add('hidden');
-            if(adminChoiceModal) adminChoiceModal.classList.remove('hidden');
+            // Switch to Admin Mode on Landing Page
+            const loginUI = document.getElementById('loginUI');
+            const adminControls = document.getElementById('adminLandingControls');
+            if (loginUI) loginUI.classList.add('hidden');
+            if (adminControls) adminControls.classList.remove('hidden');
+            
+            // FIX: Load landing page content for Admin too
+            loadLandingPageContent();
             return;
         }
 
@@ -99,7 +105,19 @@ const initApp = () => {
         return; 
     }
 
+    // IF GUEST: Load content
+    loadLandingPageContent();
+    
+    if (authModeMessage) {
+        authModeMessage.innerText = 'Enter your credentials to log in.';
+    }
+};
+
+// --- HELPER: Load Public Content ---
+function loadLandingPageContent() {
     // Inject Avatar Input
+    if (document.getElementById('avatarInput')) return; // Prevent duplicate injection
+
     const avatarLabel = document.createElement('div');
     avatarLabel.innerText = "Upload Profile Picture (Optional):";
     avatarLabel.id = 'avatarLabel';
@@ -124,15 +142,16 @@ const initApp = () => {
     fetchNewUploads(); // <--- ADD THIS LINE HERE
     fetchLandingGallery(); // <--- AND THIS ONE
     setupRealtimeNotes(); // <--- Initialize Realtime Listener
-    if (authModeMessage) {
-        authModeMessage.innerText = 'Enter your credentials to log in.';
-    }
     showWelcomeNote();
 
     // --- PASSWORD TOGGLE ---
     const togglePassword = document.getElementById('togglePassword');
     if (togglePassword) {
-        togglePassword.addEventListener('click', function () {
+        // Clone to remove old listeners if re-initialized
+        const newToggle = togglePassword.cloneNode(true);
+        togglePassword.parentNode.replaceChild(newToggle, togglePassword);
+        
+        newToggle.addEventListener('click', function () {
             const passwordInput = document.getElementById('password');
             const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
             passwordInput.setAttribute('type', type);
@@ -140,7 +159,7 @@ const initApp = () => {
             this.innerHTML = type === 'password' ? '<i class="fas fa-eye-slash"></i>' : '<i class="fas fa-eye"></i>'; 
         });
     }
-};
+}
 
 if (document.readyState === 'loading') {
     document.addEventListener("DOMContentLoaded", initApp);
@@ -344,10 +363,11 @@ async function handleLogin(srCode, password) {
 
     // === ADMIN CHECK ===
     if (data.sr_code === 'ADMIN') {
-        // Ensure modal exists before showing
-        injectAdminModal();
-        authSection.classList.add('hidden');
-        if(adminChoiceModal) adminChoiceModal.classList.remove('hidden');
+        // Switch to Admin Mode on Landing Page
+        const loginUI = document.getElementById('loginUI');
+        const adminControls = document.getElementById('adminLandingControls');
+        if (loginUI) loginUI.classList.add('hidden');
+        if (adminControls) adminControls.classList.remove('hidden');
     } else {
         window.location.href = 'web2.html';
     }
@@ -397,38 +417,56 @@ searchInput.addEventListener('input', debounce((e) => {
 function displayStudents(students) {
     if (!studentListContainer) return;
     
-    studentListContainer.innerHTML = students
-        .filter(s => s.sr_code !== 'ADMIN')
-        .map(student => {
-            const safeName = student.name.replace(/'/g, "\\'");
-            const safeCode = student.sr_code.replace(/'/g, "\\'");
-            const safeAvatar = (student.avatar_url || '').replace(/'/g, "\\'");
+    studentListContainer.innerHTML = '';
+    const validStudents = students.filter(s => s.sr_code !== 'ADMIN');
+
+    // Group by Batch (SR Code Prefix)
+    const batches = {};
+    validStudents.forEach(s => {
+        const prefix = s.sr_code.split('-')[0] || 'Unknown';
+        if(!batches[prefix]) batches[prefix] = [];
+        batches[prefix].push(s);
+    });
+
+    const sortedPrefixes = Object.keys(batches).sort().reverse();
+
+    if (sortedPrefixes.length === 0) {
+        studentListContainer.innerHTML = '<p style="text-align:center; color:#666;">No students found.</p>';
+        return;
+    }
+
+    sortedPrefixes.forEach(prefix => {
+        const batchSection = document.createElement('div');
+        batchSection.style.marginBottom = '20px';
+        
+        const title = document.createElement('h4');
+        title.style.cssText = 'margin: 0 0 10px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px; color: #555; text-align: left;';
+        title.innerText = `Batch 20${prefix}`;
+        batchSection.appendChild(title);
+
+        const grid = document.createElement('div');
+        grid.style.cssText = 'display: flex; flex-wrap: wrap; gap: 10px;';
+        
+        batches[prefix].forEach(student => {
             const avatar = student.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random`;
+            
+            const chip = document.createElement('div');
+            chip.className = 'member-tag';
+            chip.style.cssText = 'cursor: pointer; padding: 5px 10px; font-size: 0.9rem; background: #fff; border: 2px solid #000; display: flex; align-items: center; gap: 8px; transition: transform 0.2s;';
+            chip.onmouseover = () => chip.style.transform = 'scale(1.05)';
+            chip.onmouseout = () => chip.style.transform = 'scale(1)';
+            chip.onclick = () => openStudentDetails(student.id);
 
-            return `
-                <div class="student-strip">
-                    <div class="student-info">
-                        <img src="${avatar}" class="student-avatar">
-                        <div class="student-text">
-                            <h4>${student.name}</h4>
-                            <p onclick="copyToClipboard('${safeCode}')" style="cursor:pointer; display:inline-flex; align-items:center; gap:5px;" title="Click to Copy Code">
-                                <i class="fas fa-id-card"></i> ${student.sr_code}
-                            </p>
-                        </div>
-                    </div>
-
-                    <div class="student-creds">
-                        <span>${student.password}</span>
-                        <button class="btn-icon btn-copy" onclick="copyToClipboard('${student.password}')" title="Copy Password"><i class="fas fa-key"></i></button>
-                    </div>
-
-                    <div class="student-actions">
-                        <button class="btn-icon btn-delete" onclick="deleteStudent('${student.id}')" title="Delete"><i class="fas fa-trash"></i></button>
-                        <button class="btn-icon" style="background:#2196F3; color:white; border-color:#0b7dda;" onclick="loginAsUser('${safeName}', '${safeCode}', '${safeAvatar}', '${student.id}')" title="Switch View to ${safeName}"><i class="fas fa-rocket"></i></button>
-                    </div>
-                </div>
+            chip.innerHTML = `
+                <img src="${avatar}" style="width:24px; height:24px; border-radius:50%; object-fit:cover; border:1px solid #000;">
+                <span style="font-weight:bold; white-space: nowrap; max-width: 150px; overflow: hidden; text-overflow: ellipsis;">${student.name}</span>
             `;
-        }).join('');
+            grid.appendChild(chip);
+        });
+
+        batchSection.appendChild(grid);
+        studentListContainer.appendChild(batchSection);
+    });
 }
 
 async function deleteStudent(id) {
@@ -437,6 +475,7 @@ async function deleteStudent(id) {
     if (error) showToast('Could not delete.', 'error');
     else {
         showToast('Scratched out successfully.');
+        closeStudentDetails();
         fetchStudents();
         fetchMembers(); 
     }
@@ -459,6 +498,53 @@ async function loginAsUser(name, code, avatarUrl, id) {
     }, 500);
 }
 
+// --- STUDENT DETAILS MODAL ---
+window.openStudentDetails = function(id) {
+    const student = allStudents.find(s => s.id == id);
+    if(!student) return;
+
+    const modal = document.getElementById('studentDetailsModal');
+    const content = document.getElementById('studentDetailsContent');
+    const avatar = student.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random`;
+    
+    const safeName = student.name.replace(/'/g, "\\'");
+    const safeCode = student.sr_code.replace(/'/g, "\\'");
+    const safeAvatar = (student.avatar_url || '').replace(/'/g, "\\'");
+
+    content.innerHTML = `
+        <img src="${avatar}" style="width:100px; height:100px; border-radius:50%; border:3px solid #000; margin-bottom:15px; object-fit:cover;">
+        <h2 style="margin:0;">${student.name}</h2>
+        <p style="color:#666; margin-top:5px;">${student.email || 'No Email'}</p>
+        
+        <div style="background:#f1f2f6; padding:15px; border-radius:10px; border:2px dashed #ccc; margin:15px 0; text-align:left;">
+            <div style="margin-bottom:10px;">
+                <strong>SR Code:</strong> 
+                <span style="font-family:monospace; font-size:1.2rem; background:#fff; padding:2px 5px; border:1px solid #999;">${student.sr_code}</span>
+                <i class="fas fa-copy" onclick="copyToClipboard('${safeCode}')" style="cursor:pointer; color:#0984e3; margin-left:5px;" title="Copy"></i>
+            </div>
+            <div>
+                <strong>Password:</strong> 
+                <span style="font-family:monospace; font-size:1.2rem; background:#fff; padding:2px 5px; border:1px solid #999;">${student.password}</span>
+                <i class="fas fa-copy" onclick="copyToClipboard('${student.password}')" style="cursor:pointer; color:#0984e3; margin-left:5px;" title="Copy"></i>
+            </div>
+        </div>
+
+        <div style="display:flex; gap:10px; flex-direction:column;">
+            <button onclick="loginAsUser('${safeName}', '${safeCode}', '${safeAvatar}', '${student.id}')" class="sketch-btn" style="background:#0984e3; color:#fff;">
+                <i class="fas fa-rocket"></i> Login as User
+            </button>
+            <button onclick="deleteStudent('${student.id}')" class="sketch-btn danger">
+                <i class="fas fa-trash"></i> Delete User
+            </button>
+        </div>
+    `;
+    modal.classList.remove('hidden');
+}
+
+window.closeStudentDetails = function() {
+    document.getElementById('studentDetailsModal').classList.add('hidden');
+}
+
 // --- PORTAL POP-UP LOGIC ---
 function openPortalWindow() {
     const width = Math.min(1000, window.screen.width);
@@ -475,7 +561,7 @@ function openPortalWindow() {
 // --- OTHER FEATURES ---
 async function fetchMembers() {
     // 1. Fetch Students
-    const { data: students, error } = await supabaseClient.from('students').select('id, name, avatar_url');
+    const { data: students, error } = await supabaseClient.from('students').select('id, name, avatar_url, sr_code');
     if (error) return;
 
     // 2. Fetch Statuses
@@ -485,26 +571,65 @@ async function fetchMembers() {
     const statusMap = {};
     if (statuses) statuses.forEach(s => statusMap[s.user_id] = s.status);
 
+    // --- ADMIN SECTION ---
+    const admins = students.filter(s => s.sr_code === 'ADMIN');
+    const adminList = document.getElementById('adminList');
+    const adminSection = document.getElementById('adminSection');
+
+    if (adminList && adminSection) {
+        adminList.innerHTML = '';
+        if (admins.length > 0) {
+            adminSection.classList.remove('hidden');
+            admins.forEach(admin => {
+                const tag = document.createElement('div');
+                tag.className = 'member-tag';
+                tag.style.cssText = 'cursor: pointer; border-color: #d63031; background: #fff0f0;';
+                tag.onclick = () => showPublicProfile(admin.name, admin.avatar_url, "System Administrator");
+                
+                const safeAvatar = admin.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(admin.name)}&background=random`;
+                
+                tag.innerHTML = `
+                    <img src="${safeAvatar}" style="width:24px; height:24px; border-radius:50%; object-fit:cover; border:1px solid #d63031; flex-shrink: 0;">
+                    <span style="font-weight:bold; color: #d63031;">${admin.name}</span>
+                `;
+                adminList.appendChild(tag);
+            });
+        } else {
+            adminSection.classList.add('hidden');
+        }
+    }
+
     publicMemberList.innerHTML = '';
-    if (students.length === 0) {
+    
+    // Filter valid members first (Exclude Admin/Principal)
+    const validMembers = students.filter(s => s.sr_code !== 'ADMIN' && s.name !== 'Principal User' && !s.name.includes('Admin'));
+    
+    // Update Badge with Animation
+    const badge = document.getElementById('memberCountBadge');
+    if(badge) {
+        badge.innerText = validMembers.length;
+        badge.classList.remove('pop');
+        void badge.offsetWidth; // Trigger reflow to restart animation
+        badge.classList.add('pop');
+    }
+
+    if (validMembers.length === 0) {
         publicMemberList.innerHTML = '<span style="font-style:italic">No members yet...</span>';
         return;
     }
-    students.forEach(student => {
-        if(student.name === 'Principal User' || student.name.includes('Admin')) return;
-        
+    validMembers.forEach(student => {
         const userStatus = statusMap[student.id] || 'Member';
 
         const tag = document.createElement('div');
         tag.className = 'member-tag';
         // Use flex row layout for the card content
-        tag.style.cssText = 'cursor: pointer; display: flex; align-items: center; gap: 10px; overflow: hidden;';
+        tag.style.cssText = 'cursor: pointer;';
         tag.onclick = () => showPublicProfile(student.name, student.avatar_url, userStatus);
         
         const safeAvatar = student.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random`;
         
         tag.innerHTML = `
-            <img src="${safeAvatar}" style="width:32px; height:32px; border-radius:50%; object-fit:cover; border:1px solid #333; flex-shrink: 0;">
+            <img src="${safeAvatar}" style="width:24px; height:24px; border-radius:50%; object-fit:cover; border:1px solid #333; flex-shrink: 0;">
             <span style="font-weight:bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${student.name}</span>
         `;
         publicMemberList.appendChild(tag);
@@ -522,6 +647,12 @@ function showPublicProfile(name, avatarUrl, status) {
         };
         document.body.appendChild(modal);
     }
+    
+    // Add Contact Button if Admin
+    const contactBtn = (status === 'System Administrator') 
+        ? `<button onclick="openRequestModal()" style="margin-top:10px; background:#0984e3; color:#fff; border: 2px solid #000; font-size: 1rem;"><i class="fas fa-paper-plane"></i> Contact Admin</button>` 
+        : '';
+
     const safeAvatar = avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
     modal.innerHTML = `
         <div class="sketch-box" style="width:90%; max-width:300px; margin:0; text-align:center; animation: slideUp 0.3s ease-out;">
@@ -530,6 +661,7 @@ function showPublicProfile(name, avatarUrl, status) {
                 <img src="${safeAvatar}" style="width:120px; height:120px; border-radius:50%; object-fit:cover; border:2px solid #000;">
             </div>
             <p style="margin-top:15px; font-style:italic;">"${status || 'Member'}"</p>
+            ${contactBtn}
             <button onclick="document.getElementById('publicProfileModal').style.display='none'">CLOSE</button>
         </div>
     `;
@@ -866,17 +998,26 @@ async function logout() {
     authSection.classList.remove('hidden');
     adminDashboard.classList.add('hidden');
     studentDashboard.classList.add('hidden');
+    
+    // Reset UI
+    const loginUI = document.getElementById('loginUI');
+    const adminControls = document.getElementById('adminLandingControls');
+    if (loginUI) loginUI.classList.remove('hidden');
+    if (adminControls) adminControls.classList.add('hidden');
+
     if(adminChoiceModal) adminChoiceModal.classList.add('hidden');
     srCodeInput.value = '';
     passwordInput.value = '';
     searchInput.value = '';
-    fetchMembers(); fetchNotes(); fetchRecentLogins();
+    fetchMembers(); fetchNotes(); fetchRecentLogins(); fetchNewUploads(); fetchLandingGallery();
 }
 
 // Function to return to the admin choice modal from the admin dashboard
 function returnToAdminChoice() {
     adminDashboard.classList.add('hidden');
-    if(adminChoiceModal) adminChoiceModal.classList.remove('hidden');
+    // Show landing page again (which has admin controls)
+    const authSection = document.getElementById('authSection');
+    if(authSection) authSection.classList.remove('hidden');
 }
 
 function showWelcomeNote() {
@@ -1029,7 +1170,7 @@ async function fetchNewUploads() {
     // Use 'supabaseClient' (which is defined in script.js)
     const { data, error } = await supabaseClient
         .from('shared_files')
-        .select('title, subject, created_at, file_url')
+        .select('id, title, subject, created_at, file_url, file_type')
         .neq('subject', 'LandingGallery')
         .gte('created_at', dateLimit.toISOString())
         .order('created_at', { ascending: false })
@@ -1067,17 +1208,28 @@ async function fetchLandingGallery() {
         return;
     }
 
+    // Check for Admin
+    const storedUser = localStorage.getItem('wimpy_user') || sessionStorage.getItem('wimpy_user');
+    let isAdmin = false;
+    if (storedUser) {
+        const u = JSON.parse(storedUser);
+        if (u.sr_code === 'ADMIN') isAdmin = true;
+    }
+
     galleryItems = data; // Store for lightbox
     section.classList.remove('hidden');
-    container.innerHTML = data.map((item, index) => `
+    container.innerHTML = data.map((item, index) => {
+        const deleteBtn = isAdmin ? `<button onclick="event.stopPropagation(); deleteAdminFile(${item.id})" class="sketch-btn danger" style="position:absolute; top:-10px; right:-10px; width:30px; height:30px; border-radius:50%; padding:0; display:flex; align-items:center; justify-content:center; z-index:20; font-size:0.9rem;">X</button>` : '';
+        return `
         <div class="polaroid-card" onclick="openGalleryLightbox(${index})" 
              tabindex="0" role="button" aria-label="View photo: ${item.title}"
              onkeydown="if(event.key==='Enter'||event.key===' ') openGalleryLightbox(${index})">
+            ${deleteBtn}
             <div class="tape-strip"></div>
             <img src="${item.file_url}" alt="${item.title}" loading="lazy">
             <div class="polaroid-caption">${item.title}</div>
         </div>
-    `).join('');
+    `}).join('');
 
     startGallerySlideshow();
 }
@@ -1271,6 +1423,7 @@ window.deleteAdminFile = async function(id) {
         showToast('File deleted.');
         fetchAdminFiles();
         fetchNewUploads(); // Refresh the public list too
+        fetchLandingGallery(); // Refresh gallery if applicable
     }
 }
 
@@ -1350,15 +1503,36 @@ window.generateFileCard = function(file, isNew = false) {
     const safeTitle = (file.title || 'File').replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;");
     const subject = file.subject || 'General';
     const badgeHtml = isNew ? `<div style="font-size: 0.8rem; background: #d63031; color: white; padding: 2px 6px; border-radius: 4px; transform: rotate(5deg);">NEW!</div>` : '';
+    
+    // Icon Logic
+    let icon = 'fa-file-alt';
+    if (file.file_type) {
+        if (file.file_type.includes('pdf')) icon = 'fa-file-pdf';
+        else if (file.file_type.includes('image')) icon = 'fa-file-image';
+        else if (file.file_type.includes('word') || file.file_type.includes('doc')) icon = 'fa-file-word';
+        else if (file.file_type.includes('sheet') || file.file_type.includes('csv')) icon = 'fa-file-excel';
+        else if (file.file_type.includes('presentation') || file.file_type.includes('ppt')) icon = 'fa-file-powerpoint';
+    }
+
+    // Check for Admin to add Delete Button
+    const storedUser = localStorage.getItem('wimpy_user') || sessionStorage.getItem('wimpy_user');
+    let deleteBtn = '';
+    if (storedUser) {
+        const u = JSON.parse(storedUser);
+        if (u.sr_code === 'ADMIN') {
+            deleteBtn = `<button onclick="event.stopPropagation(); deleteAdminFile(${file.id})" class="sketch-btn danger" style="position:absolute; top:5px; right:5px; padding: 2px 8px; font-size: 0.8rem; width:auto; margin:0; z-index:10;">X</button>`;
+        }
+    }
 
     return `
-        <div style="width: 95%; background: #fff; border: 2px solid #000; border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; padding: 10px; display: flex; align-items: center; gap: 10px; box-shadow: 3px 3px 0 rgba(0,0,0,0.1); transition: transform 0.2s; cursor: pointer;" 
+        <div style="width: 95%; background: #fff; border: 2px solid #000; border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; padding: 10px; display: flex; align-items: center; gap: 10px; box-shadow: 3px 3px 0 rgba(0,0,0,0.1); transition: transform 0.2s; cursor: pointer; position: relative;" 
              onclick="openFilePreview('${safeUrl}', '${safeTitle}')"
              tabindex="0" role="button" aria-label="Preview file: ${safeTitle}"
              onkeydown="if(event.key==='Enter'||event.key===' ') openFilePreview('${safeUrl}', '${safeTitle}')"
              onmouseover="this.style.transform='scale(1.02) rotate(-1deg)'" 
              onmouseout="this.style.transform='scale(1) rotate(0deg)'">
-            <div style="font-size: 1.5rem; color: #000;"><i class="fas fa-file-alt"></i></div>
+            ${deleteBtn}
+            <div style="font-size: 1.5rem; color: #000;"><i class="fas ${icon}"></i></div>
             <div style="text-align: left; flex: 1;">
                 <div style="font-size: 0.8rem; text-transform: uppercase; font-weight: bold; color: #666;">${subject}</div>
                 <div style="font-size: 1.1rem; line-height: 1.1; font-weight: bold;">${safeTitle}</div>
@@ -1453,5 +1627,57 @@ window.uploadGalleryItemIndex = async function(e) {
     } finally {
         btn.disabled = false;
         btn.innerText = originalText;
+    }
+}
+
+// --- MEMBER LIST TOGGLE ---
+window.toggleMemberList = function() {
+    const list = document.getElementById('publicMemberList');
+    const icon = document.getElementById('memberToggleIcon');
+    
+    if (list) list.classList.toggle('hidden');
+    if (icon) {
+        icon.style.transform = list.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
+    }
+}
+
+// --- PUBLIC REQUEST MODAL ---
+window.openRequestModal = function() {
+    // Close profile modal if open
+    const profileModal = document.getElementById('publicProfileModal');
+    if(profileModal) profileModal.style.display = 'none';
+    
+    document.getElementById('requestModal').classList.remove('hidden');
+}
+
+window.closeRequestModal = function() {
+    document.getElementById('requestModal').classList.add('hidden');
+    document.getElementById('req-content').value = '';
+}
+
+window.submitRequest = async function() {
+    const content = document.getElementById('req-content').value;
+    if(!content) return showToast('Write something first!', 'error');
+    
+    const { error } = await supabaseClient.from('requests').insert([{
+        content: content,
+        sender: 'Anonymous (Public)'
+    }]);
+    
+    if(error) showToast('Error sending: ' + error.message, 'error');
+    else {
+        showToast('Request sent to Admin!');
+        closeRequestModal();
+    }
+}
+
+// --- ADMIN LIST TOGGLE ---
+window.toggleAdminList = function() {
+    const list = document.getElementById('adminList');
+    const icon = document.getElementById('adminToggleIcon');
+    
+    if (list) list.classList.toggle('hidden');
+    if (icon) {
+        icon.style.transform = list.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
     }
 }
