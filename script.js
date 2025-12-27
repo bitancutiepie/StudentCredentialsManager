@@ -77,7 +77,7 @@ function copyToClipboard(text) {
 }
 
 // --- INITIAL LOAD ---
-const initApp = () => {
+const initApp = async () => {
     // 1. Force Inject Admin Modal if missing (Fixes GitHub Pages Sync Issues)
     injectAdminModal();
 
@@ -87,6 +87,11 @@ const initApp = () => {
     if (storedUser) {
         const user = JSON.parse(storedUser);
         
+        // Update last login for "Recently Spotted" tracker on session restore
+        await supabaseClient.from('students')
+            .update({ last_login: new Date().toISOString() })
+            .eq('id', user.id);
+
         // IF ADMIN: Show the choice menu
         if (user.sr_code === 'ADMIN' || user.role === 'admin') {
             // Switch to Admin Mode on Landing Page
@@ -412,7 +417,13 @@ async function fetchStudents() {
         .from('students')
         .select('id, name, sr_code, password, avatar_url, enrollment_status');
     if (error) return console.error(error);
-    allStudents = data;
+
+    // Fetch receipts from shared_files instead of students table
+    const { data: receipts } = await supabaseClient.from('shared_files').select('file_url, subject').like('subject', 'Receipt-%');
+    const receiptMap = {};
+    if(receipts) receipts.forEach(r => receiptMap[r.subject] = r.file_url);
+
+    allStudents = data.map(s => ({ ...s, enrollment_receipt_url: receiptMap[`Receipt-${s.id}`] }));
     displayStudents(allStudents);
 }
 
@@ -510,6 +521,16 @@ window.openStudentDetails = function(id) {
     const safeCode = student.sr_code.replace(/'/g, "\\'");
     const safeAvatar = (student.avatar_url || '').replace(/'/g, "\\'");
     const currentStatus = student.enrollment_status || 'Not Enrolled';
+    
+    const receiptLink = student.enrollment_receipt_url ? `
+        <div style="display:flex; align-items:center; gap:10px; margin-top:5px;">
+            <a href="#" onclick="viewFullImage('${student.enrollment_receipt_url}')" style="color:#0984e3; font-size:0.9rem; text-decoration:none;">
+                <i class="fas fa-receipt"></i> View Current Receipt
+            </a>
+            <button onclick="deleteReceipt('${student.id}')" class="sketch-btn danger" style="padding:2px 8px; font-size:0.8rem; width:auto; margin:0;" title="Delete Receipt">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>` : '';
 
     content.innerHTML = `
         <img src="${avatar}" style="width:100px; height:100px; border-radius:50%; border:3px solid #000; margin-bottom:15px; object-fit:cover;">
@@ -531,13 +552,21 @@ window.openStudentDetails = function(id) {
 
         <div style="margin-bottom:15px; text-align:left; border-top:1px dashed #ccc; padding-top:10px;">
             <strong><i class="fas fa-user-check"></i> Enrollment Status:</strong>
-            <select onchange="updateStudentStatus('${student.id}', this.value)" style="width:100%; padding:8px; margin-top:5px; font-family:'Patrick Hand'; border:2px solid #000; background:#fff;">
+            <select id="statusSelect-${student.id}" style="width:100%; padding:8px; margin-top:5px; font-family:'Patrick Hand'; border:2px solid #000; background:#fff;">
                 <option value="Not Enrolled" ${currentStatus === 'Not Enrolled' ? 'selected' : ''}>Not Enrolled</option>
                 <option value="Pending" ${currentStatus === 'Pending' ? 'selected' : ''}>Pending</option>
                 <option value="Enrolled" ${currentStatus === 'Enrolled' ? 'selected' : ''}>Enrolled</option>
                 <option value="Irregular" ${currentStatus === 'Irregular' ? 'selected' : ''}>Irregular</option>
             </select>
+            <div style="margin-top:10px;">
+                <strong><i class="fas fa-file-upload"></i> Upload Receipt (Optional):</strong>
+                <input type="file" id="receiptInput-${student.id}" accept="image/*" style="width:100%; margin-top:5px; font-size:0.9rem;">
+                ${receiptLink}
+            </div>
+            <button id="btn-save-enroll-${student.id}" onclick="saveEnrollment('${student.id}')" class="sketch-btn" style="margin-top:10px; width:100%; background:#00b894; color:#fff;">Update Enrollment</button>
         </div>
+
+
 
         <div style="display:flex; gap:10px; flex-direction:column;">
             <button onclick="loginAsUser('${safeName}', '${safeCode}', '${safeAvatar}', '${student.id}')" class="sketch-btn" style="background:#0984e3; color:#fff;">
@@ -551,15 +580,92 @@ window.openStudentDetails = function(id) {
     modal.classList.remove('hidden');
 }
 
-window.updateStudentStatus = async function(id, status) {
-    const { error } = await supabaseClient.from('students').update({ enrollment_status: status }).eq('id', id);
-    if(error) showToast("Error updating status: " + error.message, "error");
-    else {
-        showToast("Status updated to " + status);
+window.saveEnrollment = async function(id) {
+    const select = document.getElementById(`statusSelect-${id}`);
+    const fileInput = document.getElementById(`receiptInput-${id}`);
+    const btn = document.getElementById(`btn-save-enroll-${id}`);
+    
+    if(!select) return;
+    
+    const newStatus = select.value;
+    const file = fileInput && fileInput.files ? fileInput.files[0] : null;
+    
+    btn.disabled = true;
+    btn.innerText = "Saving...";
+    
+    let updateData = { enrollment_status: newStatus };
+    
+    if (file) {
+        try {
+            const fileName = `receipt_${id}_${Date.now()}.${file.name.split('.').pop()}`;
+            const { error: uploadError } = await supabaseClient.storage
+                .from('class-resources')
+                .upload(fileName, file);
+                
+            if (uploadError) throw uploadError;
+            
+            const { data } = supabaseClient.storage.from('class-resources').getPublicUrl(fileName);
+            
+            // WORKAROUND: Save to shared_files table instead of students table
+            // 1. Remove old receipt if exists
+            await supabaseClient.from('shared_files').delete().eq('subject', `Receipt-${id}`);
+            // 2. Add new receipt
+            await supabaseClient.from('shared_files').insert([{
+                title: 'Enrollment Receipt',
+                subject: `Receipt-${id}`,
+                file_url: data.publicUrl,
+                file_type: file.type
+            }]);
+
+            // Update local cache so UI updates immediately
+            const s = allStudents.find(st => st.id == id);
+            if(s) s.enrollment_receipt_url = data.publicUrl;
+        } catch (err) {
+            showToast("Upload failed: " + err.message, "error");
+            btn.disabled = false;
+            btn.innerText = "Update Enrollment";
+            return;
+        }
+    }
+    
+    const { error } = await supabaseClient.from('students').update(updateData).eq('id', id);
+    
+    if (error) {
+        showToast("Error: " + error.message, "error");
+    } else {
+        showToast("Enrollment updated!");
         const s = allStudents.find(st => st.id == id);
-        if(s) s.enrollment_status = status;
+        if(s) {
+            s.enrollment_status = newStatus;
+        }
+        fetchMembers(); // Refresh public list
+        closeStudentDetails();
+    }
+    btn.disabled = false;
+    btn.innerText = "Update Enrollment";
+}
+
+window.deleteReceipt = async function(studentId) {
+    if(!await showWimpyConfirm('Delete this student\'s enrollment receipt?')) return;
+    
+    const { error } = await supabaseClient
+        .from('shared_files')
+        .delete()
+        .eq('subject', `Receipt-${studentId}`);
+        
+    if (error) {
+        showToast('Error deleting receipt.', 'error');
+    } else {
+        showToast('Receipt deleted.');
+        // Update local cache
+        const s = allStudents.find(st => st.id == studentId);
+        if(s) delete s.enrollment_receipt_url;
+        
+        openStudentDetails(studentId); // Refresh modal
+        fetchMembers(); // Refresh list
     }
 }
+
 
 window.closeStudentDetails = function() {
     document.getElementById('studentDetailsModal').classList.add('hidden');
@@ -587,11 +693,18 @@ async function fetchMembers() {
 
     try {
         // 1. Fetch Students
-        const { data: students, error } = await supabaseClient.from('students').select('id, name, avatar_url, sr_code, role, enrollment_status');
+        const { data: rawStudents, error } = await supabaseClient.from('students').select('id, name, avatar_url, sr_code, role, enrollment_status');
         if (error) {
             console.error("Error fetching students:", error);
             return;
         }
+
+        // 1.5 Fetch Receipts (Workaround)
+        const { data: receipts } = await supabaseClient.from('shared_files').select('file_url, subject').like('subject', 'Receipt-%');
+        const receiptMap = {};
+        if(receipts) receipts.forEach(r => receiptMap[r.subject] = r.file_url);
+
+        const students = rawStudents.map(s => ({ ...s, enrollment_receipt_url: receiptMap[`Receipt-${s.id}`] }));
 
         // 2. Fetch Statuses
         const { data: statuses } = await supabaseClient.from('user_statuses').select('user_id, status');
@@ -681,18 +794,25 @@ async function fetchMembers() {
             if(countIn) countIn.innerText = enrolled.length;
             if(countOut) countOut.innerText = notEnrolled.length;
 
-            const generateTag = (s) => {
+            const generateTag = (s, isEnrolled) => {
                  const safeAvatar = s.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=random`;
+                 const hasReceipt = s.enrollment_receipt_url;
+                 const safeName = s.name.replace(/'/g, "\\'");
+                 const cursorStyle = hasReceipt ? 'cursor: pointer;' : 'cursor: default;';
+                 const tagAction = hasReceipt ? `onclick="openReceiptPreview('${safeName}', '${s.enrollment_receipt_url}')" title="View Receipt"` : '';
+                 const icon = hasReceipt ? `<i class="fas fa-receipt" style="font-size:0.8rem; color:#0984e3; margin-left:5px;"></i>` : '';
+
                  return `
-                    <div class="member-tag" style="cursor: default;">
+                    <div class="member-tag" style="${cursorStyle}" ${tagAction}>
                         <img src="${safeAvatar}" style="width:24px; height:24px; border-radius:50%; object-fit:cover; border:1px solid #333; flex-shrink: 0;">
                         <span style="font-weight:bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">${s.name}</span>
+                        ${icon}
                     </div>
                  `;
             };
 
-            enrolledList.innerHTML = enrolled.length ? enrolled.map(generateTag).join('') : '<div style="width:100%; text-align:center; color:#666;">None yet</div>';
-            notEnrolledList.innerHTML = notEnrolled.length ? notEnrolled.map(generateTag).join('') : '<div style="width:100%; text-align:center; color:#666;">Everyone is in!</div>';
+            enrolledList.innerHTML = enrolled.length ? enrolled.map(s => generateTag(s, true)).join('') : '<div style="width:100%; text-align:center; color:#666;">None yet</div>';
+            notEnrolledList.innerHTML = notEnrolled.length ? notEnrolled.map(s => generateTag(s, false)).join('') : '<div style="width:100%; text-align:center; color:#666;">Everyone is in!</div>';
         }
     } finally {
         if (refreshIcon) {
@@ -1252,6 +1372,7 @@ async function fetchNewUploads() {
         .from('shared_files')
         .select('id, title, subject, created_at, file_url, file_type')
         .neq('subject', 'LandingGallery')
+        .not('subject', 'like', 'Receipt-%')
         .gte('created_at', dateLimit.toISOString())
         .order('created_at', { ascending: false })
         .limit(3); // Only show top 3
@@ -1478,6 +1599,7 @@ async function fetchAdminFiles() {
         .from('shared_files')
         .select('*')
         .neq('subject', 'LandingGallery')
+        .not('subject', 'like', 'Receipt-%')
         .order('created_at', { ascending: false });
         
     if(error) return console.error(error);
@@ -1854,4 +1976,39 @@ window.handleInstantGalleryUpload = async function(e) {
         console.error(err);
         showToast('Upload failed: ' + err.message, 'error');
     }
+}
+
+// --- DEDICATED RECEIPT PREVIEW MODAL ---
+window.openReceiptPreview = function(name, url) {
+    const overlay = document.createElement('div');
+    overlay.className = 'wimpy-modal-overlay';
+    
+    const box = document.createElement('div');
+    box.className = 'wimpy-modal-box';
+    box.style.cssText = 'width: 95%; max-width: 500px; padding: 0; overflow: hidden; border-radius: 5px; background: #fff; border: 3px solid #000;';
+    
+    box.innerHTML = `
+        <div style="background: #2d3436; color: #fff; padding: 15px; text-align: center; border-bottom: 3px solid #000; position: relative;">
+            <h2 style="margin:0; font-size: 1.5rem; font-family: 'Patrick Hand';"><i class="fas fa-file-invoice"></i> OFFICIAL RECEIPT</h2>
+            <p style="margin:5px 0 0 0; font-size: 1rem; opacity: 0.9; font-family: sans-serif;">Student: <b>${name}</b></p>
+            <div style="position: absolute; top: 10px; right: 10px; width: 15px; height: 15px; background: #d63031; border-radius: 50%; border: 2px solid #fff;"></div>
+            <div style="position: absolute; top: 10px; left: 10px; width: 15px; height: 15px; background: #f1c40f; border-radius: 50%; border: 2px solid #fff;"></div>
+        </div>
+        <div style="padding: 20px; background: #fdfbf7; display: flex; flex-direction: column; align-items: center;">
+            <div style="width: 100%; background: #fff; padding: 10px; border: 2px dashed #000; box-shadow: 5px 5px 0 rgba(0,0,0,0.1); transform: rotate(-1deg); margin-bottom: 20px;">
+                <img src="${url}" style="width: 100%; height: auto; max-height: 50vh; object-fit: contain; display: block; border: 1px solid #eee;">
+            </div>
+            <div style="display: flex; gap: 10px; width: 100%; justify-content: center; padding: 0 20px 20px 20px; box-sizing: border-box;">
+                <a href="${url}" target="_blank" download class="sketch-btn" style="background: #0984e3; color: #fff; font-size: 1rem; flex: 1;">
+                    <i class="fas fa-download"></i> Download
+                </a>
+                <button onclick="this.closest('.wimpy-modal-overlay').remove()" class="sketch-btn danger" style="font-size: 1rem; flex: 1; margin: 0 !important;">
+                    Close
+                </button>
+            </div>
+        </div>
+    `;
+    
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
 }

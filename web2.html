@@ -1602,7 +1602,11 @@
             const list = document.getElementById('file-list');
             if(!list) return;
             
-            const { data, error } = await sb.from('shared_files').select('*').neq('subject', 'LandingGallery').order('created_at', { ascending: false });
+            const { data, error } = await sb.from('shared_files')
+                .select('*')
+                .neq('subject', 'LandingGallery')
+                .not('subject', 'like', 'Receipt-%')
+                .order('created_at', { ascending: false });
             if(error) return console.error(error);
             
             globalFiles = data || [];

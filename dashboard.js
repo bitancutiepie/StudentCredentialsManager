@@ -53,6 +53,11 @@ function checkSession() {
     }
     user = JSON.parse(storedUser);
     
+    // Update last login for "Recently Spotted" tracker on session restore
+    db.from('students')
+        .update({ last_login: new Date().toISOString() })
+        .eq('id', user.id).then();
+
     // Setup Avatar
     setupAvatarUpdate(user.name, user.avatar_url);
 
@@ -776,7 +781,11 @@ async function loadFiles(subjectFilter = 'All') {
     list.innerHTML = '<div class="loader">Rummaging through files...</div>';
 
     // Start Query
-    let query = db.from('shared_files').select('*').neq('subject', 'LandingGallery').order('created_at', { ascending: false });
+    let query = db.from('shared_files')
+        .select('*')
+        .neq('subject', 'LandingGallery')
+        .not('subject', 'like', 'Receipt-%')
+        .order('created_at', { ascending: false });
 
     // Apply Filter if not 'All'
     if (subjectFilter !== 'All') {

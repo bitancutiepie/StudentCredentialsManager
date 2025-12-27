@@ -190,6 +190,28 @@
 
         h2 { font-size: 2.5rem; text-align: center; margin-top: 0; text-decoration: underline; text-decoration-style: wavy; text-decoration-skip-ink: none; }
 
+        /* --- SKETCH BUTTON CLASS --- */
+        .sketch-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            padding: 8px 15px;
+            background: #fff;
+            color: #000;
+            border: 2px solid #000;
+            border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+            font-family: 'Patrick Hand', cursive;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            width: auto !important;
+            margin: 0 !important;
+        }
+        .sketch-btn:hover { background: #000; color: #fff; transform: rotate(-2deg) scale(1.05); }
+        .sketch-btn.danger { background: #d63031; color: #fff; }
+
         input, textarea {
             width: 100%;
             padding: 10px;
