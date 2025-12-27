@@ -931,8 +931,8 @@ async function fetchNotes() {
         div.appendChild(p);
 
         div.id = `note-${note.id}`;
-        div.style.left = note.x_pos + '%';
-        div.style.top = note.y_pos + '%';
+        div.style.left = (note.x_pos || 0) + '%';
+        div.style.top = (note.y_pos || 0) + '%';
         div.style.transform = `rotate(${note.rotation}deg)`;
         
         // Apply Wimpy Style (Color or Lined)
@@ -975,6 +975,7 @@ async function fetchNotes() {
         makeDraggable(div, note.id);
         noteLayer.appendChild(div);
     });
+    setTimeout(resolveCollisions, 200);
 }
 
 window.toggleLike = async function(id) {
@@ -1080,6 +1081,56 @@ function setupRealtimeNotes() {
         .subscribe();
 }
 
+function resolveCollisions() {
+    const notes = Array.from(document.querySelectorAll('.sticky-note'));
+    const board = document.getElementById('freedom-wall-board');
+    if (!board || notes.length < 2) return;
+
+    const boardRect = board.getBoundingClientRect();
+    const padding = 10;
+
+    for (let iter = 0; iter < 10; iter++) {
+        let movedInThisPass = false;
+        for (let i = 0; i < notes.length; i++) {
+            for (let j = i + 1; j < notes.length; j++) {
+                const n1 = notes[i];
+                const n2 = notes[j];
+                const r1 = n1.getBoundingClientRect();
+                const r2 = n2.getBoundingClientRect();
+
+                const overlapX = Math.min(r1.right, r2.right) - Math.max(r1.left, r2.left) + padding;
+                const overlapY = Math.min(r1.bottom, r2.bottom) - Math.max(r1.top, r2.top) + padding;
+
+                if (overlapX > 0 && overlapY > 0) {
+                    movedInThisPass = true;
+                    let dx = (r1.left + r1.width / 2) - (r2.left + r2.width / 2);
+                    let dy = (r1.top + r1.height / 2) - (r2.top + r2.height / 2);
+
+                    if (dx === 0 && dy === 0) { dx = Math.random() - 0.5; dy = Math.random() - 0.5; }
+
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    const force = 5;
+                    const moveX = (dx / distance) * force;
+                    const moveY = (dy / distance) * force;
+
+                    const applyMove = (el, mx, my) => {
+                        let lVal = parseFloat(el.style.left) || 0;
+                        let tVal = parseFloat(el.style.top) || 0;
+                        if (el.style.left.includes('px')) lVal = (lVal / boardRect.width) * 100;
+                        if (el.style.top.includes('px')) tVal = (tVal / boardRect.height) * 100;
+
+                        el.style.left = Math.max(0, Math.min(90, lVal + (mx / boardRect.width) * 100)) + '%';
+                        el.style.top = Math.max(0, Math.min(90, tVal + (my / boardRect.height) * 100)) + '%';
+                    };
+                    applyMove(n1, moveX, moveY);
+                    applyMove(n2, -moveX, -moveY);
+                }
+            }
+        }
+        if (!movedInThisPass) break;
+    }
+}
+
 window.deleteNote = async function(id) {
     if(!await showWimpyConfirm("Tear off this note?")) return;
     const { error } = await supabaseClient.from('notes').delete().eq('id', id);
@@ -1092,6 +1143,8 @@ window.deleteNote = async function(id) {
 
 function makeDraggable(element, noteId) {
     let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    let startLeft = 0, startTop = 0; // Track starting position
+
     element.onmousedown = dragMouseDown;
     element.ontouchstart = dragMouseDown;
     
@@ -1100,6 +1153,8 @@ function makeDraggable(element, noteId) {
         
         // Bring to front
         element.style.zIndex = 1000;
+        startLeft = element.offsetLeft; // Capture start position
+        startTop = element.offsetTop;
         
         if (e.type !== 'touchstart') e.preventDefault(); 
         pos3 = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX; 
@@ -1121,14 +1176,25 @@ function makeDraggable(element, noteId) {
         document.onmousemove = null; 
         document.ontouchend = null; 
         document.ontouchmove = null; 
+        
+        // FIX: Check if parent has dimensions to avoid NaN/Infinity errors
+        if (!parent || parent.offsetWidth <= 0 || parent.offsetHeight <= 0) return;
+
+        // FIX: Only update if actually moved (prevents 400 errors on simple clicks)
+        if (Math.abs(element.offsetLeft - startLeft) < 2 && Math.abs(element.offsetTop - startTop) < 2) return;
+
         const xPercent = (element.offsetLeft / parent.offsetWidth) * 100; 
         const yPercent = (element.offsetTop / parent.offsetHeight) * 100; 
+        resolveCollisions();
         updateNotePosition(noteId, xPercent, yPercent); 
     }
 }
 async function updateNotePosition(id, x, y) {
-    x = Math.max(0, Math.min(x, 95));
-    y = Math.max(0, Math.min(y, 95));
+    // FIX: Ensure values are valid numbers before sending to DB
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+
+    x = parseFloat(Math.max(0, Math.min(x, 95)).toFixed(2));
+    y = parseFloat(Math.max(0, Math.min(y, 95)).toFixed(2));
     await supabaseClient.from('notes').update({ x_pos: x, y_pos: y }).eq('id', id);
 }
 
@@ -1147,6 +1213,7 @@ window.openFreedomWall = function() {
     }
 
     fetchNotes(); // Refresh notes when opening
+    setTimeout(resolveCollisions, 300);
     // Auto-focus the input for instant accessibility
     setTimeout(() => {
         const input = document.getElementById('fw-landing-input');

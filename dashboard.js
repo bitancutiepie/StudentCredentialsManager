@@ -1145,6 +1145,7 @@ window.openFreedomWallModal = function() {
 
     fetchNotes();
     setTimeout(() => {
+        resolveCollisions();
         const input = document.getElementById('fw-content');
         if(input) input.focus();
     }, 100);
@@ -1162,8 +1163,8 @@ async function fetchNotes() {
         const div = document.createElement('div');
         div.className = 'sticky-note';
         div.id = `note-${note.id}`;
-        div.style.left = note.x_pos + '%';
-        div.style.top = note.y_pos + '%';
+        div.style.left = (note.x_pos || 0) + '%';
+        div.style.top = (note.y_pos || 0) + '%';
         div.style.transform = `rotate(${note.rotation}deg)`;
         if (note.color) div.classList.add(note.color);
 
@@ -1191,6 +1192,58 @@ async function fetchNotes() {
         makeDraggable(div, note.id);
         noteLayer.appendChild(div);
     });
+
+    setTimeout(resolveCollisions, 200);
+}
+
+function resolveCollisions() {
+    const notes = Array.from(document.querySelectorAll('.sticky-note'));
+    const board = document.getElementById('freedom-wall-board');
+    if (!board || notes.length < 2) return;
+
+    const boardRect = board.getBoundingClientRect();
+    const padding = 10;
+
+    for (let iter = 0; iter < 10; iter++) {
+        let movedInThisPass = false;
+        for (let i = 0; i < notes.length; i++) {
+            for (let j = i + 1; j < notes.length; j++) {
+                const n1 = notes[i];
+                const n2 = notes[j];
+                const r1 = n1.getBoundingClientRect();
+                const r2 = n2.getBoundingClientRect();
+
+                const overlapX = Math.min(r1.right, r2.right) - Math.max(r1.left, r2.left) + padding;
+                const overlapY = Math.min(r1.bottom, r2.bottom) - Math.max(r1.top, r2.top) + padding;
+
+                if (overlapX > 0 && overlapY > 0) {
+                    movedInThisPass = true;
+                    let dx = (r1.left + r1.width / 2) - (r2.left + r2.width / 2);
+                    let dy = (r1.top + r1.height / 2) - (r2.top + r2.height / 2);
+
+                    if (dx === 0 && dy === 0) { dx = Math.random() - 0.5; dy = Math.random() - 0.5; }
+
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    const force = 5;
+                    const moveX = (dx / distance) * force;
+                    const moveY = (dy / distance) * force;
+
+                    const applyMove = (el, mx, my) => {
+                        let lVal = parseFloat(el.style.left) || 0;
+                        let tVal = parseFloat(el.style.top) || 0;
+                        if (el.style.left.includes('px')) lVal = (lVal / boardRect.width) * 100;
+                        if (el.style.top.includes('px')) tVal = (tVal / boardRect.height) * 100;
+
+                        el.style.left = Math.max(0, Math.min(90, lVal + (mx / boardRect.width) * 100)) + '%';
+                        el.style.top = Math.max(0, Math.min(90, tVal + (my / boardRect.height) * 100)) + '%';
+                    };
+                    applyMove(n1, moveX, moveY);
+                    applyMove(n2, -moveX, -moveY);
+                }
+            }
+        }
+        if (!movedInThisPass) break;
+    }
 }
 
 window.deleteNote = async function(id) {
@@ -1205,12 +1258,17 @@ window.deleteNote = async function(id) {
 
 function makeDraggable(element, noteId) {
     let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    let startLeft = 0, startTop = 0; // Track starting position
+
     element.onmousedown = dragMouseDown;
     element.ontouchstart = dragMouseDown;
     
     function dragMouseDown(e) { 
         e = e || window.event; 
         element.style.zIndex = 1000;
+        startLeft = element.offsetLeft; // Capture start position
+        startTop = element.offsetTop;
+
         if (e.type !== 'touchstart') e.preventDefault(); 
         pos3 = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX; 
         pos4 = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY; 
@@ -1234,9 +1292,22 @@ function makeDraggable(element, noteId) {
         document.onmouseup = null; document.onmousemove = null; 
         document.ontouchend = null; document.ontouchmove = null; 
         const parent = element.parentElement;
+
+        if (!parent || parent.offsetWidth <= 0 || parent.offsetHeight <= 0) return;
+
+        // FIX: Only update if actually moved (prevents 400 errors on simple clicks)
+        if (Math.abs(element.offsetLeft - startLeft) < 2 && Math.abs(element.offsetTop - startTop) < 2) return;
+
         const xPercent = (element.offsetLeft / parent.offsetWidth) * 100; 
         const yPercent = (element.offsetTop / parent.offsetHeight) * 100; 
-        db.from('notes').update({ x_pos: Math.max(0, Math.min(xPercent, 95)), y_pos: Math.max(0, Math.min(yPercent, 95)) }).eq('id', noteId); 
+
+        if (!Number.isFinite(xPercent) || !Number.isFinite(yPercent)) return;
+
+        resolveCollisions();
+        
+        const finalX = parseFloat(Math.max(0, Math.min(xPercent, 95)).toFixed(2));
+        const finalY = parseFloat(Math.max(0, Math.min(yPercent, 95)).toFixed(2));
+        db.from('notes').update({ x_pos: finalX, y_pos: finalY }).eq('id', noteId); 
     }
 }
 
