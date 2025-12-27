@@ -87,7 +87,7 @@ Diverging from sterile, corporate interfaces, this project adopts a **hand-drawn
 The application requires the following tables in Supabase:
 
 1.  **`students`**: User credentials and profile data.
-    *   `id` (uuid), `sr_code` (text), `password` (text), `name` (text), `avatar_url` (text), `last_login` (timestamp), `email` (text).
+    *   `id` (uuid), `sr_code` (text), `password` (text), `name` (text), `avatar_url` (text), `last_login` (timestamp), `email` (text), `role` (text).
 2.  **`schedule`**: Class timetables.
     *   `id`, `subject_code`, `subject_name`, `start_time`, `end_time`, `day_of_week`, `instructor`, `room`, `meet_link`, `classroom_link`.
 3.  **`assignments`**: Homework tracking.
@@ -100,8 +100,35 @@ The application requires the following tables in Supabase:
     *   `id`, `content`, `x_pos`, `y_pos`, `rotation`, `color`.
 7.  **`requests`**: Anonymous messages to admin.
     *   `id`, `content`, `sender`, `created_at`.
-8.  **`user_statuses`**: Custom status messages for users.
-    *   `user_id`, `status`.
+8.  **`messages`**: Real-time chat system.
+    *   `id`, `sender_id`, `receiver_id`, `content`, `created_at`, `is_read`.
+
+---
+
+## 🛡️ Ethical & Security Standards
+
+The **Wimpy Credentials Book** prioritizes the integrity and privacy of its community. While developed for a specific, close-knit group, the system adheres to strict professional standards:
+
+### **Security Protocols**
+*   **Role-Based Access Control (RBAC):** Strict distinction between `Student` and `Admin` roles. Admin capabilities (e.g., file deletion, user management) are protected by server-side verification logic to prevent unauthorized execution via console manipulation.
+*   **Session Integrity:** The application implements real-time validation of user sessions. Any attempt to spoof admin privileges via local storage modification is immediately detected, logged, and the unauthorized session is purged.
+*   **Navigation Hardening:** Admin-restricted areas (like the "Admin Tools" binder tab) are gated by logic checks that prevent access even if UI elements are forcibly revealed.
+
+### **Data Ethics**
+*   **Consent & Privacy:** User data is collected solely for the purpose of academic management and is accessible only to authorized administrators for recovery purposes.
+*   **Auditability:** Key actions, such as account recovery or data modification, are performed with explicit confirmation dialogs to prevent accidental loss.
+*   **Transparency:** The system includes a visible "System Update" log to keep all users informed of changes to the platform's functionality and security policies.
+
+*> **Note:** This application manages credentials for a trusted circle of peers to facilitate account recovery. In a public production environment, additional layers like password hashing and strict Row Level Security (RLS) would be mandatory.*
+
+---
+
+## 🔄 Latest Updates (Maintenance Patch)
+
+*   **Security:** Fixed navigation loopholes and fortified admin function triggers against console-based exploits.
+*   **Architecture:** Refactored codebase into a clean, modular directory structure (`/css`, `/js`, `/assets`) for improved maintainability.
+*   **Performance:** Optimized asset loading and extracted inline styles for a smoother user experience.
+*   **Feature:** Launched **Message System**, enabling students to leave notes for offline classmates.
 
 ---
 
@@ -117,23 +144,14 @@ The application requires the following tables in Supabase:
     *   Create a new project at [supabase.com](https://supabase.com).
     *   Create the tables listed in the [Database Schema](#-database-schema) section.
     *   **Storage:** Create two public buckets: `avatars` and `class-resources`.
-    *   **Policies:** Enable RLS (Row Level Security) or allow public read/write access (depending on your security needs).
+    *   **Realtime:** Enable Realtime for `messages` and `notes` tables.
 
 3.  **Connect the App**
-    *   Open `script.js` and `dashboard.js`.
+    *   Open `js/script.js` and `js/dashboard.js`.
     *   Replace the `SUPABASE_URL` and `SUPABASE_KEY` constants with your project's credentials.
 
 4.  **Run Locally**
     *   You can use the Live Server extension in VS Code or simply open `index.html` in your browser.
-
----
-
-## ⚠️ Security Note
-
-**Context:** This application was developed for a specific, closed group of trusted friends to facilitate easier account recovery and management.
-
-*   **Password Storage:** Passwords are currently stored as plain text to allow the Admin to assist members who forget their credentials.
-*   **Recommendation:** If you plan to deploy this for a public audience or a real production environment, **you must implement password hashing (e.g., bcrypt)** and stricter Row Level Security (RLS) policies in Supabase to protect user data.
 
 ---
 

@@ -1,912 +1,37 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema ni JV</title>
     <!-- Supabase -->
     <!-- Favicon -->
-    <link rel="icon" type="image/png" href="logo.png">
-    <link rel="apple-touch-icon" href="logo.png">
+    <link rel="icon" type="image/png" href="assets/images/logo.png">
+    <link rel="apple-touch-icon" href="assets/images/logo.png">
     <!-- Open Graph / Social Media Sharing Image -->
-    <meta property="og:image" content="logo.png">
-    <meta name="twitter:image" content="logo.png">
+    <meta property="og:image" content="assets/images/logo.png">
+    <meta name="twitter:image" content="assets/images/logo.png">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- EmailJS SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script>
-       (function(){
-          emailjs.init("KtQgxJvMwR6IfuU3_");
-       })();
+        (function () {
+            emailjs.init("KtQgxJvMwR6IfuU3_");
+        })();
     </script>
     <!-- html2canvas for Wallpaper Generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Permanent+Marker&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Permanent+Marker&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
     
-    <style>
-        :root {
-            --paper-color: #fdfbf7;
-            --line-color: #a4b0be;
-            --ink-color: #2f3542;
-            --red-ink: #ff4757;
-            --highlight: #ffee58;
-            --tape-color: rgba(255, 255, 255, 0.4);
-        }
-
-        body {
-            font-family: 'Patrick Hand', cursive;
-            background-color: #57606f; /* Dark Desk Background */
-            background-image: radial-gradient(#2f3542 15%, transparent 16%), radial-gradient(#2f3542 15%, transparent 16%);
-            background-size: 20px 20px;
-            margin: 0;
-            padding: 20px;
-            color: var(--ink-color);
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-
-        /* --- CUSTOM SCROLLBAR --- */
-        ::-webkit-scrollbar {
-            width: 14px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #fdfbf7; /* Paper color */
-            border-left: 2px solid #000;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #2f3542; /* Pencil lead color */
-            border: 3px solid #fdfbf7; /* Creates a gap effect */
-            border-radius: 10px;
-            background-clip: padding-box;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #d63031; /* Red pen on hover */
-            border: 3px solid #fdfbf7;
-        }
-
-        /* For Firefox */
-        html {
-            scrollbar-color: #2f3542 #fdfbf7; /* thumb and track color */
-            scrollbar-width: thin;
-        }
-
-
-        /* --- THE BINDER CONTAINER --- */
-        .binder {
-            display: flex;
-            max-width: 1200px;
-            margin: 0 auto;
-            background: var(--paper-color);
-            box-shadow: 15px 15px 30px rgba(0,0,0,0.4);
-            border-radius: 5px;
-            position: relative;
-            min-height: 85vh;
-            overflow: hidden; /* For rounded corners */
-            transition: max-width 0.3s ease;
-        }
-        .binder.wide-mode { max-width: 98%; }
-
-        /* Left Sidebar (The Rings & Tabs) */
-        .sidebar {
-            width: 80px;
-            background: #2f3542;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding-top: 40px;
-            z-index: 20;
-            flex-shrink: 0;
-        }
-
-        .binder-ring {
-            width: 40px;
-            height: 15px;
-            background: linear-gradient(90deg, #bdc3c7, #fff, #bdc3c7);
-            border-radius: 10px;
-            margin-bottom: 60px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-            position: relative;
-            z-index: 25;
-        }
-        
-        .binder-ring::before {
-            content: '';
-            position: absolute;
-            left: -15px;
-            top: 2px;
-            width: 12px;
-            height: 12px;
-            background: #000;
-            border-radius: 50%;
-        }
-
-        /* Navigation Tabs (Vertical Sticky Notes) */
-        .nav-tabs {
-            position: absolute;
-            left: 60px; /* Moved left to hug the spine tighter */
-            top: 50px;  /* Pushed down slightly for better spacing */
-            display: flex;
-            flex-direction: column;
-            gap: 20px; /* Increased gap to prevent crowding */
-            z-index: 15;
-        }
-
-        .tab-btn {
-            width: 130px; /* Slightly narrower to reduce overlap chance */
-            padding: 12px 10px 12px 25px;
-            font-family: 'Permanent Marker', cursive;
-            font-size: 1rem;
-            border: none;
-            cursor: pointer;
-            text-align: left;
-            transition: transform 0.2s ease;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
-            clip-path: polygon(0% 0%, 95% 0%, 100% 50%, 95% 100%, 0% 100%);
-            position: relative;
-        }
-
-        .tab-btn:hover { transform: translateX(10px); }
-        .tab-btn.active { transform: translateX(15px); box-shadow: 5px 5px 10px rgba(0,0,0,0.1); }
-
-        /* Tab Colors */
-        .tab-btn:nth-child(1) { background: #ff7675; color: white; transform: rotate(-2deg); } /* Schedule */
-        .tab-btn:nth-child(2) { background: #74b9ff; color: white; transform: rotate(1deg); } /* Assignments */
-        .tab-btn:nth-child(3) { background: #55efc4; color: #2d3436; transform: rotate(-1deg); } /* Calendar */
-        .tab-btn:nth-child(4) { background: #ffeaa7; color: #2d3436; transform: rotate(2deg); } /* Links */
-        .tab-btn:nth-child(5) { background: #a29bfe; color: #2d3436; transform: rotate(-1deg); } /* Help */
-
-        /* --- MAIN PAPER AREA --- */
-        .paper-content {
-            flex-grow: 1;
-            /* INCREASED LEFT PADDING from 120px to 170px to clear the tabs */
-            padding: 40px 40px 40px 170px; 
-            background-image: repeating-linear-gradient(var(--paper-color) 0px, var(--paper-color) 29px, var(--line-color) 30px);
-            position: relative;
-        }
-
-        /* The Vertical Red Margin Line */
-        .paper-content::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 145px; /* Moved margin line to match new padding */
-            width: 2px;
-            height: 100%;
-            background-color: #ff9ff3;
-            opacity: 0.6;
-            z-index: 0;
-        }
-
-        /* --- TYPOGRAPHY --- */
-        h1 {
-            font-family: 'Permanent Marker', cursive;
-            font-size: 3rem;
-            margin: 0;
-            transform: rotate(-2deg);
-            text-shadow: 2px 2px 0px rgba(0,0,0,0.1);
-        }
-
-        /* --- TAB SWITCHING ANIMATION --- */
-        .tab-content {
-            animation: paperSlideIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-            transform-origin: top left;
-        }
-
-        @keyframes paperSlideIn {
-            0% { opacity: 0; transform: translateX(-40px) rotate(-3deg); }
-            100% { opacity: 1; transform: translateX(0) rotate(0deg); }
-        }
-
-        /* --- NEW WIMPY ANIMATIONS --- */
-        @keyframes paperDeal {
-            0% { opacity: 0; transform: translateY(50px) rotate(-5deg) scale(0.9); }
-            100% { opacity: 1; transform: translateY(0) rotate(0deg) scale(1); }
-        }
-
-        @keyframes buttonWiggle {
-            0% { transform: rotate(0deg); }
-            25% { transform: rotate(-3deg); }
-            50% { transform: rotate(3deg); }
-            75% { transform: rotate(-1deg); }
-            100% { transform: rotate(0deg); }
-        }
-
-        /* Scribble effect for headers on hover */
-        h2:hover {
-            animation: buttonWiggle 0.5s ease-in-out infinite;
-        }
-
-        /* --- CARDS & ITEMS --- */
-        .grid-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 25px;
-            margin-top: 30px;
-            position: relative;
-            z-index: 5;
-        }
-
-        .class-card {
-            background: white;
-            padding: 20px;
-            box-shadow: 3px 3px 8px rgba(0,0,0,0.1);
-            position: relative;
-            transition: all 0.3s ease;
-            border: 1px solid #d1ccc0;
-            /* Default hidden for animation */
-            opacity: 0; 
-            animation: paperDeal 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-        }
-
-        /* Tape Effect on top of cards */
-        .class-card::before {
-            content: '';
-            position: absolute;
-            top: -15px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 100px;
-            height: 30px;
-            background-color: rgba(255,255,255,0.4);
-            border-left: 1px dashed rgba(0,0,0,0.1);
-            border-right: 1px dashed rgba(0,0,0,0.1);
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-            opacity: 0.7;
-        }
-
-        .class-card:hover {
-            transform: scale(1.02) rotate(-1deg);
-            box-shadow: 10px 10px 15px rgba(0,0,0,0.15);
-            z-index: 10;
-        }
-
-        /* Specific Styles for Assignment Cards (Sticky Note Look) */
-        #assignment-list .class-card {
-            background: #fffa65;
-            border: none;
-            border-bottom-right-radius: 40px 5px;
-        }
-        #assignment-list .class-card::after {
-            content: '';
-            position: absolute;
-            bottom: 0; right: 0;
-            width: 0; height: 0;
-            border-style: solid;
-            border-width: 0 0 40px 40px;
-            border-color: transparent transparent rgba(0,0,0,0.1) transparent;
-        }
-
-        .subject-code {
-            font-family: 'Permanent Marker', cursive;
-            font-size: 1.5rem;
-            color: #d63031;
-        }
-
-        .time-badge {
-            float: right;
-            font-weight: bold;
-            background: #000;
-            color: #fff;
-            padding: 2px 8px;
-            font-size: 0.9rem;
-            border-radius: 3px;
-        }
-
-        /* --- BUTTONS --- */
-        .filter-bar {
-            margin: 20px 0;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-        
-        .sketch-btn {
-            background: transparent;
-            border: 2px solid var(--ink-color);
-            padding: 8px 16px;
-            font-family: 'Patrick Hand', cursive;
-            font-size: 1.1rem;
-            cursor: pointer;
-            border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
-            transition: 0.2s;
-            text-decoration: none;
-            color: var(--ink-color);
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .sketch-btn:hover {
-            background: var(--ink-color);
-            color: white;
-            transform: rotate(-2deg);
-            animation: buttonWiggle 0.4s ease-in-out;
-        }
-
-        .sketch-btn.meet { border-color: #0984e3; color: #0984e3; }
-        .sketch-btn.meet:hover { background: #0984e3; color: white; }
-        
-        .sketch-btn.classroom { border-color: #00b894; color: #00b894; }
-        .sketch-btn.classroom:hover { background: #00b894; color: white; }
-
-        .sketch-btn.danger {
-            border-color: #d63031;
-            color: #d63031;
-            font-size: 0.9rem;
-        }
-        
-        /* Active State for Admin Menu */
-        .sketch-btn.active-tool {
-            background: var(--ink-color);
-            color: white;
-            transform: rotate(-2deg);
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
-        }
-        .sketch-btn.danger:hover { background: #d63031; color: white; }
-
-        /* Wallpaper Button Custom Style */
-        .wallpaper-btn { margin-left: auto; border-color: #6c5ce7; color: #6c5ce7; }
-        .wallpaper-btn:hover { background: #6c5ce7; color: white; }
-
-        /* --- ADMIN FORMS --- */
-        .admin-controls {
-            display: none; /* Hidden by default */
-            margin-top: 40px;
-            background: #fff;
-            padding: 20px;
-            border: 2px dashed #000;
-            position: relative;
-        }
-        .admin-controls::before {
-            content: 'ADMIN ONLY';
-            position: absolute;
-            top: -15px;
-            left: 20px;
-            background: #d63031;
-            color: white;
-            padding: 2px 10px;
-            font-weight: bold;
-            transform: rotate(-2deg);
-        }
-
-        input, select, textarea {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 10px;
-            border: none;
-            border-bottom: 2px solid #ccc;
-            background: transparent;
-            font-family: 'Patrick Hand';
-            font-size: 1.2rem;
-            box-sizing: border-box;
-        }
-        input:focus, textarea:focus {
-            outline: none;
-            border-bottom: 2px solid var(--ink-color);
-        }
-
-        /* --- UTILS --- */
-        .hidden { display: none !important; }
-        .loader { font-size: 1.5rem; text-align: center; margin-top: 50px; color: #7f8c8d; }
-
-        /* --- FLOATING UP BUTTON (Wimpy Style) --- */
-        /* --- Better Loading States (Doodle Animation) --- */
-        .loader {
-            font-family: 'Permanent Marker', cursive;
-            font-size: 1.5rem;
-            text-align: center;
-            margin-top: 50px;
-            color: #555;
-            animation: pencilFloat 1s ease-in-out infinite alternate;
-        }
-
-        .loader::before {
-            content: '\f303'; /* Pencil Icon */
-            font-family: "Font Awesome 6 Free";
-            font-weight: 900;
-            margin-right: 5px;
-        }
-
-        @keyframes pencilFloat {
-            from { transform: translateY(0) rotate(-5deg); }
-            to { transform: translateY(-10px) rotate(5deg); }
-        }
-
-        /* --- LIVE CLASS CARD STYLES --- */
-        .live-card {
-            padding: 15px 20px;
-            border-radius: 4px;
-            position: relative;
-            box-shadow: 0 0 15px rgba(214, 48, 49, 0.3);
-            transform: rotate(-1deg);
-            animation: urgentPulse 2s infinite;
-        }
-
-        .live-card::before {
-            content: 'HAPPENING NOW';
-            position: absolute;
-            top: -12px;
-            left: 20px;
-            background: #d63031;
-            color: white;
-            font-family: 'Permanent Marker', cursive;
-            padding: 2px 10px;
-            font-size: 1rem;
-            transform: rotate(-2deg);
-            z-index: 2;
-        }
-
-        .live-card h3 {
-            margin: 10px 0 5px 0;
-            color: #d63031;
-            font-size: 1.8rem;
-        }
-
-        .live-card-details {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        @keyframes urgentPulse {
-            0% { box-shadow: 0 0 0 0 rgba(214, 48, 49, 0.4); }
-            70% { box-shadow: 0 0 0 10px rgba(214, 48, 49, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(214, 48, 49, 0); }
-        }
-
-        .floating-action {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            width: 60px;
-            height: 60px;
-            background: #fff; /* Paper white */
-            border: 3px solid #000; /* Marker pen black */
-            /* This creates a non-perfect, hand-drawn circle shape */
-            border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; 
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
-            box-shadow: 5px 5px 0px rgba(0,0,0,0.2); /* Hard shadow for pop */
-            transition: transform 0.2s ease;
-            z-index: 100;
-            color: #000;
-            font-size: 1.8rem;
-        }
-
-        .floating-action:hover {
-            transform: translateY(-5px) rotate(-10deg); /* Floats and tilts when hovered */
-            box-shadow: 8px 8px 0px rgba(0,0,0,0.2);
-            background: #000; /* Invert colors on hover */
-            color: #fff;
-            border-color: #fff;
-        }
-
-        /* --- TOAST NOTIFICATIONS --- */
-        #toast-container {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 10001; /* Ensure above modals */
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .toast {
-            background: #fff740; /* Sticky Note Yellow */
-            color: #000;
-            padding: 15px 25px;
-            border: 2px solid #000;
-            font-family: 'Patrick Hand', cursive;
-            font-size: 1.2rem;
-            box-shadow: 5px 5px 0 rgba(0,0,0,0.2);
-            transform: rotate(-2deg); /* Wimpy Style Tilt */
-            opacity: 0;
-            animation: slideInFadeOut 4s forwards; /* Lasts 4 seconds total */
-            min-width: 200px;
-            text-align: center;
-        }
-
-        /* Animation: Slide in -> Wait -> Fade Up & Out */
-        @keyframes slideInFadeOut {
-            0% { transform: translateX(100%) rotate(0deg); opacity: 0; }
-            10% { transform: translateX(0) rotate(-2deg); opacity: 1; }
-            80% { transform: translateX(0) rotate(-2deg); opacity: 1; }
-            100% { transform: translateY(-20px) rotate(-2deg); opacity: 0; }
-        }
-
-        /* --- MOBILE RESPONSIVENESS --- */
-        @media (max-width: 768px) {
-            body { padding: 10px; background-size: 15px 15px; }
-            .binder { flex-direction: column; min-height: 100vh; border-radius: 0; margin: 0 -10px; width: calc(100% + 20px); }
-            .sidebar { 
-                width: 100%; 
-                height: auto; 
-                flex-direction: row; 
-                justify-content: center; 
-                padding: 10px 0; 
-                align-items: center; 
-                background: #2f3542;
-            }
-            .binder-ring { 
-                display: none; /* Hide rings on mobile to save space */
-            }
-            .nav-tabs {
-                position: static;
-                flex-direction: row;
-                gap: 10px;
-                padding: 10px 15px;
-                overflow-x: auto;
-                width: 100%;
-                box-sizing: border-box;
-                -webkit-overflow-scrolling: touch;
-                scrollbar-width: none; /* Firefox */
-            }
-            .nav-tabs::-webkit-scrollbar { display: none; } /* Chrome/Safari */
-
-            .tab-btn {
-                width: auto;
-                padding: 10px 20px;
-                font-size: 1rem;
-                clip-path: none;
-                border-radius: 5px;
-                flex-shrink: 0;
-                margin-bottom: 0;
-                box-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-            }
-            .paper-content {
-                padding: 20px 15px;
-                background-size: 100% 30px; /* Adjust line height */
-            }
-            .paper-content::before { display: none; /* Remove margin line on mobile */ }
-            
-            h1 { font-size: 2rem; }
-            .casio-watch { position: relative; top: 0; right: 0; display: inline-block; margin: 10px auto; transform: rotate(0); }
-            .grid-container { grid-template-columns: 1fr; gap: 20px; }
-
-            /* Better touch targets */
-            .sketch-btn {
-                padding: 10px 20px;
-                font-size: 1.1rem;
-                width: 100%;
-                justify-content: center;
-                box-sizing: border-box;
-            }
-            
-            .filter-bar {
-                justify-content: center;
-            }
-            
-            .filter-bar .sketch-btn {
-                width: auto;
-                flex: 1 1 auto;
-            }
-
-            /* Prevent iOS zoom on inputs */
-            input, select, textarea {
-                font-size: 16px !important; 
-            }
-
-            /* Fix Wallpaper Button Visibility on Mobile */
-            .wallpaper-btn { margin-left: 0; width: 100%; margin-top: 5px; }
-
-            /* Center Toasts on Mobile */
-            #toast-container {
-                left: 50%;
-                transform: translateX(-50%);
-                right: auto;
-                width: 90%;
-                align-items: center;
-            }
-
-            /* Fix Active Users List on Mobile (Horizontal) */
-            #active-users-list {
-                flex-direction: row !important;
-                flex-wrap: wrap;
-                justify-content: center;
-            }
-            #active-users-panel {
-                padding-bottom: 0 !important;
-                margin-top: 0 !important;
-            }
-
-            /* Freedom Wall Mobile Fix */
-            .sticky-note { width: 90px !important; font-size: 0.75rem !important; padding: 8px !important; min-height: 50px !important; }
-            .sticky-note .like-sticker { font-size: 0.7rem !important; padding: 1px 4px !important; bottom: 2px !important; right: 2px !important; }
-            .sticky-note .delete-note-btn { width: 16px !important; height: 16px !important; font-size: 0.6rem !important; }
-        }
-
-        /* --- WIMPY POP-UP MODAL --- */
-        .wimpy-modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.6); z-index: 10000;
-            display: flex; justify-content: center; align-items: center;
-            backdrop-filter: blur(3px);
-        }
-        .wimpy-modal-box {
-            background: #fff; border: 3px solid #000;
-            border-radius: 2% 6% 5% 4% / 1% 1% 2% 4%;
-            padding: 30px; width: 90%; max-width: 400px;
-            text-align: center; box-shadow: 10px 10px 0 rgba(0,0,0,0.2);
-            transform: rotate(-1deg);
-            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        @keyframes popIn { from { transform: scale(0.8) rotate(-5deg); opacity: 0; } to { transform: scale(1) rotate(-1deg); opacity: 1; } }
-
-        /* Color Picker */
-        .color-option {
-            width: 30px; height: 30px; border-radius: 50%; cursor: pointer; 
-            border: 2px solid rgba(0,0,0,0.1); transition: transform 0.2s;
-        }
-        .color-option:hover { transform: scale(1.2); }
-        .color-option.selected { border: 2px solid #000; transform: scale(1.1); }
-
-        /* --- CHAT STYLES --- */
-        .chat-container { display: flex; flex-direction: column; height: 300px; overflow-y: auto; border: 2px solid #000; background: #fff; padding: 10px; margin-bottom: 10px; }
-        .chat-bubble { max-width: 70%; padding: 8px 12px; border-radius: 15px; margin-bottom: 5px; font-family: 'Patrick Hand'; font-size: 1.1rem; word-wrap: break-word; }
-        .chat-bubble.me { align-self: flex-end; background: #0984e3; color: #fff; border-bottom-right-radius: 2px; }
-        .chat-bubble.them { align-self: flex-start; background: #dfe6e9; color: #000; border-bottom-left-radius: 2px; }
-        .chat-input-area { display: flex; gap: 10px; }
-
-        /* --- FREEDOM WALL BOARD STYLES --- */
-        #freedom-wall-board {
-            position: relative;
-            width: 100%;
-            background-color: #fff;
-            background-image: radial-gradient(#bdc3c7 1px, transparent 1px);
-            background-size: 20px 20px;
-            border: 2px solid #000;
-            border-radius: 5px;
-            overflow: auto;
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
-        }
-        .sticky-note {
-            position: absolute;
-            width: 150px;
-            padding: 15px;
-            font-family: 'Patrick Hand', cursive;
-            font-size: 1.1rem;
-            background: #fff;
-            border: 2px solid #000;
-            box-shadow: 4px 4px 0 rgba(0,0,0,0.1);
-            cursor: grab;
-            word-wrap: break-word;
-        }
-        .sticky-note.lined { background-image: repeating-linear-gradient(transparent, transparent 24px, #a4b0be 25px); line-height: 25px; }
-        .sticky-note.yellow { background-color: #fff740; }
-        .sticky-note.pink { background-color: #ff7eb9; }
-        .sticky-note.blue { background-color: #7afcff; }
-        .sticky-note.green { background-color: #98ff98; }
-        .delete-note-btn {
-            position: absolute;
-            top: 2px;
-            right: 2px;
-            background: #d63031;
-            color: #fff;
-            border: none;
-            border-radius: 50%;
-            width: 18px;
-            height: 18px;
-            font-size: 0.7rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .like-sticker {
-            position: absolute;
-            bottom: 5px;
-            right: 5px;
-            font-size: 0.9rem;
-            color: #b2bec3;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 3px;
-            background: rgba(255,255,255,0.8);
-            padding: 1px 5px;
-            border-radius: 10px;
-        }
-    </style>
-    <style>
-        .sticky-time {
-            position: relative;
-            margin: 0 auto 20px auto;
-            background: #fff740; /* Post-it yellow */            
-            padding: 15px; 
-            width: 280px; /* Fixed width */
-            height: 140px; /* Fixed height */
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            box-shadow: 4px 4px 5px rgba(0,0,0,0.2);
-            transform: rotate(3deg); /* Taped crookedly */
-            font-family: 'Permanent Marker', cursive;
-            z-index: 10;
-            border-bottom-right-radius: 30px 5px; /* Dog-ear effect */            
-            box-sizing: border-box;
-        }
-
-        .sticky-time .pin {
-            position: absolute;
-            top: -15px;            
-            left: 50%; /* Center the pin */
-            font-size: 1.5rem;
-            filter: drop-shadow(2px 2px 0 rgba(0,0,0,0.2));            
-            transform: translateX(-50%); /* Adjust for centering */
-        }
-
-        .sticky-time small {
-            display: block;
-            font-size: 1rem; /* Slightly larger for better readability */
-            color: #555;            
-            font-family: 'Patrick Hand', cursive;            
-            margin-bottom: 5px;            
-        }
-
-        .sticky-time #live-clock {
-            font-family: 'Patrick Hand', sans-serif;
-            font-size: 3rem; /* Adjusted to fit fixed box */
-            color: #2d3436;
-            line-height: 1;
-            font-weight: bold;
-            white-space: nowrap; /* Prevent wrapping */
-        }
-
-        /* Mobile */
-        @media (max-width: 768px) {
-            .sticky-time {
-                margin: 20px auto;                
-                transform: rotate(0deg);                
-                width: 220px; 
-                height: 110px;
-                padding: 10px;
-            }
-            .sticky-time small {
-                font-size: 0.9rem; /* Smaller font for mobile */
-            }
-            .sticky-time #live-clock {
-                font-size: 2.2rem; 
-            }
-            .sticky-time .pin {
-                left: 50%; /* Ensure pin remains centered */
-                transform: translateX(-50%);
-            }
-        }
-
-        /* --- LIVE ACTIVE USERS STYLES --- */
-        .live-user-bubble {
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            border: 2px solid #fff;
-            position: relative;
-            cursor: pointer;
-            transition: transform 0.2s;
-            background-color: #fff; /* Fallback */
-        }
-
-        .live-user-bubble:hover {
-            transform: scale(1.1);
-            z-index: 10;
-        }
-
-        .live-user-bubble img {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            object-fit: cover;
-        }
-
-        /* The Green Dot */
-        .live-user-bubble::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            right: 0;
-            width: 12px;
-            height: 12px;
-            background-color: #2ecc71; /* Green */
-            border: 2px solid #2f3542; /* Dark border to match theme */
-            border-radius: 50%;
-        }
-
-        /* Tooltip for the name */
-        .live-user-bubble:hover::before {
-            content: attr(data-name);
-            position: absolute;
-            left: 60px; /* Push to the right of the sidebar */
-            top: 50%;
-            transform: translateY(-50%);
-            background: #000;
-            color: #fff;
-            padding: 5px 10px;
-            border-radius: 5px;
-            font-family: 'Patrick Hand';
-            white-space: nowrap;
-            z-index: 20;
-            font-size: 1rem;
-        }
-
-        /* --- CALENDAR STYLES --- */
-        .calendar-wrapper {
-            background: #fff;
-            border: 2px solid #000;
-            border-radius: 5px;
-            padding: 15px;
-            box-shadow: 5px 5px 0 rgba(0,0,0,0.1);
-            transform: rotate(-1deg);
-        }
-        .calendar-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            font-family: 'Permanent Marker', cursive;
-            font-size: 1.5rem;
-        }
-        .calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 5px;
-        }
-        .cal-day-header {
-            text-align: center;
-            font-weight: bold;
-            padding: 5px;
-            background: #eee;
-            border-radius: 3px;
-        }
-        .cal-day {
-            background: #fff;
-            border: 1px solid #ddd;
-            min-height: 80px;
-            padding: 5px;
-            position: relative;
-            cursor: pointer;
-            transition: 0.2s;
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-        .cal-day:hover { background: #f9f9f9; transform: scale(1.05); z-index: 5; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        .cal-day.today { background: #fff740; border: 2px solid #000; }
-        .cal-day.empty { background: transparent; border: none; cursor: default; }
-        .cal-event-dot {
-            font-size: 0.7rem; background: #d63031; color: white; padding: 1px 4px; border-radius: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        }
-
-        /* --- RUBBER STAMP ANIMATION --- */
-        @keyframes stamp-slam {
-            0% { opacity: 0; transform: scale(5) rotate(-10deg); }
-            50% { opacity: 1; transform: scale(0.8) rotate(-10deg); }
-            70% { transform: scale(1.1) rotate(-10deg); }
-            100% { transform: scale(1) rotate(-10deg); }
-        }
-        .rubber-stamp {
-            animation: stamp-slam 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
-            font-family: 'Permanent Marker', cursive !important;
-            border: 3px solid;
-            background: transparent !important;
-            padding: 2px 8px !important;
-            border-radius: 5px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transform: rotate(-10deg);
-            display: inline-block;
-            mix-blend-mode: multiply; /* Blends nicely with paper */
-        }
-    </style>
+    
+    <link rel="stylesheet" href="css/dashboard.css">
 </head>
+
 <body>
 
     <div class="binder">
@@ -917,11 +42,14 @@
             <div class="binder-ring"></div>
 
             <!-- START: Live Active Users -->
-            <div id="active-users-panel" style="margin-top: auto; padding-bottom: 20px; text-align: center; width: 100%;">
-                <p style="color: #fff; font-family: 'Patrick Hand'; font-size: 0.9rem; margin-bottom: 10px; border-bottom: 1px dashed #7f8c8d; padding-bottom: 5px;">
+            <div id="active-users-panel"
+                style="margin-top: auto; padding-bottom: 20px; text-align: center; width: 100%;">
+                <p
+                    style="color: #fff; font-family: 'Patrick Hand'; font-size: 0.9rem; margin-bottom: 10px; border-bottom: 1px dashed #7f8c8d; padding-bottom: 5px;">
                     <i class="fas fa-eye"></i> IN THE ROOM:
                 </p>
-                <div id="active-users-list" style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                <div id="active-users-list"
+                    style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
                     <!-- Avatars will appear here dynamically -->
                     <small style="color: #bdc3c7;">Scanning...</small>
                 </div>
@@ -936,12 +64,13 @@
             <button class="tab-btn" onclick="switchTab('calendar', event)">Events</button>
             <button class="tab-btn" onclick="switchTab('links', event)">Links</button>
             <button class="tab-btn" onclick="switchTab('help', event)">Help Guide</button>
-            <button class="tab-btn admin-only hidden" onclick="switchTab('admin-tools', event)" style="background: #2d3436; color: #fff; transform: rotate(-2deg);">Admin Tools</button>
+            <button class="tab-btn admin-only hidden" onclick="switchTab('admin-tools', event)"
+                style="background: #2d3436; color: #fff; transform: rotate(-2deg);">Admin Tools</button>
         </div>
 
         <!-- The Main Paper Content -->
         <div class="paper-content">
-            
+
             <div style="display: flex; justify-content: center; align-items: flex-start; flex-wrap: wrap;">
                 <div class="sticky-time">
                     <span class="pin"><i class="fas fa-thumbtack"></i></span>
@@ -951,46 +80,42 @@
             </div>
 
             <!-- REORGANIZED HEADER INFO -->
-            <style>
-                .profile-header-container {
-                    display: flex;
-                    align-items: flex-start;
-                    gap: 20px;
-                    flex-wrap: wrap;
-                    margin-bottom: 25px;
-                }
-                .profile-text-stack {
-                    display: flex;
-                    flex-direction: column;
-                    align-items: flex-start;
-                    gap: 8px;
-                    min-width: 200px;
-                }
-                @media (max-width: 768px) {
-                    .profile-header-container { gap: 15px; }
-                    .profile-text-stack { gap: 12px; } /* More gap for mobile rotations */
-                }
-            </style>
+            
 
             <div class="profile-header-container">
                 <!-- Avatar & Inbox Group -->
                 <div style="display: flex; align-items: center; gap: 15px;">
                     <div style="position: relative;">
-                        <img id="userAvatarDisplay" style="width: 65px; height: 65px; border-radius: 50%; border: 2px solid #000; cursor: pointer; object-fit: cover;" title="Click to change profile picture">
-                        <div onclick="document.getElementById('userAvatarDisplay').click()" style="position: absolute; bottom: -2px; right: -5px; background: #2d3436; color: #fff; border: 2px solid #fff; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; box-shadow: 2px 2px 0 rgba(0,0,0,0.2); cursor: pointer;"><i class="fas fa-camera"></i></div>
+                        <img id="userAvatarDisplay"
+                            style="width: 65px; height: 65px; border-radius: 50%; border: 2px solid #000; cursor: pointer; object-fit: cover;"
+                            title="Click to change profile picture">
+                        <div onclick="document.getElementById('userAvatarDisplay').click()"
+                            style="position: absolute; bottom: -2px; right: -5px; background: #2d3436; color: #fff; border: 2px solid #fff; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; box-shadow: 2px 2px 0 rgba(0,0,0,0.2); cursor: pointer;">
+                            <i class="fas fa-camera"></i></div>
                     </div>
-                    <div onclick="openInboxModal()" style="position: relative; cursor: pointer; font-size: 2rem; color: #2d3436;" title="My Messages">
+                    <div onclick="openInboxModal()"
+                        style="position: relative; cursor: pointer; font-size: 2rem; color: #2d3436;"
+                        title="My Messages">
                         <i class="fas fa-envelope"></i>
-                        <span id="msg-badge" style="position: absolute; top: -5px; right: -5px; background: #d63031; color: #fff; font-size: 0.8rem; font-weight: bold; padding: 2px 6px; border-radius: 50%; display: none;">0</span>
+                        <span id="msg-badge"
+                            style="position: absolute; top: -5px; right: -5px; background: #d63031; color: #fff; font-size: 0.8rem; font-weight: bold; padding: 2px 6px; border-radius: 50%; display: none;">0</span>
                     </div>
                 </div>
 
                 <!-- Text Info Stack -->
                 <div class="profile-text-stack">
-                    <div id="enrollment-badge" style="display:none; font-size: 0.85rem; font-weight:bold; padding: 4px 10px; border-radius: 4px; white-space: nowrap;"></div>
-                    <p id="welcome-msg" style="background: yellow; display: inline-block; transform: rotate(-1.5deg); padding: 2px 8px; margin: 0; font-size: 1.2rem; border: 1px solid rgba(0,0,0,0.1);">Loading User...</p>
-                    <div onclick="editUserStatus()" style="cursor: pointer; transform: rotate(1deg); padding-left: 5px;" title="Edit status">
-                        <small style="font-family: 'Patrick Hand'; color: #2f3542; border-bottom: 1px dashed #a4b0be; font-size: 1.1rem;"><span id="user-status-text">Certified Member</span> <i class="fas fa-pencil-alt" style="font-size: 0.8rem; margin-left: 5px;"></i></small>
+                    <div id="enrollment-badge"
+                        style="display:none; font-size: 0.85rem; font-weight:bold; padding: 4px 10px; border-radius: 4px; white-space: nowrap;">
+                    </div>
+                    <p id="welcome-msg"
+                        style="background: yellow; display: inline-block; transform: rotate(-1.5deg); padding: 2px 8px; margin: 0; font-size: 1.2rem; border: 1px solid rgba(0,0,0,0.1);">
+                        Loading User...</p>
+                    <div onclick="editUserStatus()" style="cursor: pointer; transform: rotate(1deg); padding-left: 5px;"
+                        title="Edit status">
+                        <small
+                            style="font-family: 'Patrick Hand'; color: #2f3542; border-bottom: 1px dashed #a4b0be; font-size: 1.1rem;"><span
+                                id="user-status-text">Certified Member</span> <i class="fas fa-pencil-alt"
+                                style="font-size: 0.8rem; margin-left: 5px;"></i></small>
                     </div>
                 </div>
             </div>
@@ -1002,10 +127,12 @@
 
             <!-- Logout Button (Hidden in plain sight as a doodle button) -->
             <div style="margin-top: 10px; text-align: right; display: flex; justify-content: flex-end; gap: 10px;">
-                <button onclick="toggleWideMode()" class="sketch-btn" style="border: none; text-decoration: underline;" title="Stretch View">
+                <button onclick="toggleWideMode()" class="sketch-btn" style="border: none; text-decoration: underline;"
+                    title="Stretch View">
                     <i class="fas fa-expand-arrows-alt"></i> Wide View
                 </button>
-                <button onclick="window.location.href='index.html'" class="sketch-btn admin-only hidden" style="border: none; text-decoration: underline; color: #636e72;">
+                <button onclick="window.location.href='index.html'" class="sketch-btn admin-only hidden"
+                    style="border: none; text-decoration: underline; color: #636e72;">
                     <i class="fas fa-undo"></i> Admin Menu
                 </button>
                 <button onclick="logout()" class="sketch-btn danger" style="border: none; text-decoration: underline;">
@@ -1018,26 +145,39 @@
             <!-- ================= ADMIN TOOLS TAB (NEW SECTION) ================= -->
             <div id="admin-tools" class="tab-content hidden">
                 <h2><i class="fas fa-user-shield"></i> Admin Control Panel</h2>
-                
+
                 <!-- Admin Tool Navigation -->
                 <div class="filter-bar" style="justify-content: center; gap: 10px; margin-bottom: 20px;">
-                    <button class="sketch-btn" onclick="showAdminTool('admin-schedule-form', this)"><i class="fas fa-clock"></i> Class</button>
-                    <button class="sketch-btn" onclick="showAdminTool('admin-assignment-form', this)"><i class="fas fa-thumbtack"></i> Homework</button>
-                    <button class="sketch-btn" onclick="showAdminTool('admin-event-form', this)"><i class="fas fa-calendar-alt"></i> Event</button>
-                    <button class="sketch-btn" onclick="showAdminTool('admin-file-form', this)"><i class="fas fa-paperclip"></i> File</button>
-                    <button class="sketch-btn" onclick="showAdminTool('admin-email-form', this)"><i class="fas fa-envelope"></i> Email</button>
-                    <button class="sketch-btn" onclick="showAdminTool('admin-message-manager', this)"><i class="fas fa-comments"></i> Messages</button>
-                    <button class="sketch-btn" onclick="showAdminTool('admin-gallery-form', this)"><i class="fas fa-images"></i> Gallery</button>
-                    <button class="sketch-btn" onclick="showAdminTool('admin-storage-view', this)"><i class="fas fa-hdd"></i> Storage</button>
-                    <button class="sketch-btn" onclick="showAdminTool('admin-promote-form', this)"><i class="fas fa-crown"></i> Privileges</button>
-                    <button id="btn-revoke-admin" class="sketch-btn hidden" onclick="showAdminTool('admin-revoke-form', this)" style="border-color: #d63031; color: #d63031;"><i class="fas fa-user-slash"></i> Revoke</button>
+                    <button class="sketch-btn" onclick="showAdminTool('admin-schedule-form', this)"><i
+                            class="fas fa-clock"></i> Class</button>
+                    <button class="sketch-btn" onclick="showAdminTool('admin-assignment-form', this)"><i
+                            class="fas fa-thumbtack"></i> Homework</button>
+                    <button class="sketch-btn" onclick="showAdminTool('admin-event-form', this)"><i
+                            class="fas fa-calendar-alt"></i> Event</button>
+                    <button class="sketch-btn" onclick="showAdminTool('admin-file-form', this)"><i
+                            class="fas fa-paperclip"></i> File</button>
+                    <button class="sketch-btn" onclick="showAdminTool('admin-email-form', this)"><i
+                            class="fas fa-envelope"></i> Email</button>
+                    <button class="sketch-btn" onclick="showAdminTool('admin-message-manager', this)"><i
+                            class="fas fa-comments"></i> Messages</button>
+                    <button class="sketch-btn" onclick="showAdminTool('admin-gallery-form', this)"><i
+                            class="fas fa-images"></i> Gallery</button>
+                    <button class="sketch-btn" onclick="showAdminTool('admin-storage-view', this)"><i
+                            class="fas fa-hdd"></i> Storage</button>
+                    <button class="sketch-btn" onclick="showAdminTool('admin-promote-form', this)"><i
+                            class="fas fa-crown"></i> Privileges</button>
+                    <button id="btn-revoke-admin" class="sketch-btn hidden"
+                        onclick="showAdminTool('admin-revoke-form', this)"
+                        style="border-color: #d63031; color: #d63031;"><i class="fas fa-user-slash"></i> Revoke</button>
                 </div>
-                <p style="text-align: center; font-style: italic; color: #666; margin-bottom: 20px;" id="admin-tool-hint">Select a tool above to get started.</p>
+                <p style="text-align: center; font-style: italic; color: #666; margin-bottom: 20px;"
+                    id="admin-tool-hint">Select a tool above to get started.</p>
 
                 <div class="grid-container" style="grid-template-columns: 1fr;">
                     <!-- Moved Forms -->
                     <div class="admin-controls" id="admin-schedule-form">
-                        <button onclick="showAdminTool(null)" class="sketch-btn danger" style="position: absolute; top: 10px; right: 10px; width: auto; margin: 0; padding: 5px 10px; font-size: 0.9rem;">Close</button>
+                        <button onclick="showAdminTool(null)" class="sketch-btn danger"
+                            style="position: absolute; top: 10px; right: 10px; width: auto; margin: 0; padding: 5px 10px; font-size: 0.9rem;">Close</button>
                         <h3>Admin's Note: Add Class</h3>
                         <form onsubmit="addClass(event)" autocomplete="off">
                             <select id="s-day" required>
@@ -1059,39 +199,45 @@
                             <input type="text" id="s-instructor" placeholder="Instructor">
                             <input type="url" id="s-meet" placeholder="G-Meet Link">
                             <input type="url" id="s-class" placeholder="Classroom Link">
-                            <button type="submit" class="sketch-btn" style="background: #000; color: #fff;">Save to Schedule</button>
+                            <button type="submit" class="sketch-btn" style="background: #000; color: #fff;">Save to
+                                Schedule</button>
                         </form>
                     </div>
 
                     <div class="admin-controls" id="admin-assignment-form">
-                        <button onclick="showAdminTool(null)" class="sketch-btn danger" style="position: absolute; top: 10px; right: 10px; width: auto; margin: 0; padding: 5px 10px; font-size: 0.9rem;">Close</button>
+                        <button onclick="showAdminTool(null)" class="sketch-btn danger"
+                            style="position: absolute; top: 10px; right: 10px; width: auto; margin: 0; padding: 5px 10px; font-size: 0.9rem;">Close</button>
                         <h3>Admin's Note: Add Homework</h3>
                         <form onsubmit="addAssignment(event)" autocomplete="off">
                             <input type="text" id="a-title" placeholder="Title" required>
                             <input type="text" id="a-subject" placeholder="Subject (e.g. Math)" required>
                             <input type="datetime-local" id="a-due">
                             <textarea id="a-desc" placeholder="Details..."></textarea>
-                            <button type="submit" class="sketch-btn" style="background: #000; color: #fff;">Post Homework</button>
+                            <button type="submit" class="sketch-btn" style="background: #000; color: #fff;">Post
+                                Homework</button>
                         </form>
                     </div>
 
                     <div class="admin-controls" id="admin-event-form">
-                        <button onclick="showAdminTool(null)" class="sketch-btn danger" style="position: absolute; top: 10px; right: 10px; width: auto; margin: 0; padding: 5px 10px; font-size: 0.9rem;">Close</button>
+                        <button onclick="showAdminTool(null)" class="sketch-btn danger"
+                            style="position: absolute; top: 10px; right: 10px; width: auto; margin: 0; padding: 5px 10px; font-size: 0.9rem;">Close</button>
                         <h3>Admin's Note: Add Event</h3>
                         <form onsubmit="addEvent(event)" autocomplete="off">
                             <input type="text" id="e-title" placeholder="Event Name" required>
                             <input type="date" id="e-date" required>
                             <input type="text" id="e-desc" placeholder="Description">
-                            <button type="submit" class="sketch-btn" style="background: #000; color: #fff;">Save Event</button>
+                            <button type="submit" class="sketch-btn" style="background: #000; color: #fff;">Save
+                                Event</button>
                         </form>
                     </div>
 
                     <div class="admin-controls" id="admin-file-form">
-                        <button onclick="showAdminTool(null)" class="sketch-btn danger" style="position: absolute; top: 10px; right: 10px; width: auto; margin: 0; padding: 5px 10px; font-size: 0.9rem;">Close</button>
+                        <button onclick="showAdminTool(null)" class="sketch-btn danger"
+                            style="position: absolute; top: 10px; right: 10px; width: auto; margin: 0; padding: 5px 10px; font-size: 0.9rem;">Close</button>
                         <h3>Admin's Note: Upload Resource</h3>
                         <form onsubmit="uploadFile(event)" autocomplete="off">
                             <input type="text" id="f-title" placeholder="File Title (e.g. Week 1 Reviewer)" required>
-                            
+
                             <!-- Subject Selection (Empty - JS will fill this) -->
                             <select id="f-subject" required style="margin-bottom: 10px;">
                                 <option value="" disabled selected>Select Subject</option>
@@ -1099,28 +245,34 @@
                                 <!-- JavaScript will add your Schedule subjects here -->
                             </select>
 
-                            <input type="file" id="f-file" required accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.jpg,.png,.jpeg">
-                            <button type="submit" class="sketch-btn" id="upload-btn" style="background: #000; color: #fff;">
+                            <input type="file" id="f-file" required
+                                accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.jpg,.png,.jpeg">
+                            <button type="submit" class="sketch-btn" id="upload-btn"
+                                style="background: #000; color: #fff;">
                                 <i class="fas fa-paperclip"></i> Upload to Cabinet
                             </button>
                         </form>
                     </div>
 
                     <div class="admin-controls" id="admin-email-form">
-                        <button onclick="showAdminTool(null)" class="sketch-btn danger" style="position: absolute; top: 10px; right: 10px; width: auto; margin: 0; padding: 5px 10px; font-size: 0.9rem;">Close</button>
+                        <button onclick="showAdminTool(null)" class="sketch-btn danger"
+                            style="position: absolute; top: 10px; right: 10px; width: auto; margin: 0; padding: 5px 10px; font-size: 0.9rem;">Close</button>
                         <h3>Admin's Note: Email Center <i class="fas fa-envelope"></i></h3>
-                        <p style="font-size: 0.9rem; margin-bottom: 10px;">(Select a specific student or blast everyone)</p>
-                        
+                        <p style="font-size: 0.9rem; margin-bottom: 10px;">(Select a specific student or blast everyone)
+                        </p>
+
                         <form onsubmit="sendEmailService(event)" autocomplete="off">
                             <!-- NEW: Recipient Dropdown -->
-                            <select id="email-recipient" style="width: 100%; padding: 10px; margin-bottom: 10px; border: none; border-bottom: 2px solid #333; font-family: 'Patrick Hand'; font-size: 1.2rem; background: transparent;">
+                            <select id="email-recipient"
+                                style="width: 100%; padding: 10px; margin-bottom: 10px; border: none; border-bottom: 2px solid #333; font-family: 'Patrick Hand'; font-size: 1.2rem; background: transparent;">
                                 <option value="ALL">Send to Everyone (Blast)</option>
                                 <!-- JavaScript will load student names here -->
                             </select>
 
                             <input type="text" id="email-subject" placeholder="Subject (e.g. You passed!)" required>
-                            <textarea id="email-body" placeholder="Write your message here..." style="height: 100px;"></textarea>
-                            
+                            <textarea id="email-body" placeholder="Write your message here..."
+                                style="height: 100px;"></textarea>
+
                             <button type="submit" class="sketch-btn" style="background: #000; color: #fff;">
                                 <i class="fas fa-paper-plane"></i> Send Email
                             </button>
@@ -1129,31 +281,37 @@
 
                     <!-- NEW: Message Manager -->
                     <div class="admin-controls" id="admin-message-manager">
-                        <button onclick="showAdminTool(null)" class="sketch-btn danger" style="position: absolute; top: 10px; right: 10px; width: auto; margin: 0; padding: 5px 10px; font-size: 0.9rem;">Close</button>
+                        <button onclick="showAdminTool(null)" class="sketch-btn danger"
+                            style="position: absolute; top: 10px; right: 10px; width: auto; margin: 0; padding: 5px 10px; font-size: 0.9rem;">Close</button>
                         <h3>Admin's Note: Message Manager <i class="fas fa-comments"></i></h3>
                         <p style="font-size: 0.9rem; margin-bottom: 10px;">(Monitor and clear chat logs)</p>
-                        
+
                         <div style="display:flex; gap:10px; margin-bottom:15px;">
-                            <button onclick="fetchAdminMessages()" class="sketch-btn" style="flex:1;"><i class="fas fa-sync"></i> Refresh</button>
-                            <button onclick="deleteOldMessages()" class="sketch-btn danger" style="flex:1;"><i class="fas fa-trash-alt"></i> Clear Old (>30 days)</button>
+                            <button onclick="fetchAdminMessages()" class="sketch-btn" style="flex:1;"><i
+                                    class="fas fa-sync"></i> Refresh</button>
+                            <button onclick="deleteOldMessages()" class="sketch-btn danger" style="flex:1;"><i
+                                    class="fas fa-trash-alt"></i> Clear Old (>30 days)</button>
                         </div>
 
-                        <div id="admin-message-list" style="max-height: 300px; overflow-y: auto; border: 2px solid #000; padding: 10px; background: #f9f9f9;">
+                        <div id="admin-message-list"
+                            style="max-height: 300px; overflow-y: auto; border: 2px solid #000; padding: 10px; background: #f9f9f9;">
                             <p style="text-align:center; color:#666;">Click Refresh to load messages.</p>
                         </div>
                     </div>
 
                     <!-- NEW: Gallery Manager for Landing Page -->
                     <div class="admin-controls" id="admin-gallery-form">
-                        <button onclick="showAdminTool(null)" class="sketch-btn danger" style="position: absolute; top: 10px; right: 10px; width: auto; margin: 0; padding: 5px 10px; font-size: 0.9rem;">Close</button>
+                        <button onclick="showAdminTool(null)" class="sketch-btn danger"
+                            style="position: absolute; top: 10px; right: 10px; width: auto; margin: 0; padding: 5px 10px; font-size: 0.9rem;">Close</button>
                         <h3>Admin's Note: Landing Page Gallery <i class="fas fa-images"></i></h3>
                         <p style="font-size: 0.9rem; margin-bottom: 10px;">(Upload photos for the main login page)</p>
-                        
+
                         <form onsubmit="uploadGalleryItem(event)" autocomplete="off">
                             <input type="text" id="g-caption" placeholder="Caption (e.g. First Day of School)" required>
                             <input type="file" id="g-file" required accept="image/*">
-                            
-                            <button type="submit" id="upload-gallery-btn" class="sketch-btn" style="background: #000; color: #fff;">
+
+                            <button type="submit" id="upload-gallery-btn" class="sketch-btn"
+                                style="background: #000; color: #fff;">
                                 <i class="fas fa-camera"></i> Post to Gallery
                             </button>
                         </form>
@@ -1164,11 +322,13 @@
 
                     <!-- NEW: Storage Monitor -->
                     <div class="admin-controls" id="admin-storage-view">
-                        <button onclick="showAdminTool(null)" class="sketch-btn danger" style="position: absolute; top: 10px; right: 10px; width: auto; margin: 0; padding: 5px 10px; font-size: 0.9rem;">Close</button>
+                        <button onclick="showAdminTool(null)" class="sketch-btn danger"
+                            style="position: absolute; top: 10px; right: 10px; width: auto; margin: 0; padding: 5px 10px; font-size: 0.9rem;">Close</button>
                         <h3>Admin's Note: Storage Monitor <i class="fas fa-hdd"></i></h3>
                         <p style="font-size: 0.9rem; margin-bottom: 10px;">(Check file counts and usage)</p>
-                        
-                        <button onclick="fetchStorageStats()" class="sketch-btn" style="background: #000; color: #fff; width: 100%; justify-content: center;">
+
+                        <button onclick="fetchStorageStats()" class="sketch-btn"
+                            style="background: #000; color: #fff; width: 100%; justify-content: center;">
                             <i class="fas fa-sync"></i> Scan Buckets
                         </button>
                         <div id="storage-stats-display" style="margin-top: 15px;"></div>
@@ -1177,29 +337,35 @@
 
                 <!-- NEW: Promote User -->
                 <div class="admin-controls" id="admin-promote-form">
-                    <button onclick="showAdminTool(null)" class="sketch-btn danger" style="position: absolute; top: 10px; right: 10px; width: auto; margin: 0; padding: 5px 10px; font-size: 0.9rem;">Close</button>
+                    <button onclick="showAdminTool(null)" class="sketch-btn danger"
+                        style="position: absolute; top: 10px; right: 10px; width: auto; margin: 0; padding: 5px 10px; font-size: 0.9rem;">Close</button>
                     <h3>Admin's Note: Grant Privileges <i class="fas fa-crown"></i></h3>
                     <p style="font-size: 0.9rem; margin-bottom: 10px;">(Give a user Admin access)</p>
-                    
+
                     <form onsubmit="promoteUser(event)" autocomplete="off">
-                        <select id="promote-user-select" style="width: 100%; padding: 10px; margin-bottom: 10px; border: none; border-bottom: 2px solid #333; font-family: 'Patrick Hand'; font-size: 1.2rem; background: transparent;">
+                        <select id="promote-user-select"
+                            style="width: 100%; padding: 10px; margin-bottom: 10px; border: none; border-bottom: 2px solid #333; font-family: 'Patrick Hand'; font-size: 1.2rem; background: transparent;">
                             <option value="" disabled selected>Loading users...</option>
                         </select>
-                        <button type="submit" class="sketch-btn" style="background: #000; color: #fff;"><i class="fas fa-check-circle"></i> Make Admin</button>
+                        <button type="submit" class="sketch-btn" style="background: #000; color: #fff;"><i
+                                class="fas fa-check-circle"></i> Make Admin</button>
                     </form>
                 </div>
 
                 <!-- NEW: Revoke Admin (Main Admin Only) -->
                 <div class="admin-controls" id="admin-revoke-form">
-                    <button onclick="showAdminTool(null)" class="sketch-btn danger" style="position: absolute; top: 10px; right: 10px; width: auto; margin: 0; padding: 5px 10px; font-size: 0.9rem;">Close</button>
+                    <button onclick="showAdminTool(null)" class="sketch-btn danger"
+                        style="position: absolute; top: 10px; right: 10px; width: auto; margin: 0; padding: 5px 10px; font-size: 0.9rem;">Close</button>
                     <h3>Admin's Note: Revoke Access <i class="fas fa-user-slash"></i></h3>
                     <p style="font-size: 0.9rem; margin-bottom: 10px;">(Demote an Admin back to Student)</p>
-                    
+
                     <form onsubmit="revokeAdmin(event)" autocomplete="off">
-                        <select id="revoke-user-select" style="width: 100%; padding: 10px; margin-bottom: 10px; border: none; border-bottom: 2px solid #333; font-family: 'Patrick Hand'; font-size: 1.2rem; background: transparent;">
+                        <select id="revoke-user-select"
+                            style="width: 100%; padding: 10px; margin-bottom: 10px; border: none; border-bottom: 2px solid #333; font-family: 'Patrick Hand'; font-size: 1.2rem; background: transparent;">
                             <option value="" disabled selected>Loading admins...</option>
                         </select>
-                        <button type="submit" class="sketch-btn danger" style="width: 100%; justify-content: center;"><i class="fas fa-ban"></i> Revoke Access</button>
+                        <button type="submit" class="sketch-btn danger" style="width: 100%; justify-content: center;"><i
+                                class="fas fa-ban"></i> Revoke Access</button>
                     </form>
                 </div>
             </div>
@@ -1207,7 +373,7 @@
             <!-- ================= SCHEDULE TAB ================= -->
             <div id="schedule" class="tab-content">
                 <h2><i class="fas fa-clock"></i> Class Schedule</h2>
-                
+
                 <div class="filter-bar">
                     <button class="sketch-btn" onclick="filterSchedule('Monday')">Monday</button>
                     <button class="sketch-btn" onclick="filterSchedule('Tuesday')">Tuesday</button>
@@ -1219,8 +385,9 @@
                         <i class="fas fa-camera-retro"></i> Wallpaper
                     </button>
                 </div>
-                
-                <h3 id="current-day-label" style="text-align: center; font-size: 1.5rem; color: #57606f;">Weekly View</h3>
+
+                <h3 id="current-day-label" style="text-align: center; font-size: 1.5rem; color: #57606f;">Weekly View
+                </h3>
 
                 <div id="schedule-list" class="grid-container">
                     <div class="loader">Flipping pages...</div>
@@ -1247,8 +414,8 @@
 
                 <!-- Insert above <h3 id="file-filter-label"> -->
                 <div style="position: relative; margin-bottom: 15px;">
-                    <input type="text" id="file-search" placeholder="🔍 Search filename..." onkeyup="searchFiles()" 
-                           style="border: 2px solid #000; border-radius: 20px; padding: 8px 15px; background: #fff;">
+                    <input type="text" id="file-search" placeholder="🔍 Search filename..." onkeyup="searchFiles()"
+                        style="border: 2px solid #000; border-radius: 20px; padding: 8px 15px; background: #fff;">
                 </div>
 
                 <!-- Subject Filter Bar (Empty - JS will fill this) -->
@@ -1269,17 +436,21 @@
                 <!-- Static Links -->
                 <h3><i class="fas fa-external-link-alt"></i> External Tools</h3>
                 <div class="grid-container">
-                    <a href="https://drive.google.com/drive/folders/1n50vswAbnj1KnoxB0Obp3_vcrouz10CW?usp=drive_link" target="_blank" class="class-card" style="text-decoration: none; color: inherit; text-align: center; border: 2px dashed #00b894;">
+                    <a href="https://drive.google.com/drive/folders/1n50vswAbnj1KnoxB0Obp3_vcrouz10CW?usp=drive_link"
+                        target="_blank" class="class-card"
+                        style="text-decoration: none; color: inherit; text-align: center; border: 2px dashed #00b894;">
                         <i class="fab fa-google-drive" style="font-size: 3rem; color: #00b894;"></i>
                         <h3 style="margin-top: 10px;">Old Archive</h3>
                     </a>
-                    
-                    <div onclick="openRequestModal()" class="class-card" style="cursor: pointer; text-align: center; border: 2px dashed #0984e3;">
+
+                    <div onclick="openRequestModal()" class="class-card"
+                        style="cursor: pointer; text-align: center; border: 2px dashed #0984e3;">
                         <i class="fas fa-user-secret" style="font-size: 3rem; color: #0984e3;"></i>
                         <h3 style="margin-top: 10px;">Secret Request</h3>
                     </div>
 
-                    <div onclick="openFreedomWallModal()" class="class-card" style="cursor: pointer; text-align: center; border: 2px dashed #2d3436;">
+                    <div onclick="openFreedomWallModal()" class="class-card"
+                        style="cursor: pointer; text-align: center; border: 2px dashed #2d3436;">
                         <i class="fas fa-sticky-note" style="font-size: 3rem; color: #2d3436;"></i>
                         <h3 style="margin-top: 10px;">Post to Freedom Wall</h3>
                     </div>
@@ -1291,31 +462,37 @@
             <!-- ================= HELP TAB ================= -->
             <div id="help" class="tab-content hidden">
                 <h2><i class="fas fa-question-circle"></i> Student's Guide</h2>
-                
+
                 <div class="grid-container">
                     <div class="class-card" style="transform: rotate(1deg);">
                         <h3><i class="fas fa-book"></i> The Binder</h3>
-                        <p>Welcome to your digital binder! Use the <b>colored tabs</b> on the left (or top on mobile) to navigate between your Schedule, Homework, and Reviewers.</p>
+                        <p>Welcome to your digital binder! Use the <b>colored tabs</b> on the left (or top on mobile) to
+                            navigate between your Schedule, Homework, and Reviewers.</p>
                     </div>
                     <div class="class-card" style="transform: rotate(-1deg);">
                         <h3><i class="fas fa-paper-plane"></i> Messaging</h3>
-                        <p>Use the floating <b>"MESSAGE SOMEONE"</b> button to chat with classmates. You can see who's online in the sidebar and check your inbox for new notes!</p>
+                        <p>Use the floating <b>"MESSAGE SOMEONE"</b> button to chat with classmates. You can see who's
+                            online in the sidebar and check your inbox for new notes!</p>
                     </div>
                     <div class="class-card" style="transform: rotate(1.5deg);">
                         <h3><i class="fas fa-eye"></i> File Previewer</h3>
-                        <p>No need to download everything! Click on any file in the <b>Links</b> tab to preview PDFs and images instantly before saving them.</p>
+                        <p>No need to download everything! Click on any file in the <b>Links</b> tab to preview PDFs and
+                            images instantly before saving them.</p>
                     </div>
                     <div class="class-card" style="transform: rotate(-2deg);">
                         <h3><i class="fas fa-magic"></i> Wallpaper Gen</h3>
-                        <p>Create custom schedules for your phone or desktop. Check the <b>Wallpaper</b> button in the Schedule tab for new Glassmorphism effects and custom backgrounds!</p>
+                        <p>Create custom schedules for your phone or desktop. Check the <b>Wallpaper</b> button in the
+                            Schedule tab for new Glassmorphism effects and custom backgrounds!</p>
                     </div>
                     <div class="class-card" style="transform: rotate(1deg);">
                         <h3><i class="fas fa-clock"></i> Live Tracker</h3>
-                        <p>The binder automatically tracks your current class. Look for the <b>"HAPPENING NOW"</b> card at the top of your schedule for quick access to links.</p>
+                        <p>The binder automatically tracks your current class. Look for the <b>"HAPPENING NOW"</b> card
+                            at the top of your schedule for quick access to links.</p>
                     </div>
                     <div class="class-card" style="transform: rotate(-1.5deg);">
                         <h3><i class="fas fa-user-secret"></i> Secret Requests</h3>
-                        <p>Found a bug? Want to suggest a feature? Use the <b>"Secret Request"</b> card in the Links tab to send an anonymous note to the admin.</p>
+                        <p>Found a bug? Want to suggest a feature? Use the <b>"Secret Request"</b> card in the Links tab
+                            to send an anonymous note to the admin.</p>
                     </div>
                 </div>
             </div>
@@ -1336,7 +513,8 @@
         <div class="wimpy-modal-box" style="text-align: left;">
             <h2 style="margin-top:0;">Drop a Note</h2>
             <p>Got a request or a secret question for the admin?</p>
-            <textarea id="req-content" placeholder="Type here..." style="width:100%; height:100px; font-family:'Patrick Hand'; font-size:1.2rem; padding:10px; border:2px solid #000;"></textarea>
+            <textarea id="req-content" placeholder="Type here..."
+                style="width:100%; height:100px; font-family:'Patrick Hand'; font-size:1.2rem; padding:10px; border:2px solid #000;"></textarea>
             <div style="margin-top:10px; display:flex; gap:10px;">
                 <button onclick="closeRequestModal()" class="sketch-btn">Cancel</button>
                 <button onclick="submitRequest()" class="sketch-btn" style="background:#000; color:#fff;">Send</button>
@@ -1346,42 +524,62 @@
 
     <!-- Freedom Wall Modal -->
     <div id="freedomWallModal" class="wimpy-modal-overlay hidden">
-        <div class="wimpy-modal-box" style="width: 95%; max-width: 1000px; height: 80vh; display: flex; flex-direction: column; padding: 20px;">
+        <div class="wimpy-modal-box"
+            style="width: 95%; max-width: 1000px; height: 80vh; display: flex; flex-direction: column; padding: 20px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                 <h2 style="margin:0;"><i class="fas fa-sticky-note"></i> Freedom Wall</h2>
-                <button onclick="document.getElementById('freedomWallModal').classList.add('hidden')" class="sketch-btn danger" style="width:auto; margin:0; padding: 5px 15px;">CLOSE</button>
+                <button onclick="document.getElementById('freedomWallModal').classList.add('hidden')"
+                    class="sketch-btn danger" style="width:auto; margin:0; padding: 5px 15px;">CLOSE</button>
             </div>
             <div id="freedom-wall-board" style="flex: 1; margin-bottom: 15px;">
                 <!-- Notes injected here -->
             </div>
             <!-- Admin Controls for Freedom Wall -->
-            <div id="fw-admin-controls" class="hidden" style="margin-bottom: 10px; display: flex; gap: 10px; justify-content: center;">
-                <button onclick="autoArrangeNotes()" class="sketch-btn" style="width: auto; background: #0984e3; color: #fff; font-size: 1rem; padding: 5px 15px;">AUTO ARRANGE</button>
-                <button onclick="scatterNotes()" class="sketch-btn" style="width: auto; background: #e67e22; color: #fff; font-size: 1rem; padding: 5px 15px;">SCATTER</button>
+            <div id="fw-admin-controls" class="hidden"
+                style="margin-bottom: 10px; display: flex; gap: 10px; justify-content: center;">
+                <button onclick="autoArrangeNotes()" class="sketch-btn"
+                    style="width: auto; background: #0984e3; color: #fff; font-size: 1rem; padding: 5px 15px;">AUTO
+                    ARRANGE</button>
+                <button onclick="scatterNotes()" class="sketch-btn"
+                    style="width: auto; background: #e67e22; color: #fff; font-size: 1rem; padding: 5px 15px;">SCATTER</button>
             </div>
             <div style="margin-top: 10px; display:flex; gap:10px; justify-content:center; align-items:center;">
-                <div class="color-option selected" onclick="selectColor(this, 'white')" style="background:#fff;" title="Plain"></div>
-                <div class="color-option" onclick="selectColor(this, 'lined')" style="background: repeating-linear-gradient(transparent, transparent 4px, #a4b0be 5px); background-color: #fff;" title="Lined"></div>
-                <div class="color-option" onclick="selectColor(this, 'yellow')" style="background:#fff740;" title="Yellow"></div>
-                <div class="color-option" onclick="selectColor(this, 'pink')" style="background:#ff7eb9;" title="Pink"></div>
-                <div class="color-option" onclick="selectColor(this, 'blue')" style="background:#7afcff;" title="Blue"></div>
-                <div class="color-option" onclick="selectColor(this, 'green')" style="background:#98ff98;" title="Green"></div>
+                <div class="color-option selected" onclick="selectColor(this, 'white')" style="background:#fff;"
+                    title="Plain"></div>
+                <div class="color-option" onclick="selectColor(this, 'lined')"
+                    style="background: repeating-linear-gradient(transparent, transparent 4px, #a4b0be 5px); background-color: #fff;"
+                    title="Lined"></div>
+                <div class="color-option" onclick="selectColor(this, 'yellow')" style="background:#fff740;"
+                    title="Yellow"></div>
+                <div class="color-option" onclick="selectColor(this, 'pink')" style="background:#ff7eb9;" title="Pink">
+                </div>
+                <div class="color-option" onclick="selectColor(this, 'blue')" style="background:#7afcff;" title="Blue">
+                </div>
+                <div class="color-option" onclick="selectColor(this, 'green')" style="background:#98ff98;"
+                    title="Green"></div>
                 <input type="hidden" id="fw-binder-color" value="white">
             </div>
-            <div style="margin-top: 15px; display: flex; gap: 10px; align-items: center; background: #f1f2f6; padding: 10px; border: 2px dashed #000; border-radius: 5px;">
+            <div
+                style="margin-top: 15px; display: flex; gap: 10px; align-items: center; background: #f1f2f6; padding: 10px; border: 2px dashed #000; border-radius: 5px;">
                 <i class="fas fa-pencil-alt" style="font-size: 1.5rem;"></i>
-                <input type="text" id="fw-content" placeholder="Write on the wall..." maxlength="60" style="flex: 1; border: none; background: transparent; border-bottom: 2px solid #000; font-family: 'Patrick Hand'; font-size: 1.3rem; outline: none;" onkeydown="if(event.key === 'Enter') postFreedomWallNote()">
-                <button onclick="postFreedomWallNote()" class="sketch-btn" style="width: auto; margin: 0; background: #2d3436; color: #fff;">STICK IT</button>
+                <input type="text" id="fw-content" placeholder="Write on the wall..." maxlength="60"
+                    style="flex: 1; border: none; background: transparent; border-bottom: 2px solid #000; font-family: 'Patrick Hand'; font-size: 1.3rem; outline: none;"
+                    onkeydown="if(event.key === 'Enter') postFreedomWallNote()">
+                <button onclick="postFreedomWallNote()" class="sketch-btn"
+                    style="width: auto; margin: 0; background: #2d3436; color: #fff;">STICK IT</button>
             </div>
         </div>
     </div>
 
     <!-- Inbox Modal -->
     <div id="inboxModal" class="wimpy-modal-overlay hidden">
-        <div class="wimpy-modal-box" style="width: 95%; max-width: 400px; height: 60vh; display: flex; flex-direction: column;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom: 2px dashed #000; padding-bottom: 10px;">
+        <div class="wimpy-modal-box"
+            style="width: 95%; max-width: 400px; height: 60vh; display: flex; flex-direction: column;">
+            <div
+                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom: 2px dashed #000; padding-bottom: 10px;">
                 <h2 style="margin:0;"><i class="fas fa-envelope-open-text"></i> Inbox</h2>
-                <button onclick="document.getElementById('inboxModal').classList.add('hidden')" class="sketch-btn danger" style="width:auto; padding: 5px 10px;">X</button>
+                <button onclick="document.getElementById('inboxModal').classList.add('hidden')"
+                    class="sketch-btn danger" style="width:auto; padding: 5px 10px;">X</button>
             </div>
             <div id="inbox-list" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
                 <!-- Conversations injected here -->
@@ -1390,41 +588,7 @@
     </div>
 
     <!-- Floating Message Button -->
-    <style>
-        .fab-message {
-            position: fixed;
-            bottom: 110px;
-            right: 30px;
-            background: #fff740;
-            border: 3px solid #000;
-            padding: 12px 20px;
-            font-family: 'Permanent Marker', cursive;
-            font-size: 1.1rem;
-            cursor: pointer;
-            z-index: 1000;
-            box-shadow: 8px 8px 0px rgba(0,0,0,0.2);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            border-radius: 5px;
-            transform: rotate(-2deg);
-            animation: buttonWiggle 3s infinite ease-in-out;
-            transition: all 0.2s ease;
-        }
-        .fab-message:hover {
-            transform: scale(1.1) rotate(0deg);
-            background: #000;
-            color: #fff;
-        }
-        @media (max-width: 768px) {
-            .fab-message {
-                bottom: 100px;
-                right: 20px;
-                padding: 10px 15px;
-                font-size: 0.9rem;
-            }
-        }
-    </style>
+    
     <div class="fab-message" onclick="openNewChatModal()" title="Message Someone">
         <i class="fas fa-paper-plane"></i>
         <span>MESSAGE SOMEONE</span>
@@ -1432,34 +596,42 @@
 
     <!-- New Chat / Recipient Selection Modal -->
     <div id="newChatModal" class="wimpy-modal-overlay hidden">
-        <div class="wimpy-modal-box" style="width: 95%; max-width: 400px; height: 70vh; display: flex; flex-direction: column;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom: 2px dashed #000; padding-bottom: 10px;">
+        <div class="wimpy-modal-box"
+            style="width: 95%; max-width: 400px; height: 70vh; display: flex; flex-direction: column;">
+            <div
+                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom: 2px dashed #000; padding-bottom: 10px;">
                 <h2 style="margin:0;"><i class="fas fa-user-plus"></i> Send Note To...</h2>
-                <button onclick="document.getElementById('newChatModal').classList.add('hidden')" class="sketch-btn danger" style="width:auto; padding: 5px 10px;">X</button>
+                <button onclick="document.getElementById('newChatModal').classList.add('hidden')"
+                    class="sketch-btn danger" style="width:auto; padding: 5px 10px;">X</button>
             </div>
-            <input type="text" id="recipient-search" placeholder="🔍 Search classmate..." onkeyup="filterRecipients()" 
-                   style="border: 2px solid #000; border-radius: 5px; padding: 8px; margin-bottom: 15px; background: #fff;">
-            <div id="recipient-list" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
+            <input type="text" id="recipient-search" placeholder="🔍 Search classmate..." onkeyup="filterRecipients()"
+                style="border: 2px solid #000; border-radius: 5px; padding: 8px; margin-bottom: 15px; background: #fff;">
+            <div id="recipient-list"
+                style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
                 <!-- Classmates injected here -->
             </div>
         </div>
     </div>
 
     <!-- Notification Sound -->
-    <audio id="notif-sound" src="https://assets.mixkit.co/sfx/preview/mixkit-message-pop-alert-2354.mp3" preload="auto"></audio>
+    <audio id="notif-sound" src="https://assets.mixkit.co/sfx/preview/mixkit-message-pop-alert-2354.mp3"
+        preload="auto"></audio>
 
     <!-- Chat Modal -->
     <div id="chatModal" class="wimpy-modal-overlay hidden">
         <div class="wimpy-modal-box" style="width: 95%; max-width: 500px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                 <h2 id="chat-with-name" style="margin:0;"><i class="fas fa-comments"></i> Chat</h2>
-                <button onclick="closeChatModal()" class="sketch-btn danger" style="width:auto; padding: 5px 10px;">X</button>
+                <button onclick="closeChatModal()" class="sketch-btn danger"
+                    style="width:auto; padding: 5px 10px;">X</button>
             </div>
             <div id="chat-history" class="chat-container"></div>
             <form onsubmit="sendChatMessage(event)" class="chat-input-area">
                 <input type="hidden" id="chat-target-id">
-                <input type="text" id="chat-input" placeholder="Write a note..." required autocomplete="off" style="margin:0; border: 2px solid #000;">
-                <button type="submit" class="sketch-btn" style="width:auto; margin:0; background:#000; color:#fff;"><i class="fas fa-paper-plane"></i></button>
+                <input type="text" id="chat-input" placeholder="Write a note..." required autocomplete="off"
+                    style="margin:0; border: 2px solid #000;">
+                <button type="submit" class="sketch-btn" style="width:auto; margin:0; background:#000; color:#fff;"><i
+                        class="fas fa-paper-plane"></i></button>
             </form>
         </div>
     </div>
@@ -1469,7 +641,8 @@
         <div class="wimpy-modal-box">
             <h2><i class="fas fa-camera-retro"></i> Get Wallpaper</h2>
             <p>Select your device size:</p>
-            <select id="wp-size-select" style="margin-bottom: 20px; font-family: 'Patrick Hand'; font-size: 1.2rem; padding: 10px; border: 2px solid #000; background: #fff; width: 100%;">
+            <select id="wp-size-select"
+                style="margin-bottom: 20px; font-family: 'Patrick Hand'; font-size: 1.2rem; padding: 10px; border: 2px solid #000; background: #fff; width: 100%;">
                 <option value="auto">Current Screen (Adaptive)</option>
                 <option value="1080,1920">Standard Phone (9:16)</option>
                 <option value="1170,2532">Tall Phone / iPhone (19.5:9)</option>
@@ -1478,7 +651,8 @@
                 <option value="1920,1080">Desktop / Laptop (16:9)</option>
             </select>
             <p>Select Background Style:</p>
-            <select id="wp-bg-select" onchange="toggleCustomBgInput(this)" style="margin-bottom: 20px; font-family: 'Patrick Hand'; font-size: 1.2rem; padding: 10px; border: 2px solid #000; background: #fff; width: 100%;">
+            <select id="wp-bg-select" onchange="toggleCustomBgInput(this)"
+                style="margin-bottom: 20px; font-family: 'Patrick Hand'; font-size: 1.2rem; padding: 10px; border: 2px solid #000; background: #fff; width: 100%;">
                 <option value="paper">Classic Paper (Wimpy Style)</option>
                 <option value="midnight">Midnight Glass</option>
                 <option value="sunset">Sunset Glass</option>
@@ -1486,11 +660,14 @@
                 <option value="forest">Forest Glass</option>
                 <option value="custom">Custom Image (Upload)</option>
             </select>
-            <input type="file" id="wp-custom-bg" accept="image/*" class="hidden" style="margin-bottom: 20px; font-family: 'Patrick Hand'; font-size: 1rem; width: 100%; border: 2px dashed #000; padding: 10px;">
-            <button onclick="generateWallpaperFromSelect(event)" class="sketch-btn" style="background:#000; color:#fff; margin-bottom:10px; width:100%; justify-content:center;">
+            <input type="file" id="wp-custom-bg" accept="image/*" class="hidden"
+                style="margin-bottom: 20px; font-family: 'Patrick Hand'; font-size: 1rem; width: 100%; border: 2px dashed #000; padding: 10px;">
+            <button onclick="generateWallpaperFromSelect(event)" class="sketch-btn"
+                style="background:#000; color:#fff; margin-bottom:10px; width:100%; justify-content:center;">
                 <i class="fas fa-magic"></i> Generate Wallpaper
             </button>
-            <button onclick="document.getElementById('wallpaperModal').classList.add('hidden')" class="sketch-btn danger">Cancel</button>
+            <button onclick="document.getElementById('wallpaperModal').classList.add('hidden')"
+                class="sketch-btn danger">Cancel</button>
         </div>
     </div>
 
@@ -1499,11 +676,14 @@
         <div class="wimpy-modal-box">
             <h2><i class="fas fa-id-badge"></i> Edit Status</h2>
             <p>How are you feeling today?</p>
-            <input type="text" id="statusInput" placeholder="e.g. Certified Member" maxlength="20" style="margin-bottom: 20px; font-family: 'Patrick Hand'; font-size: 1.2rem; padding: 10px; border: 2px solid #000; background: #fff; width: 100%; text-align: center; box-sizing: border-box;">
-            <button onclick="saveUserStatus()" class="sketch-btn" style="background:#000; color:#fff; margin-bottom:10px; width:100%; justify-content:center;">
+            <input type="text" id="statusInput" placeholder="e.g. Certified Member" maxlength="20"
+                style="margin-bottom: 20px; font-family: 'Patrick Hand'; font-size: 1.2rem; padding: 10px; border: 2px solid #000; background: #fff; width: 100%; text-align: center; box-sizing: border-box;">
+            <button onclick="saveUserStatus()" class="sketch-btn"
+                style="background:#000; color:#fff; margin-bottom:10px; width:100%; justify-content:center;">
                 <i class="fas fa-save"></i> Save Status
             </button>
-            <button onclick="document.getElementById('statusModal').classList.add('hidden')" class="sketch-btn danger">Cancel</button>
+            <button onclick="document.getElementById('statusModal').classList.add('hidden')"
+                class="sketch-btn danger">Cancel</button>
         </div>
     </div>
 
@@ -1514,37 +694,42 @@
             <p id="addEventDateLabel" style="font-weight:bold; margin-bottom:15px;"></p>
             <form onsubmit="addEventFromCalendar(event)" autocomplete="off">
                 <input type="hidden" id="cal-e-date">
-                <input type="text" id="cal-e-title" placeholder="Event Name" required style="margin-bottom: 10px; width: 100%; box-sizing: border-box;">
-                <input type="text" id="cal-e-desc" placeholder="Description (Optional)" style="margin-bottom: 20px; width: 100%; box-sizing: border-box;">
-                
-                <button type="submit" class="sketch-btn" style="background:#000; color:#fff; margin-bottom:10px; width:100%; justify-content:center;">Save Event</button>
-                <button type="button" onclick="document.getElementById('addEventModal').classList.add('hidden')" class="sketch-btn danger" style="width:100%; justify-content:center;">Cancel</button>
+                <input type="text" id="cal-e-title" placeholder="Event Name" required
+                    style="margin-bottom: 10px; width: 100%; box-sizing: border-box;">
+                <input type="text" id="cal-e-desc" placeholder="Description (Optional)"
+                    style="margin-bottom: 20px; width: 100%; box-sizing: border-box;">
+
+                <button type="submit" class="sketch-btn"
+                    style="background:#000; color:#fff; margin-bottom:10px; width:100%; justify-content:center;">Save
+                    Event</button>
+                <button type="button" onclick="document.getElementById('addEventModal').classList.add('hidden')"
+                    class="sketch-btn danger" style="width:100%; justify-content:center;">Cancel</button>
             </form>
         </div>
     </div>
 
     <!-- SCRIPTS -->
-    <script src="dashboard.js?v=202405152300"></script> <!-- Update this version number on every deployment -->
+    <script src="js/dashboard.js?v=202405152300"></script> <!-- Update this version number on every deployment -->
 
     <!-- PREVIEWER FEATURE & FILE LOGIC (Added Inline) -->
     <script>
         // --- CONFIGURATION (Matches script.js) ---
         const SB_URL = 'https://egnyblflgppsosunnilq.supabase.co';
         const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVnbnlibGZsZ3Bwc29zdW5uaWxxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY0OTYzMjksImV4cCI6MjA4MjA3MjMyOX0.HR9lt4oHuFjGcjwsF_fLoJMuG2OI8aCIoRCSyyu0zVE';
-        
+
         // Use existing client if available, else create
         const sb = window.db || supabase.createClient(SB_URL, SB_KEY);
         let globalFiles = [];
 
         // --- 1. PREVIEW MODAL ---
-        window.openFilePreview = function(url, title) {
+        window.openFilePreview = function (url, title) {
             if (!url) return alert('No file link available.');
             const existing = document.getElementById('filePreviewModal');
             if (existing) existing.remove();
 
             const isPdf = url.toLowerCase().includes('.pdf');
             const isImg = url.match(/\.(jpeg|jpg|gif|png|webp)$/i);
-            
+
             const loaderHtml = `
                 <div id="previewLoader" style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:#555;">
                     <i class="fas fa-spinner fa-spin" style="font-size:3rem;"></i>
@@ -1571,20 +756,7 @@
             }
 
             const modalHtml = `
-                <style>
-                    .preview-modal-btn { transition: all 0.2s !important; cursor: pointer !important; }
-                    .preview-modal-btn:hover { 
-                        transform: rotate(-3deg) scale(1.1) !important; 
-                        animation: previewWiggle 0.4s ease-in-out infinite !important;
-                    }
-                    @keyframes previewWiggle {
-                        0% { transform: rotate(0deg); }
-                        25% { transform: rotate(-3deg); }
-                        50% { transform: rotate(3deg); }
-                        75% { transform: rotate(-1deg); }
-                        100% { transform: rotate(0deg); }
-                    }
-                </style>
+                
                 <div id="filePreviewModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; display:flex; justify-content:center; align-items:center;">
                     <div class="sketch-box" style="width:90%; max-width:900px; height:85%; display:flex; flex-direction:column; padding:15px; background:#fff; position:relative; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
                         <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px dashed #000; padding-bottom:10px; margin-bottom:10px;">
@@ -1603,25 +775,25 @@
         }
 
         // --- 2. FETCH & RENDER FILES ---
-        window.refreshFiles = async function() {
+        window.refreshFiles = async function () {
             const list = document.getElementById('file-list');
-            if(!list) return;
-            
+            if (!list) return;
+
             const { data, error } = await sb.from('shared_files')
                 .select('*')
                 .neq('subject', 'LandingGallery')
                 .not('subject', 'like', 'Receipt-%')
                 .order('created_at', { ascending: false });
-            if(error) return console.error(error);
-            
+            if (error) return console.error(error);
+
             globalFiles = data || [];
             renderFileList(globalFiles);
         }
 
-        window.renderFileList = function(files) {
+        window.renderFileList = function (files) {
             const list = document.getElementById('file-list');
-            if(!files.length) { list.innerHTML = '<p>No files found.</p>'; return; }
-            
+            if (!files.length) { list.innerHTML = '<p>No files found.</p>'; return; }
+
             // Check Admin
             const currentUser = window.user || JSON.parse(localStorage.getItem('wimpy_user') || 'null');
             const isAdmin = currentUser && currentUser.sr_code === 'ADMIN';
@@ -1649,64 +821,64 @@
         }
 
         // Override Search/Filter
-        window.searchFiles = function() { const q = document.getElementById('file-search').value.toLowerCase(); renderFileList(globalFiles.filter(f => f.title.toLowerCase().includes(q) || f.subject.toLowerCase().includes(q))); }
-        window.filterFiles = function(s) { document.getElementById('file-filter-label').innerText = 'Showing: ' + s; renderFileList(s === 'All' ? globalFiles : globalFiles.filter(f => f.subject === s)); }
+        window.searchFiles = function () { const q = document.getElementById('file-search').value.toLowerCase(); renderFileList(globalFiles.filter(f => f.title.toLowerCase().includes(q) || f.subject.toLowerCase().includes(q))); }
+        window.filterFiles = function (s) { document.getElementById('file-filter-label').innerText = 'Showing: ' + s; renderFileList(s === 'All' ? globalFiles : globalFiles.filter(f => f.subject === s)); }
 
         // Override deleteFile to use the inline refresh logic
-        window.deleteFile = async function(id) {
-            if(window.showWimpyConfirm && !await showWimpyConfirm('Delete this file?')) return;
-            if(!window.showWimpyConfirm && !confirm('Delete this file?')) return;
+        window.deleteFile = async function (id) {
+            if (window.showWimpyConfirm && !await showWimpyConfirm('Delete this file?')) return;
+            if (!window.showWimpyConfirm && !confirm('Delete this file?')) return;
 
             const { error } = await sb.from('shared_files').delete().eq('id', id);
             if (error) {
-                if(window.showToast) showToast('Error deleting file.');
+                if (window.showToast) showToast('Error deleting file.');
                 else alert('Error deleting file.');
             } else {
-                if(window.showToast) showToast('File removed.');
+                if (window.showToast) showToast('File removed.');
                 refreshFiles();
             }
         }
 
         // Override loadFiles to maintain consistency with dashboard.js calls
-        window.loadFiles = async function(subject) {
+        window.loadFiles = async function (subject) {
             await refreshFiles();
-            if(subject && subject !== 'All') filterFiles(subject);
+            if (subject && subject !== 'All') filterFiles(subject);
         }
 
         // Load on start (Delayed slightly to ensure DOM is ready)
         document.addEventListener('DOMContentLoaded', () => setTimeout(refreshFiles, 1000));
 
         // --- CUSTOM STATUS LOGIC ---
-        window.editUserStatus = function() {
+        window.editUserStatus = function () {
             // FIX: Use global user from dashboard.js (Custom Auth)
             const currentUser = window.user || JSON.parse(localStorage.getItem('wimpy_user') || 'null');
-            
+
             if (!currentUser) {
                 alert("Please log in to change your status.");
                 return;
             }
-            
+
             const el = document.getElementById('user-status-text');
             const current = el.innerText;
-            
+
             document.getElementById('statusInput').value = current;
             document.getElementById('statusModal').classList.remove('hidden');
             setTimeout(() => document.getElementById('statusInput').focus(), 100);
         }
 
-        window.saveUserStatus = async function() {
+        window.saveUserStatus = async function () {
             const newStatus = document.getElementById('statusInput').value.trim();
             const el = document.getElementById('user-status-text');
             const current = el.innerText;
             const modal = document.getElementById('statusModal');
-            
+
             if (!newStatus) return alert("Status cannot be empty!");
-            
+
             modal.classList.add('hidden');
 
             if (newStatus !== current) {
                 el.innerText = newStatus;
-                
+
                 const currentUser = window.user || JSON.parse(localStorage.getItem('wimpy_user') || 'null');
 
                 // Save to 'user_statuses' table in Supabase
@@ -1714,7 +886,7 @@
                     user_id: currentUser.id,
                     status: newStatus
                 });
-                
+
                 if (error) {
                     console.error("Status save failed:", error);
                     alert("Save failed: " + (error.message || "Permission denied"));
@@ -1735,26 +907,26 @@
                 }
             }
         }
-        
+
         // Run on load (delayed slightly to ensure dashboard.js loads user)
         document.addEventListener('DOMContentLoaded', () => setTimeout(initUserStatus, 1000));
 
         // --- WALLPAPER GENERATOR LOGIC ---
-        window.openWallpaperModal = function() {
+        window.openWallpaperModal = function () {
             document.getElementById('wallpaperModal').classList.remove('hidden');
         }
-        
-        window.toggleCustomBgInput = function(select) {
+
+        window.toggleCustomBgInput = function (select) {
             const input = document.getElementById('wp-custom-bg');
-            if(select.value === 'custom') input.classList.remove('hidden');
+            if (select.value === 'custom') input.classList.remove('hidden');
             else input.classList.add('hidden');
         }
 
-        window.generateWallpaperFromSelect = function(e) {
+        window.generateWallpaperFromSelect = function (e) {
             const val = document.getElementById('wp-size-select').value;
             const bgStyle = document.getElementById('wp-bg-select').value;
             const fileInput = document.getElementById('wp-custom-bg');
-            
+
             // Capture button reference immediately because e.currentTarget is null in async callbacks
             const btn = e.currentTarget;
 
@@ -1765,10 +937,10 @@
             } else {
                 [w, h] = val.split(',').map(Number);
             }
-            
+
             if (bgStyle === 'custom' && fileInput.files && fileInput.files[0]) {
                 const reader = new FileReader();
-                reader.onload = function(evt) {
+                reader.onload = function (evt) {
                     // Pass a mock event object with the captured button
                     generateWallpaper(w, h, bgStyle, { currentTarget: btn }, evt.target.result);
                 };
@@ -1782,12 +954,12 @@
             }
         }
 
-        window.showWallpaperPreview = function(dataUrl, filename) {
+        window.showWallpaperPreview = function (dataUrl, filename) {
             const overlay = document.createElement('div');
             overlay.className = 'wimpy-modal-overlay';
             overlay.id = 'wp-preview-overlay';
             overlay.style.zIndex = '10002'; // Ensure it's on top
-            
+
             const box = document.createElement('div');
             box.className = 'wimpy-modal-box';
             Object.assign(box.style, {
@@ -1798,7 +970,7 @@
                 display: 'flex',
                 flexDirection: 'column'
             });
-            
+
             box.innerHTML = `
                 <h2 style="margin-top:0;"><i class="fas fa-eye"></i> Preview</h2>
                 <div style="flex: 1; overflow: auto; margin-bottom: 15px; border: 2px solid #000; background: #eee; display: flex; justify-content: center; align-items: center; min-height: 200px;">
@@ -1813,27 +985,27 @@
                     </button>
                 </div>
             `;
-            
+
             overlay.appendChild(box);
             document.body.appendChild(overlay);
-            
-            document.getElementById('wp-download-btn').onclick = function() {
+
+            document.getElementById('wp-download-btn').onclick = function () {
                 const link = document.createElement('a');
                 link.download = filename;
                 link.href = dataUrl;
                 link.click();
-                
+
                 // Success Toast
                 const toast = document.createElement('div');
                 toast.className = 'toast';
                 toast.innerText = "Wallpaper Saved!";
                 document.getElementById('toast-container').appendChild(toast);
-                
+
                 document.getElementById('wp-preview-overlay').remove();
             };
         }
 
-        window.generateWallpaper = async function(width, height, bgStyle, e, customBgData = null) {
+        window.generateWallpaper = async function (width, height, bgStyle, e, customBgData = null) {
             const btn = e.currentTarget;
             const originalText = btn.innerHTML;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Drawing...';
@@ -1876,7 +1048,7 @@
                     boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.2)',
                     borderRadius: '15px'
                 };
-                
+
                 if (bgStyle === 'midnight') {
                     stageStyles.background = 'linear-gradient(to bottom, #0f2027, #203a43, #2c5364)';
                     titleColor = '#fff';
@@ -1935,7 +1107,7 @@
             });
 
             const cards = document.querySelectorAll('#schedule-list .class-card');
-            if(cards.length === 0) {
+            if (cards.length === 0) {
                 grid.innerHTML = '<h2 style="text-align:center; width:100%;">No classes found! Go have fun!</h2>';
             } else {
                 cards.forEach(card => {
@@ -1946,7 +1118,7 @@
                     // Clean up styles for static image
                     clone.style.animation = 'none';
                     clone.style.opacity = '1';
-                    
+
                     // Apply Card Styles (Glass or Paper)
                     Object.assign(clone.style, cardStyles);
 
@@ -1960,7 +1132,7 @@
                     clone.querySelectorAll('*').forEach(el => {
                         const style = window.getComputedStyle(el);
                         const fontSize = parseFloat(style.fontSize);
-                        if(fontSize) el.style.fontSize = (fontSize * 1.5) + 'px';
+                        if (fontSize) el.style.fontSize = (fontSize * 1.5) + 'px';
                     });
                     grid.appendChild(clone);
                 });
@@ -1980,7 +1152,7 @@
                 const canvas = await html2canvas(stage, { scale: 1, useCORS: true, logging: false });
                 const dataUrl = canvas.toDataURL('image/png');
                 const filename = `WimpySchedule_${width}x${height}_${Date.now()}.png`;
-                
+
                 showWallpaperPreview(dataUrl, filename);
             } catch (err) {
                 console.error(err);
@@ -1995,4 +1167,5 @@
         }
     </script>
 </body>
+
 </html>

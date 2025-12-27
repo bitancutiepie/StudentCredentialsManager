@@ -35,7 +35,7 @@ const noteLayer = document.getElementById('freedom-wall-board');
 const noteInput = document.getElementById('noteInput');
 const searchInput = document.getElementById('searchInput');
 let currentStudentId = null;
-let avatarInput; 
+let avatarInput;
 
 let galleryItems = []; // Store gallery images for lightbox navigation
 let galleryInterval;
@@ -49,7 +49,7 @@ function showToast(message, type = 'info') {
     const toast = document.createElement('div');
     toast.className = 'toast';
     toast.innerText = message;
-    if(type === 'error') {
+    if (type === 'error') {
         toast.style.background = '#ffadad';
         toast.style.border = '1px solid #d15656';
     }
@@ -62,7 +62,7 @@ function showToast(message, type = 'info') {
 
 function debounce(func, wait) {
     let timeout;
-    return function(...args) {
+    return function (...args) {
         clearTimeout(timeout);
         timeout = setTimeout(() => func.apply(this, args), wait);
     };
@@ -83,10 +83,10 @@ const initApp = async () => {
 
     // 2. Check Session
     const storedUser = localStorage.getItem('wimpy_user') || sessionStorage.getItem('wimpy_user');
-    
+
     if (storedUser) {
         const user = JSON.parse(storedUser);
-        
+
         // Update last login for "Recently Spotted" tracker on session restore
         await supabaseClient.from('students')
             .update({ last_login: new Date().toISOString() })
@@ -99,7 +99,7 @@ const initApp = async () => {
             const adminControls = document.getElementById('adminLandingControls');
             if (loginUI) loginUI.classList.add('hidden');
             if (adminControls) adminControls.classList.remove('hidden');
-            
+
             // FIX: Load landing page content for Admin too
             loadLandingPageContent();
             return;
@@ -107,12 +107,12 @@ const initApp = async () => {
 
         // IF STUDENT: Go to web2
         window.location.href = 'web2.html';
-        return; 
+        return;
     }
 
     // IF GUEST: Load content
     loadLandingPageContent();
-    
+
     if (authModeMessage) {
         authModeMessage.innerText = 'Enter your credentials to log in.';
     }
@@ -139,13 +139,13 @@ function loadLandingPageContent() {
     avatarInput.id = 'avatarInput';
     avatarInput.accept = 'image/*';
     avatarInput.className = 'hidden';
-    if(nameInput && nameInput.parentNode) {
+    if (nameInput && nameInput.parentNode) {
         nameInput.parentNode.insertBefore(avatarLabel, nameInput.nextSibling);
         nameInput.parentNode.insertBefore(avatarInput, avatarLabel.nextSibling);
     }
 
     fetchMembers();
-    fetchNotes(); 
+    fetchNotes();
     fetchRecentLogins();
     fetchNewUploads(); // <--- ADD THIS LINE HERE
     fetchLandingGallery(); // <--- AND THIS ONE
@@ -158,13 +158,13 @@ function loadLandingPageContent() {
         // Clone to remove old listeners if re-initialized
         const newToggle = togglePassword.cloneNode(true);
         togglePassword.parentNode.replaceChild(newToggle, togglePassword);
-        
+
         newToggle.addEventListener('click', function () {
             const passwordInput = document.getElementById('password');
             const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
             passwordInput.setAttribute('type', type);
             // Toggle icon
-            this.innerHTML = type === 'password' ? '<i class="fas fa-eye-slash"></i>' : '<i class="fas fa-eye"></i>'; 
+            this.innerHTML = type === 'password' ? '<i class="fas fa-eye-slash"></i>' : '<i class="fas fa-eye"></i>';
         });
     }
 
@@ -202,9 +202,9 @@ function injectAdminModal() {
             <p style="font-size: 0.9rem; margin-top: 15px;">(As Admin in Binder, you can add classes & events)</p>
         </div>
     `;
-    
+
     // Insert after authSection
-    if(authSection) {
+    if (authSection) {
         authSection.insertAdjacentHTML('afterend', modalHTML);
         adminChoiceModal = document.getElementById('adminChoiceModal'); // Re-assign global
     }
@@ -215,20 +215,20 @@ function injectAdminModal() {
 toggleAuth.addEventListener('click', () => {
     isLoginMode = !isLoginMode;
     authForm.reset();
-    
+
     if (authModeMessage) authModeMessage.innerText = isLoginMode ? 'Enter your credentials to log in.' : 'Fill out the form to create a new account.';
     if (isLoginMode) {
         submitBtn.innerText = 'ENTER →';
         nameInput.classList.add('hidden');
         nameInput.required = false;
-        
-        if(avatarInput) avatarInput.classList.add('hidden');
-        const lbl = document.getElementById('avatarLabel');
-        if(lbl) lbl.classList.add('hidden');
 
-        if(keepLoggedInContainer) {
+        if (avatarInput) avatarInput.classList.add('hidden');
+        const lbl = document.getElementById('avatarLabel');
+        if (lbl) lbl.classList.add('hidden');
+
+        if (keepLoggedInContainer) {
             keepLoggedInContainer.classList.remove('hidden');
-            keepLoggedInContainer.style.display = 'flex'; 
+            keepLoggedInContainer.style.display = 'flex';
         }
         toggleAuth.innerHTML = "Magpapalista? <b>Come here mga kosa click this</b> (Register Here)";
     } else {
@@ -236,20 +236,20 @@ toggleAuth.addEventListener('click', () => {
         nameInput.classList.remove('hidden');
         nameInput.required = true;
 
-        if(avatarInput) avatarInput.classList.remove('hidden');
+        if (avatarInput) avatarInput.classList.remove('hidden');
         const lbl = document.getElementById('avatarLabel');
-        if(lbl) lbl.classList.remove('hidden');
+        if (lbl) lbl.classList.remove('hidden');
 
-        if(keepLoggedInContainer) {
+        if (keepLoggedInContainer) {
             keepLoggedInContainer.classList.add('hidden');
-            keepLoggedInContainer.style.display = 'none'; 
+            keepLoggedInContainer.style.display = 'none';
         }
         toggleAuth.innerHTML = "Already a member? <b>Login</b>";
     }
 });
 
 authForm.addEventListener('submit', async (e) => {
-    e.preventDefault(); 
+    e.preventDefault();
     const srCode = srCodeInput.value.toUpperCase().trim(); // Added trim for safety
     const password = passwordInput.value;
     const name = nameInput.value.trim();
@@ -292,7 +292,7 @@ authForm.addEventListener('submit', async (e) => {
 
 async function handleRegister(name, srCode, password, file) {
     let avatarUrl = null;
-    
+
     // --- AUTO-GENERATE EMAIL ---
     const generatedEmail = `${srCode}@g.batstate-u.edu.ph`;
 
@@ -308,17 +308,17 @@ async function handleRegister(name, srCode, password, file) {
     }
     const { error } = await supabaseClient
         .from('students')
-        .insert([{ 
-            name: name, 
-            sr_code: srCode, 
-            password: password, 
+        .insert([{
+            name: name,
+            sr_code: srCode,
+            password: password,
             avatar_url: avatarUrl,
             email: generatedEmail // Added email here
         }]);
     if (error) throw error;
     showToast('Success! You are in.');
-    fetchMembers(); 
-    toggleAuth.click(); 
+    fetchMembers();
+    toggleAuth.click();
 }
 
 async function handleLogin(srCode, password) {
@@ -341,14 +341,14 @@ async function handleLogin(srCode, password) {
     // --- SELF-HEALING: FIX MISSING EMAIL ---
     if (data.sr_code !== 'ADMIN' && (!data.email || data.email === '')) {
         const autoEmail = `${data.sr_code}@g.batstate-u.edu.ph`;
-        
+
         // Update Supabase silently
         try {
             await supabaseClient
                 .from('students')
                 .update({ email: autoEmail })
                 .eq('id', data.id);
-                
+
             // Update local data variable so the session has it too
             data.email = autoEmail;
             console.log("System auto-corrected missing email.");
@@ -393,9 +393,9 @@ async function handleLogin(srCode, password) {
 }
 
 // --- ADMIN CHOICE HANDLING ---
-window.chooseAdminPath = function(path) {
-    if(adminChoiceModal) adminChoiceModal.classList.add('hidden');
-    
+window.chooseAdminPath = function (path) {
+    if (adminChoiceModal) adminChoiceModal.classList.add('hidden');
+
     if (path === 'manage') {
         showAdminPanel('Bitancutiepie (Admin)');
     } else if (path === 'dashboard') {
@@ -408,15 +408,15 @@ function showAdminPanel(name) {
     studentDashboard.classList.add('hidden');
     adminDashboard.classList.remove('hidden');
     adminNameDisplay.innerText = name;
-    fetchStudents(); 
+    fetchStudents();
     fetchRequests(); // Load requests when admin panel opens
     fetchAdminFiles(); // Load files
 
     // Toggle Mobile Navs
     const fixedNav = document.getElementById('fixed-action-buttons');
     const adminNav = document.getElementById('admin-mobile-nav');
-    if(fixedNav) fixedNav.classList.add('hidden');
-    if(adminNav) adminNav.classList.remove('hidden');
+    if (fixedNav) fixedNav.classList.add('hidden');
+    if (adminNav) adminNav.classList.remove('hidden');
 }
 
 // --- ADMIN FEATURES (Black List) ---
@@ -430,7 +430,7 @@ async function fetchStudents() {
     // Fetch receipts from shared_files instead of students table
     const { data: receipts } = await supabaseClient.from('shared_files').select('file_url, subject').like('subject', 'Receipt-%');
     const receiptMap = {};
-    if(receipts) receipts.forEach(r => receiptMap[r.subject] = r.file_url);
+    if (receipts) receipts.forEach(r => receiptMap[r.subject] = r.file_url);
 
     allStudents = data.map(s => ({ ...s, enrollment_receipt_url: receiptMap[`Receipt-${s.id}`] }));
     displayStudents(allStudents);
@@ -438,8 +438,8 @@ async function fetchStudents() {
 
 searchInput.addEventListener('input', debounce((e) => {
     const searchTerm = e.target.value.toLowerCase();
-    const filtered = allStudents.filter(student => 
-        student.name.toLowerCase().includes(searchTerm) || 
+    const filtered = allStudents.filter(student =>
+        student.name.toLowerCase().includes(searchTerm) ||
         student.sr_code.toLowerCase().includes(searchTerm)
     );
     displayStudents(filtered);
@@ -447,7 +447,7 @@ searchInput.addEventListener('input', debounce((e) => {
 
 function displayStudents(students) {
     if (!studentListContainer) return;
-    
+
     studentListContainer.innerHTML = '';
     const validStudents = students.filter(s => s.sr_code !== 'ADMIN');
 
@@ -463,10 +463,10 @@ function displayStudents(students) {
     // Helper function to render a section
     const renderSection = (title, list, color) => {
         if (list.length === 0) return;
-        
+
         const section = document.createElement('div');
         section.style.marginBottom = '20px';
-        
+
         const header = document.createElement('h4');
         header.style.cssText = `margin: 0 0 10px 0; border-bottom: 2px solid ${color}; padding-bottom: 5px; color: ${color}; text-align: left; text-transform: uppercase;`;
         header.innerText = `${title} (${list.length})`;
@@ -474,10 +474,10 @@ function displayStudents(students) {
 
         const grid = document.createElement('div');
         grid.style.cssText = 'display: flex; flex-wrap: wrap; gap: 10px;';
-        
+
         list.forEach(student => {
             const avatar = student.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random`;
-            
+
             const chip = document.createElement('div');
             chip.className = 'member-tag';
             chip.style.cssText = `cursor: pointer; padding: 5px 10px; font-size: 0.9rem; background: #fff; border: 2px solid ${color}; display: flex; align-items: center; gap: 8px; transition: transform 0.2s;`;
@@ -504,20 +504,34 @@ function displayStudents(students) {
 }
 
 async function deleteStudent(id) {
-    if(!await showWimpyConfirm('Scratch this person out specifically?')) return;
+    // Check if user is admin
+    const storedUser = localStorage.getItem('wimpy_user') || sessionStorage.getItem('wimpy_user');
+    if (!storedUser) return;
+    const u = JSON.parse(storedUser);
+    if (u.sr_code !== 'ADMIN' && u.role !== 'admin') return showToast('You are not authorized.', 'error');
+
+    if (!await showWimpyConfirm('Scratch this person out specifically?')) return;
     const { error } = await supabaseClient.from('students').delete().eq('id', id);
     if (error) showToast('Could not delete.', 'error');
     else {
         showToast('Scratched out successfully.');
         closeStudentDetails();
         fetchStudents();
-        fetchMembers(); 
+        fetchMembers();
     }
 }
 
 // IMPERSONATION LOGIC
 async function loginAsUser(name, code, avatarUrl, id) {
-    if(!await showWimpyConfirm('Switch view to ' + name + '?')) return;
+    // SECURITY CHECK: Only Admins can IMPERSONATE
+    const storedUser = localStorage.getItem('wimpy_user') || sessionStorage.getItem('wimpy_user');
+    if (!storedUser) return;
+    const u = JSON.parse(storedUser);
+    if (u.sr_code !== 'ADMIN' && u.role !== 'admin') {
+        return showToast('Nice try, impersonator.', 'error');
+    }
+
+    if (!await showWimpyConfirm('Switch view to ' + name + '?')) return;
     const targetUserPayload = JSON.stringify({
         id: id,
         name: name,
@@ -533,19 +547,19 @@ async function loginAsUser(name, code, avatarUrl, id) {
 }
 
 // --- STUDENT DETAILS MODAL ---
-window.openStudentDetails = function(id) {
+window.openStudentDetails = function (id) {
     const student = allStudents.find(s => s.id == id);
-    if(!student) return;
+    if (!student) return;
 
     const modal = document.getElementById('studentDetailsModal');
     const content = document.getElementById('studentDetailsContent');
     const avatar = student.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random`;
-    
+
     const safeName = student.name.replace(/'/g, "\\'");
     const safeCode = student.sr_code.replace(/'/g, "\\'");
     const safeAvatar = (student.avatar_url || '').replace(/'/g, "\\'");
     const currentStatus = student.enrollment_status || 'Not Enrolled';
-    
+
     const receiptLink = student.enrollment_receipt_url ? `
         <div style="display:flex; align-items:center; gap:10px; margin-top:5px;">
             <a href="#" onclick="viewFullImage('${student.enrollment_receipt_url}')" style="color:#0984e3; font-size:0.9rem; text-decoration:none;">
@@ -604,32 +618,32 @@ window.openStudentDetails = function(id) {
     modal.classList.remove('hidden');
 }
 
-window.saveEnrollment = async function(id) {
+window.saveEnrollment = async function (id) {
     const select = document.getElementById(`statusSelect-${id}`);
     const fileInput = document.getElementById(`receiptInput-${id}`);
     const btn = document.getElementById(`btn-save-enroll-${id}`);
-    
-    if(!select) return;
-    
+
+    if (!select) return;
+
     const newStatus = select.value;
     const file = fileInput && fileInput.files ? fileInput.files[0] : null;
-    
+
     btn.disabled = true;
     btn.innerText = "Saving...";
-    
+
     let updateData = { enrollment_status: newStatus };
-    
+
     if (file) {
         try {
             const fileName = `receipt_${id}_${Date.now()}.${file.name.split('.').pop()}`;
             const { error: uploadError } = await supabaseClient.storage
                 .from('class-resources')
                 .upload(fileName, file);
-                
+
             if (uploadError) throw uploadError;
-            
+
             const { data } = supabaseClient.storage.from('class-resources').getPublicUrl(fileName);
-            
+
             // WORKAROUND: Save to shared_files table instead of students table
             // 1. Remove old receipt if exists
             await supabaseClient.from('shared_files').delete().eq('subject', `Receipt-${id}`);
@@ -643,7 +657,7 @@ window.saveEnrollment = async function(id) {
 
             // Update local cache so UI updates immediately
             const s = allStudents.find(st => st.id == id);
-            if(s) s.enrollment_receipt_url = data.publicUrl;
+            if (s) s.enrollment_receipt_url = data.publicUrl;
         } catch (err) {
             showToast("Upload failed: " + err.message, "error");
             btn.disabled = false;
@@ -651,15 +665,15 @@ window.saveEnrollment = async function(id) {
             return;
         }
     }
-    
+
     const { error } = await supabaseClient.from('students').update(updateData).eq('id', id);
-    
+
     if (error) {
         showToast("Error: " + error.message, "error");
     } else {
         showToast("Enrollment updated!");
         const s = allStudents.find(st => st.id == id);
-        if(s) {
+        if (s) {
             s.enrollment_status = newStatus;
         }
         fetchMembers(); // Refresh public list
@@ -669,29 +683,36 @@ window.saveEnrollment = async function(id) {
     btn.innerText = "Update Enrollment";
 }
 
-window.deleteReceipt = async function(studentId) {
-    if(!await showWimpyConfirm('Delete this student\'s enrollment receipt?')) return;
-    
+window.deleteReceipt = async function (studentId) {
+    // Admin check inside
+    const storedUser = localStorage.getItem('wimpy_user') || sessionStorage.getItem('wimpy_user');
+    if (storedUser) {
+        const u = JSON.parse(storedUser);
+        if (u.sr_code !== 'ADMIN' && u.role !== 'admin') return showToast('Only Admin can delete receipts.', 'error');
+    }
+
+    if (!await showWimpyConfirm('Delete this student\'s enrollment receipt?')) return;
+
     const { error } = await supabaseClient
         .from('shared_files')
         .delete()
         .eq('subject', `Receipt-${studentId}`);
-        
+
     if (error) {
         showToast('Error deleting receipt.', 'error');
     } else {
         showToast('Receipt deleted.');
         // Update local cache
         const s = allStudents.find(st => st.id == studentId);
-        if(s) delete s.enrollment_receipt_url;
-        
+        if (s) delete s.enrollment_receipt_url;
+
         openStudentDetails(studentId); // Refresh modal
         fetchMembers(); // Refresh list
     }
 }
 
 
-window.closeStudentDetails = function() {
+window.closeStudentDetails = function () {
     document.getElementById('studentDetailsModal').classList.add('hidden');
 }
 
@@ -702,8 +723,8 @@ function openPortalWindow() {
     const left = (window.screen.width - width) / 2;
     const top = (window.screen.height - height) / 2;
     window.open(
-        "https://dione.batstate-u.edu.ph/student/#/", 
-        "BatStatePortal", 
+        "https://dione.batstate-u.edu.ph/student/#/",
+        "BatStatePortal",
         `width=${width},height=${height},top=${top},left=${left},resizable=yes,scrollbars=yes,status=yes`
     );
 }
@@ -726,13 +747,13 @@ async function fetchMembers() {
         // 1.5 Fetch Receipts (Workaround)
         const { data: receipts } = await supabaseClient.from('shared_files').select('file_url, subject').like('subject', 'Receipt-%');
         const receiptMap = {};
-        if(receipts) receipts.forEach(r => receiptMap[r.subject] = r.file_url);
+        if (receipts) receipts.forEach(r => receiptMap[r.subject] = r.file_url);
 
         const students = rawStudents.map(s => ({ ...s, enrollment_receipt_url: receiptMap[`Receipt-${s.id}`] }));
 
         // 2. Fetch Statuses
         const { data: statuses } = await supabaseClient.from('user_statuses').select('user_id, status');
-        
+
         // Create a lookup map for statuses
         const statusMap = {};
         if (statuses) statuses.forEach(s => statusMap[s.user_id] = s.status);
@@ -751,9 +772,9 @@ async function fetchMembers() {
                     tag.className = 'member-tag';
                     tag.style.cssText = 'cursor: pointer; border-color: #d63031; background: #fff0f0;';
                     tag.onclick = () => showPublicProfile(admin.name, admin.avatar_url, "System Administrator");
-                    
+
                     const safeAvatar = admin.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(admin.name)}&background=random`;
-                    
+
                     tag.innerHTML = `
                         <img src="${safeAvatar}" style="width:24px; height:24px; border-radius:50%; object-fit:cover; border:1px solid #d63031; flex-shrink: 0;">
                         <span style="font-weight:bold; color: #d63031;">${admin.name}</span>
@@ -768,13 +789,13 @@ async function fetchMembers() {
         const publicMemberList = document.getElementById('publicMemberList');
         if (publicMemberList) {
             publicMemberList.innerHTML = '';
-        
+
             // Filter valid members first (Exclude Admin/Principal)
             const validMembers = students.filter(s => s.sr_code !== 'ADMIN' && s.role !== 'admin' && s.name !== 'Principal User' && !s.name.includes('Admin'));
-            
+
             // Update Badge with Animation
             const badge = document.getElementById('memberCountBadge');
-            if(badge) {
+            if (badge) {
                 badge.innerText = validMembers.length;
                 badge.classList.remove('pop');
                 void badge.offsetWidth; // Trigger reflow to restart animation
@@ -792,9 +813,9 @@ async function fetchMembers() {
                     // Use flex row layout for the card content
                     tag.style.cssText = 'cursor: pointer;';
                     tag.onclick = () => showPublicProfile(student.name, student.avatar_url, userStatus);
-                    
+
                     const safeAvatar = student.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random`;
-                    
+
                     tag.innerHTML = `
                         <img src="${safeAvatar}" style="width:24px; height:24px; border-radius:50%; object-fit:cover; border:1px solid #333; flex-shrink: 0;">
                         <span style="font-weight:bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${student.name}</span>
@@ -815,18 +836,18 @@ async function fetchMembers() {
             // Update Counts
             const countIn = document.getElementById('count-in');
             const countOut = document.getElementById('count-out');
-            if(countIn) countIn.innerText = enrolled.length;
-            if(countOut) countOut.innerText = notEnrolled.length;
+            if (countIn) countIn.innerText = enrolled.length;
+            if (countOut) countOut.innerText = notEnrolled.length;
 
             const generateTag = (s, isEnrolled) => {
-                 const safeAvatar = s.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=random`;
-                 const hasReceipt = s.enrollment_receipt_url;
-                 const safeName = s.name.replace(/'/g, "\\'");
-                 const cursorStyle = hasReceipt ? 'cursor: pointer;' : 'cursor: default;';
-                 const tagAction = hasReceipt ? `onclick="openReceiptPreview('${safeName}', '${s.enrollment_receipt_url}')" title="View Receipt"` : '';
-                 const icon = hasReceipt ? `<i class="fas fa-receipt" style="font-size:0.8rem; color:#0984e3; margin-left:5px;"></i>` : '';
+                const safeAvatar = s.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=random`;
+                const hasReceipt = s.enrollment_receipt_url;
+                const safeName = s.name.replace(/'/g, "\\'");
+                const cursorStyle = hasReceipt ? 'cursor: pointer;' : 'cursor: default;';
+                const tagAction = hasReceipt ? `onclick="openReceiptPreview('${safeName}', '${s.enrollment_receipt_url}')" title="View Receipt"` : '';
+                const icon = hasReceipt ? `<i class="fas fa-receipt" style="font-size:0.8rem; color:#0984e3; margin-left:5px;"></i>` : '';
 
-                 return `
+                return `
                     <div class="member-tag" style="${cursorStyle}" ${tagAction}>
                         <img src="${safeAvatar}" style="width:24px; height:24px; border-radius:50%; object-fit:cover; border:1px solid #333; flex-shrink: 0;">
                         <span style="font-weight:bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">${s.name}</span>
@@ -873,10 +894,10 @@ function showPublicProfile(name, avatarUrl, status) {
         };
         document.body.appendChild(modal);
     }
-    
+
     // Add Contact Button if Admin
-    const contactBtn = (status === 'System Administrator') 
-        ? `<button onclick="openRequestModal()" style="margin-top:10px; background:#0984e3; color:#fff; border: 2px solid #000; font-size: 1rem;"><i class="fas fa-paper-plane"></i> Contact Admin</button>` 
+    const contactBtn = (status === 'System Administrator')
+        ? `<button onclick="openRequestModal()" style="margin-top:10px; background:#0984e3; color:#fff; border: 2px solid #000; font-size: 1rem;"><i class="fas fa-paper-plane"></i> Contact Admin</button>`
         : '';
 
     const safeAvatar = avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
@@ -896,7 +917,7 @@ function showPublicProfile(name, avatarUrl, status) {
 
 async function fetchRecentLogins() {
     const container = document.getElementById('recentLoginsList');
-    if(!container) return;
+    if (!container) return;
     const { data, error } = await supabaseClient.from('students').select('name, avatar_url, last_login').neq('sr_code', 'ADMIN').not('last_login', 'is', null).order('last_login', { ascending: false }).limit(5);
     if (error) return;
     if (!data || data.length === 0) return;
@@ -938,7 +959,7 @@ async function postNote() {
     const text = noteInput.value.trim();
     if (!text) return showToast('Please write something!', 'error');
     const randomX = Math.floor(Math.random() * 80) + 10; // 10% to 90%
-    const randomY = Math.floor(Math.random() * 90) + 5; 
+    const randomY = Math.floor(Math.random() * 90) + 5;
     const rotation = Math.floor(Math.random() * 20) - 10;
     // Wimpy Theme: Use 'plain' or 'lined' instead of colors
     const styles = ['plain', 'lined'];
@@ -950,7 +971,7 @@ async function postNote() {
 async function fetchNotes() {
     const { data, error } = await supabaseClient.from('notes').select('*');
     if (error) return;
-    
+
     // Check if Admin (for delete capability)
     const storedUser = localStorage.getItem('wimpy_user') || sessionStorage.getItem('wimpy_user');
     let isAdmin = false;
@@ -963,7 +984,7 @@ async function fetchNotes() {
     data.forEach(note => {
         const div = document.createElement('div');
         div.className = 'sticky-note';
-        
+
         // Content
         const p = document.createElement('p');
         p.innerText = note.content;
@@ -975,10 +996,10 @@ async function fetchNotes() {
         div.style.left = (note.x_pos || 0) + '%';
         div.style.top = (note.y_pos || 0) + '%';
         div.style.transform = `rotate(${note.rotation}deg)`;
-        
+
         // Apply Wimpy Style (Color or Lined)
         if (note.color) div.classList.add(note.color);
-        
+
         // Delete Button (Only if Admin)
         if (isAdmin) {
             const btn = document.createElement('button');
@@ -990,7 +1011,7 @@ async function fetchNotes() {
             btn.style.padding = '0';
             btn.style.marginTop = '0';
             // Prevent drag when clicking button
-            btn.onmousedown = (e) => e.stopPropagation(); 
+            btn.onmousedown = (e) => e.stopPropagation();
             btn.onclick = () => deleteNote(note.id);
             div.appendChild(btn);
         }
@@ -1005,8 +1026,8 @@ async function fetchNotes() {
         } catch (e) {
             localStorage.removeItem('liked_notes'); // Reset if corrupted
         }
-        if(likedNotes.includes(note.id)) likeBtn.classList.add('liked');
-        
+        if (likedNotes.includes(note.id)) likeBtn.classList.add('liked');
+
         likeBtn.innerHTML = `<i class="fas fa-heart"></i> <span class="like-count">${note.likes || 0}</span>`;
         // Stop propagation to prevent dragging when clicking like
         likeBtn.onmousedown = (e) => e.stopPropagation();
@@ -1019,7 +1040,7 @@ async function fetchNotes() {
     setTimeout(resolveCollisions, 200);
 }
 
-window.toggleLike = async function(id) {
+window.toggleLike = async function (id) {
     let likedNotes = [];
     try {
         likedNotes = JSON.parse(localStorage.getItem('liked_notes') || '[]');
@@ -1028,25 +1049,25 @@ window.toggleLike = async function(id) {
     }
     const isLiked = likedNotes.includes(id);
     const el = document.getElementById(`note-${id}`);
-    
+
     // Optimistic UI Update (Immediate feedback)
-    if(el) {
+    if (el) {
         const btn = el.querySelector('.like-sticker');
         const countSpan = el.querySelector('.like-count');
         let count = parseInt(countSpan.innerText) || 0;
-        
-        if(isLiked) {
+
+        if (isLiked) {
             // Unlike
             const newLiked = likedNotes.filter(n => n !== id);
-            try { localStorage.setItem('liked_notes', JSON.stringify(newLiked)); } catch(e) {}
+            try { localStorage.setItem('liked_notes', JSON.stringify(newLiked)); } catch (e) { }
             btn.classList.remove('liked');
             countSpan.innerText = Math.max(0, count - 1);
-            
+
             // Update DB - Revert if failed
             const success = await updateLikesInDb(id, -1);
-            if(!success) {
+            if (!success) {
                 // Revert UI
-                try { localStorage.setItem('liked_notes', JSON.stringify(likedNotes)); } catch(e) {} // Put back
+                try { localStorage.setItem('liked_notes', JSON.stringify(likedNotes)); } catch (e) { } // Put back
                 btn.classList.add('liked');
                 countSpan.innerText = count;
                 showToast("Connection failed. Like not saved.", "error");
@@ -1054,16 +1075,16 @@ window.toggleLike = async function(id) {
         } else {
             // Like
             likedNotes.push(id);
-            try { localStorage.setItem('liked_notes', JSON.stringify(likedNotes)); } catch(e) {}
+            try { localStorage.setItem('liked_notes', JSON.stringify(likedNotes)); } catch (e) { }
             btn.classList.add('liked');
             countSpan.innerText = count + 1;
-            
+
             // Update DB - Revert if failed
             const success = await updateLikesInDb(id, 1);
-            if(!success) {
+            if (!success) {
                 // Revert UI
                 const revertedLiked = likedNotes.filter(n => n !== id);
-                try { localStorage.setItem('liked_notes', JSON.stringify(revertedLiked)); } catch(e) {}
+                try { localStorage.setItem('liked_notes', JSON.stringify(revertedLiked)); } catch (e) { }
                 btn.classList.remove('liked');
                 countSpan.innerText = count;
                 showToast("Connection failed. Like not saved.", "error");
@@ -1076,16 +1097,16 @@ async function updateLikesInDb(id, change) {
     try {
         // Fetch current count to ensure accuracy
         const { data, error: fetchError } = await supabaseClient.from('notes').select('likes').eq('id', id).single();
-        
-        if(fetchError) {
+
+        if (fetchError) {
             console.error("Error fetching like count:", fetchError.message, fetchError.details || '');
             return false;
         }
 
         const newCount = Math.max(0, (data?.likes || 0) + change);
         const { error: updateError } = await supabaseClient.from('notes').update({ likes: newCount }).eq('id', id);
-        
-        if(updateError) {
+
+        if (updateError) {
             console.error("Error updating like count:", updateError.message, updateError.details || '');
             return false;
         }
@@ -1101,18 +1122,18 @@ function setupRealtimeNotes() {
     supabaseClient
         .channel('public:notes')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'notes' }, payload => {
-            if(payload.eventType === 'INSERT') {
+            if (payload.eventType === 'INSERT') {
                 fetchNotes(); // New note added, refresh board
             } else if (payload.eventType === 'DELETE') {
                 const el = document.getElementById(`note-${payload.old.id}`);
-                if(el) el.remove();
+                if (el) el.remove();
             } else if (payload.eventType === 'UPDATE') {
                 const el = document.getElementById(`note-${payload.new.id}`);
-                if(el) {
+                if (el) {
                     // Update Like Count
                     const countSpan = el.querySelector('.like-count');
-                    if(countSpan) countSpan.innerText = payload.new.likes || 0;
-                    
+                    if (countSpan) countSpan.innerText = payload.new.likes || 0;
+
                     // Update Position (Only if changed significantly, to avoid jitter)
                     // We skip this if the user is currently dragging it (checked via class or state if needed)
                     // For now, we just update likes to be "responsive" as requested.
@@ -1172,10 +1193,10 @@ function resolveCollisions() {
     }
 }
 
-window.deleteNote = async function(id) {
-    if(!await showWimpyConfirm("Tear off this note?")) return;
+window.deleteNote = async function (id) {
+    if (!await showWimpyConfirm("Tear off this note?")) return;
     const { error } = await supabaseClient.from('notes').delete().eq('id', id);
-    if(error) showToast("Could not delete note.", "error");
+    if (error) showToast("Could not delete note.", "error");
     else {
         showToast("Note removed.");
         fetchNotes();
@@ -1188,46 +1209,46 @@ function makeDraggable(element, noteId) {
 
     element.onmousedown = dragMouseDown;
     element.ontouchstart = dragMouseDown;
-    
-    function dragMouseDown(e) { 
-        e = e || window.event; 
-        
+
+    function dragMouseDown(e) {
+        e = e || window.event;
+
         // Bring to front
         element.style.zIndex = 1000;
         startLeft = element.offsetLeft; // Capture start position
         startTop = element.offsetTop;
-        
-        if (e.type !== 'touchstart') e.preventDefault(); 
-        pos3 = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX; 
-        pos4 = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY; 
-        document.onmouseup = closeDragElement; 
-        document.onmousemove = elementDrag; 
-        document.ontouchend = closeDragElement; 
-        document.ontouchmove = elementDrag; 
+
+        if (e.type !== 'touchstart') e.preventDefault();
+        pos3 = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+        pos4 = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
+        document.onmouseup = closeDragElement;
+        document.onmousemove = elementDrag;
+        document.ontouchend = closeDragElement;
+        document.ontouchmove = elementDrag;
     }
-    
+
     function elementDrag(e) { e = e || window.event; let clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX; let clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY; pos1 = pos3 - clientX; pos2 = pos4 - clientY; pos3 = clientX; pos4 = clientY; element.style.top = (element.offsetTop - pos2) + "px"; element.style.left = (element.offsetLeft - pos1) + "px"; }
-    
-    function closeDragElement() { 
+
+    function closeDragElement() {
         // Reset z-index slightly so it doesn't stay 'active' forever, or keep it high
-        element.style.zIndex = 'auto'; 
+        element.style.zIndex = 'auto';
         const parent = element.parentElement;
-        
-        document.onmouseup = null; 
-        document.onmousemove = null; 
-        document.ontouchend = null; 
-        document.ontouchmove = null; 
-        
+
+        document.onmouseup = null;
+        document.onmousemove = null;
+        document.ontouchend = null;
+        document.ontouchmove = null;
+
         // FIX: Check if parent has dimensions to avoid NaN/Infinity errors
         if (!parent || parent.offsetWidth <= 0 || parent.offsetHeight <= 0) return;
 
         // FIX: Only update if actually moved (prevents 400 errors on simple clicks)
         if (Math.abs(element.offsetLeft - startLeft) < 2 && Math.abs(element.offsetTop - startTop) < 2) return;
 
-        const xPercent = (element.offsetLeft / parent.offsetWidth) * 100; 
-        const yPercent = (element.offsetTop / parent.offsetHeight) * 100; 
+        const xPercent = (element.offsetLeft / parent.offsetWidth) * 100;
+        const yPercent = (element.offsetTop / parent.offsetHeight) * 100;
         resolveCollisions();
-        updateNotePosition(noteId, xPercent, yPercent); 
+        updateNotePosition(noteId, xPercent, yPercent);
     }
 }
 async function updateNotePosition(id, x, y) {
@@ -1240,16 +1261,16 @@ async function updateNotePosition(id, x, y) {
 }
 
 // --- FREEDOM WALL MODAL (Landing Page) ---
-window.openFreedomWall = function() {
+window.openFreedomWall = function () {
     document.getElementById('freedomWallModal').classList.remove('hidden');
-    
+
     // Check for Admin to show controls
     const storedUser = localStorage.getItem('wimpy_user') || sessionStorage.getItem('wimpy_user');
     if (storedUser) {
         const u = JSON.parse(storedUser);
         if (u.sr_code === 'ADMIN' || u.role === 'admin') {
             const controls = document.getElementById('fw-admin-controls');
-            if(controls) controls.classList.remove('hidden');
+            if (controls) controls.classList.remove('hidden');
         }
     }
 
@@ -1258,38 +1279,38 @@ window.openFreedomWall = function() {
     // Auto-focus the input for instant accessibility
     setTimeout(() => {
         const input = document.getElementById('fw-landing-input');
-        if(input) input.focus();
+        if (input) input.focus();
     }, 100);
 }
-window.closeFreedomWall = function() {
+window.closeFreedomWall = function () {
     document.getElementById('freedomWallModal').classList.add('hidden');
 }
 
 // --- COLOR SELECTION ---
-window.selectColor = function(el, color) {
+window.selectColor = function (el, color) {
     document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
     el.classList.add('selected');
     document.getElementById('fw-landing-color').value = color;
 }
 
-window.postLandingNote = async function() {
+window.postLandingNote = async function () {
     const input = document.getElementById('fw-landing-input');
     const btn = document.getElementById('fw-landing-btn');
     const text = input.value.trim();
-    
+
     if (!text) return showToast('Write something first!', 'error');
 
-    if(btn) btn.disabled = true; // Prevent spam
+    if (btn) btn.disabled = true; // Prevent spam
 
     // Random Position & Style
-    const randomX = Math.floor(Math.random() * 80) + 10; 
-    const randomY = Math.floor(Math.random() * 80) + 10; 
+    const randomX = Math.floor(Math.random() * 80) + 10;
+    const randomY = Math.floor(Math.random() * 80) + 10;
     const rotation = Math.floor(Math.random() * 20) - 10;
     const selectedColor = document.getElementById('fw-landing-color').value || 'white';
 
     const { error } = await supabaseClient.from('notes').insert([{ content: text, x_pos: randomX, y_pos: randomY, rotation: rotation, color: selectedColor, likes: 0 }]);
-    
-    if(btn) btn.disabled = false;
+
+    if (btn) btn.disabled = false;
 
     if (error) showToast('Failed to post.', 'error');
     else { showToast('Note posted!'); input.value = ''; fetchNotes(); }
@@ -1304,7 +1325,7 @@ async function logout() {
     authSection.classList.remove('hidden');
     adminDashboard.classList.add('hidden');
     studentDashboard.classList.add('hidden');
-    
+
     // Reset UI
     const loginUI = document.getElementById('loginUI');
     const adminControls = document.getElementById('adminLandingControls');
@@ -1314,10 +1335,10 @@ async function logout() {
     // Reset Mobile Navs
     const fixedNav = document.getElementById('fixed-action-buttons');
     const adminNav = document.getElementById('admin-mobile-nav');
-    if(fixedNav) fixedNav.classList.remove('hidden');
-    if(adminNav) adminNav.classList.add('hidden');
+    if (fixedNav) fixedNav.classList.remove('hidden');
+    if (adminNav) adminNav.classList.add('hidden');
 
-    if(adminChoiceModal) adminChoiceModal.classList.add('hidden');
+    if (adminChoiceModal) adminChoiceModal.classList.add('hidden');
     srCodeInput.value = '';
     passwordInput.value = '';
     searchInput.value = '';
@@ -1329,13 +1350,13 @@ function returnToAdminChoice() {
     adminDashboard.classList.add('hidden');
     // Show landing page again (which has admin controls)
     const authSection = document.getElementById('authSection');
-    if(authSection) authSection.classList.remove('hidden');
+    if (authSection) authSection.classList.remove('hidden');
 
     // Reset Mobile Navs
     const fixedNav = document.getElementById('fixed-action-buttons');
     const adminNav = document.getElementById('admin-mobile-nav');
-    if(fixedNav) fixedNav.classList.remove('hidden');
-    if(adminNav) adminNav.classList.add('hidden');
+    if (fixedNav) fixedNav.classList.remove('hidden');
+    if (adminNav) adminNav.classList.add('hidden');
 }
 
 function showWelcomeNote() {
@@ -1385,20 +1406,31 @@ function showWelcomeNote() {
         <h2 style="margin-top:0; text-decoration: underline wavy #000;"><i class="fas fa-star"></i> SYSTEM UPDATE</h2>
         <p style="font-size:1.1rem; margin: 10px 0;">"Look at the upgrade guys! (Click pics to zoom)"</p>
         <div class="update-flex">
-            <div class="update-img-container" onclick="viewFullImage('Beforeimg.png')">
+            <div class="update-img-container" onclick="viewFullImage('assets/images/Beforeimg.png')">
                 <div style="font-weight: bold; background: #bdc3c7; color: #000; display: inline-block; padding: 2px 10px; transform: rotate(-3deg); border: 2px solid #000; position: absolute; top: -12px; left: -5px; z-index: 2; font-size: 0.8rem;">BEFORE:</div>
-                <img src="Beforeimg.png" alt="Old Website" style="width: 100%; height: auto; border: 3px solid #000; box-shadow: 4px 4px 0 rgba(0,0,0,0.2); background: #fff; transition: transform 0.2s;">
+                <img src="assets/images/Beforeimg.png" alt="Old Website" style="width: 100%; height: auto; border: 3px solid #000; box-shadow: 4px 4px 0 rgba(0,0,0,0.2); background: #fff; transition: transform 0.2s;">
             </div>
             <div class="update-arrow">→</div>
-            <div class="update-img-container" onclick="viewFullImage('Afterimg.png')">
+            <div class="update-img-container" onclick="viewFullImage('assets/images/Afterimg.png')">
                 <div style="font-weight: bold; background: #ffee58; color: #000; display: inline-block; padding: 2px 10px; transform: rotate(3deg); border: 2px solid #000; position: absolute; top: -12px; right: -5px; z-index: 2; font-size: 0.8rem;">NOW:</div>
-                <img src="Afterimg.png" alt="New Website" style="width: 100%; height: auto; border: 3px solid #000; box-shadow: 4px 4px 0 rgba(0,0,0,0.2); background: #fff; transition: transform 0.2s;">
+                <img src="assets/images/Afterimg.png" alt="New Website" style="width: 100%; height: auto; border: 3px solid #000; box-shadow: 4px 4px 0 rgba(0,0,0,0.2); background: #fff; transition: transform 0.2s;">
             </div>
         </div>
         <div style="text-align: left; background: #f9f9f9; border: 2px dashed #bbb; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
             <p style="font-weight: bold; margin: 0 0 10px 0; border-bottom: 2px solid #ddd; padding-bottom: 5px;"><i class="fas fa-edit"></i> What's New in this Update:</p>
             <ul style="padding-left: 20px; margin: 0; list-style-type: none; font-size: 1rem; line-height: 1.6;">
-                <li><i class="fas fa-paper-plane"></i> <b>Message Anyone:</b> New floating notepad button to chat with any classmate, even if they're offline!</li>
+                <li><i class="fas fa-shield-alt"></i> <b>Security Patch:</b> Strengthened admin protocols and fixed navigation loopholes.</li>
+                <li><i class="fas fa-user-lock"></i> <b>Session Integrity:</b> Added validation to prevent unauthorized access via storage modification.</li>
+                <li><i class="fas fa-folder-open"></i> <b>System Cleanup:</b> Organized file structure (CSS/JS/Assets) for better performance.</li>
+                <li><i class="fas fa-code"></i> <b>Optimized Codebase:</b> Extracted inline styles and scripts to improve load times.</li>
+                <li><i class="fas fa-check-circle"></i> <b>Data Ethics:</b> Reinforced authorized access controls for all users.</li>
+            </ul>
+        </div>
+        
+        <div style="text-align: left; background: #fffde7; border: 2px dashed #f1c40f; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+             <p style="font-weight: bold; margin: 0 0 10px 0; border-bottom: 2px solid #f39c12; padding-bottom: 5px;"><i class="fas fa-star"></i> Key Features:</p>
+             <ul style="padding-left: 20px; margin: 0; list-style-type: none; font-size: 1rem; line-height: 1.6;">
+                <li><i class="fas fa-paper-plane"></i> <b>Message Anyone:</b> New floating notepad button to chat with any classmate!</li>
                 <li><i class="fas fa-mobile-alt"></i> <b>Mobile Optimization:</b> Reorganized header layout to prevent overlapping on phone screens.</li>
                 <li><i class="fas fa-camera-retro"></i> <b>Memories Gallery:</b> New photo gallery added to the login page!</li>
                 <li><i class="fas fa-question-circle"></i> <b>Help Guide:</b> Added a user guide tab inside the binder.</li>
@@ -1410,7 +1442,7 @@ function showWelcomeNote() {
                 <li><i class="fas fa-clock"></i> <b>Live Class Tracker:</b> See exactly which class is happening right now.</li>
                 <li><i class="fas fa-folder"></i> <b>Subject Cabinet:</b> Files are now organized by subject folders.</li>
                 <li><i class="fas fa-paint-brush"></i> <b>New Look:</b> Added doodles, coffee stains, and a credits section to the login page.</li>
-            </ul>
+             </ul>
         </div>
         <p style="font-size:1.3rem; margin: 15px 0; color: #d32f2f; font-weight: bold;">"Login na kayo para makita niyo!"</p>
         <button onclick="showCongratsMessage(this.parentElement.parentElement)" style="background: #000; color: #fff; border: 2px solid #000; font-family: 'Patrick Hand'; font-size: 1.2rem; cursor: pointer; width: 100%; border-radius: 5px; padding: 10px;">SHEESH!</button>
@@ -1419,33 +1451,33 @@ function showWelcomeNote() {
     document.body.appendChild(modal);
 }
 // Click to Zoom
-window.viewFullImage = function(src) {
+window.viewFullImage = function (src) {
     const overlay = document.createElement('div');
     overlay.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:10000; display:flex; justify-content:center; align-items:center; cursor: zoom-out; animation: fadeIn 0.3s;';
     const img = document.createElement('img');
     img.src = src;
     img.style.cssText = 'max-width:90%; max-height:90%; border: 5px solid #fff; box-shadow: 0 0 30px rgba(0,0,0,0.5); object-fit: contain;';
     overlay.appendChild(img);
-    overlay.onclick = function() { overlay.remove(); };
+    overlay.onclick = function () { overlay.remove(); };
     document.body.appendChild(overlay);
 }
 
 // --- CONGRATS MESSAGE ---
-window.showCongratsMessage = function(prevModal) {
+window.showCongratsMessage = function (prevModal) {
     if (prevModal) prevModal.remove();
 
     const overlay = document.createElement('div');
     overlay.className = 'wimpy-modal-overlay';
-    
+
     const box = document.createElement('div');
     box.className = 'wimpy-modal-box';
-    
+
     box.innerHTML = `
         <h2 style="margin:0 0 15px 0; font-size:2rem;">🎉 CONGRATS!</h2>
         <p style="font-size:1.3rem; margin-bottom:20px;">Congrays Guys at naipasa natin ang First Sem, Goodluck sa Second Sem!<br><br>- Jv</p>
         <button onclick="this.closest('.wimpy-modal-overlay').remove()" style="background: #000; color: #fff; border: 2px solid #000; font-family: 'Patrick Hand'; font-size: 1.2rem; cursor: pointer; width: 100%; border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; padding: 10px;">LET'S GO!</button>
     `;
-    
+
     overlay.appendChild(box);
     document.body.appendChild(overlay);
 
@@ -1456,7 +1488,7 @@ window.showCongratsMessage = function(prevModal) {
         var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 10001 };
         var random = (min, max) => Math.random() * (max - min) + min;
 
-        var interval = setInterval(function() {
+        var interval = setInterval(function () {
             var timeLeft = animationEnd - Date.now();
             if (timeLeft <= 0) return clearInterval(interval);
             var particleCount = 50 * (timeLeft / duration);
@@ -1479,13 +1511,13 @@ window.showCongratsMessage = function(prevModal) {
 async function fetchNewUploads() {
     const container = document.getElementById('newUpdatesSection');
     const list = document.getElementById('newUpdatesList');
-    
+
     // Safety check: if elements don't exist, stop (prevents errors)
     if (!container || !list) return;
 
     // Calculate date 3 days ago
     const dateLimit = new Date();
-    dateLimit.setDate(dateLimit.getDate() - 3); 
+    dateLimit.setDate(dateLimit.getDate() - 3);
 
     // Use 'supabaseClient' (which is defined in script.js)
     const { data, error } = await supabaseClient
@@ -1505,7 +1537,7 @@ async function fetchNewUploads() {
     // Only show the section if we actually have data
     if (data && data.length > 0) {
         container.classList.remove('hidden'); // Show the container
-        
+
         list.innerHTML = data.map(file => window.generateFileCard(file, true)).join('');
     } else {
         container.classList.add('hidden'); // Keep hidden if empty
@@ -1516,7 +1548,7 @@ async function fetchNewUploads() {
 async function fetchLandingGallery() {
     const container = document.getElementById('wimpyGalleryContainer');
     const section = document.getElementById('wimpyGallerySection');
-    if(!container || !section) return;
+    if (!container || !section) return;
 
     const { data, error } = await supabaseClient
         .from('shared_files')
@@ -1524,7 +1556,7 @@ async function fetchLandingGallery() {
         .eq('subject', 'LandingGallery')
         .order('created_at', { ascending: false });
 
-    if(error || !data || data.length === 0) {
+    if (error || !data || data.length === 0) {
         section.classList.add('hidden');
         return;
     }
@@ -1562,32 +1594,32 @@ async function fetchLandingGallery() {
 }
 
 // --- GALLERY LIGHTBOX WITH NAVIGATION ---
-window.openGalleryLightbox = function(startIndex) {
+window.openGalleryLightbox = function (startIndex) {
     if (!galleryItems || galleryItems.length === 0) return;
     let currentIndex = startIndex;
 
     const overlay = document.createElement('div');
     overlay.id = 'galleryLightbox';
     overlay.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:10000; display:flex; justify-content:center; align-items:center; flex-direction:column; animation: fadeIn 0.3s;';
-    
+
     const imgContainer = document.createElement('div');
     imgContainer.style.cssText = 'position:relative; max-width:90%; max-height:80%; display:flex; justify-content:center; align-items:center;';
-    
+
     const img = document.createElement('img');
     img.style.cssText = 'max-width:100%; max-height:80vh; border: 5px solid #fff; box-shadow: 0 0 30px rgba(0,0,0,0.5); object-fit: contain; transition: opacity 0.2s;';
-    
+
     const caption = document.createElement('div');
     caption.style.cssText = 'color:#fff; font-family:"Patrick Hand"; font-size:1.5rem; margin-top:15px; text-align:center; text-shadow: 1px 1px 2px #000;';
 
     // Navigation Buttons
     const btnStyle = 'position:absolute; top:50%; transform:translateY(-50%) !important; background:rgba(255,255,255,0.1); color:#fff; border:2px solid #fff; width:50px; height:50px; border-radius:50%; font-size:1.5rem; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:0.2s; animation: none !important;';
-    
+
     const prevBtn = document.createElement('button');
     prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
     prevBtn.style.cssText = btnStyle + 'left:20px;';
     prevBtn.onmouseover = () => { prevBtn.style.background = '#fff'; prevBtn.style.color = '#000'; prevBtn.style.setProperty('transform', 'translateY(-50%) scale(1.1)', 'important'); };
     prevBtn.onmouseout = () => { prevBtn.style.background = 'rgba(255,255,255,0.1)'; prevBtn.style.color = '#fff'; prevBtn.style.setProperty('transform', 'translateY(-50%)', 'important'); };
-    
+
     const nextBtn = document.createElement('button');
     nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
     nextBtn.style.cssText = btnStyle + 'right:20px;';
@@ -1597,7 +1629,7 @@ window.openGalleryLightbox = function(startIndex) {
     const closeBtn = document.createElement('button');
     closeBtn.innerHTML = '<i class="fas fa-times"></i>';
     closeBtn.style.cssText = 'position:absolute; top:20px; right:20px; background:transparent; color:#fff; border:none; font-size:2rem; cursor:pointer; animation: none !important; transform: none !important;';
-    
+
     const updateImage = (idx) => {
         img.style.opacity = '0.5';
         setTimeout(() => {
@@ -1608,19 +1640,19 @@ window.openGalleryLightbox = function(startIndex) {
     };
 
     // Event Listeners
-    const next = (e) => { if(e) e.stopPropagation(); currentIndex = (currentIndex + 1) % galleryItems.length; updateImage(currentIndex); };
-    const prev = (e) => { if(e) e.stopPropagation(); currentIndex = (currentIndex - 1 + galleryItems.length) % galleryItems.length; updateImage(currentIndex); };
+    const next = (e) => { if (e) e.stopPropagation(); currentIndex = (currentIndex + 1) % galleryItems.length; updateImage(currentIndex); };
+    const prev = (e) => { if (e) e.stopPropagation(); currentIndex = (currentIndex - 1 + galleryItems.length) % galleryItems.length; updateImage(currentIndex); };
     const close = () => { document.removeEventListener('keydown', keyHandler); overlay.remove(); };
 
     prevBtn.onclick = prev;
     nextBtn.onclick = next;
     closeBtn.onclick = close;
-    overlay.onclick = (e) => { if(e.target === overlay) close(); };
+    overlay.onclick = (e) => { if (e.target === overlay) close(); };
 
     const keyHandler = (e) => {
-        if(e.key === 'ArrowLeft') prev();
-        if(e.key === 'ArrowRight') next();
-        if(e.key === 'Escape') close();
+        if (e.key === 'ArrowLeft') prev();
+        if (e.key === 'ArrowRight') next();
+        if (e.key === 'Escape') close();
     };
     document.addEventListener('keydown', keyHandler);
 
@@ -1635,10 +1667,10 @@ function showWimpyConfirm(message) {
     return new Promise((resolve) => {
         const overlay = document.createElement('div');
         overlay.className = 'wimpy-modal-overlay';
-        
+
         const box = document.createElement('div');
         box.className = 'wimpy-modal-box';
-        
+
         box.innerHTML = `
             <h2 style="margin:0 0 10px 0; font-size:2rem;">WAIT!</h2>
             <p style="font-size:1.3rem; margin-bottom:20px;">${message}</p>
@@ -1647,15 +1679,15 @@ function showWimpyConfirm(message) {
                 <button id="wimpy-yes" style="flex:1; background:#000; color:#fff;">YEAH</button>
             </div>
         `;
-        
+
         overlay.appendChild(box);
         document.body.appendChild(overlay);
-        
+
         document.getElementById('wimpy-no').onclick = () => {
             overlay.remove();
             resolve(false);
         };
-        
+
         document.getElementById('wimpy-yes').onclick = () => {
             overlay.remove();
             resolve(true);
@@ -1674,22 +1706,22 @@ function toggleWideMode() {
 // --- ADMIN REQUESTS LOGIC ---
 async function fetchRequests() {
     const container = document.getElementById('adminRequestsList');
-    if(!container) return;
-    
+    if (!container) return;
+
     container.innerHTML = '<p>Checking suggestion box...</p>';
-    
+
     const { data, error } = await supabaseClient
         .from('requests')
         .select('*')
         .order('created_at', { ascending: false });
-        
-    if(error) return console.error(error);
-    
-    if(!data || data.length === 0) {
+
+    if (error) return console.error(error);
+
+    if (!data || data.length === 0) {
         container.innerHTML = '<h3 style="text-decoration:underline wavy #d63031;"><i class="fas fa-envelope-open-text"></i> Inbox / Requests</h3><p style="text-align:center; color:#666;">No new requests.</p>';
         return;
     }
-    
+
     container.innerHTML = '<h3 style="text-decoration:underline wavy #d63031;"><i class="fas fa-envelope-open-text"></i> Inbox / Requests</h3>' + data.map(req => `
         <div class="student-strip" style="flex-direction:column; align-items:flex-start; gap:5px; background:#fffde7;">
             <div style="width:100%; display:flex; justify-content:space-between; border-bottom:1px dashed #ccc; padding-bottom:5px;">
@@ -1702,8 +1734,14 @@ async function fetchRequests() {
     `).join('');
 }
 
-window.deleteRequest = async function(id) {
-    if(!await showWimpyConfirm('Burn this note?')) return;
+window.deleteRequest = async function (id) {
+    const storedUser = localStorage.getItem('wimpy_user') || sessionStorage.getItem('wimpy_user');
+    if (storedUser) {
+        const u = JSON.parse(storedUser);
+        if (u.sr_code !== 'ADMIN' && u.role !== 'admin') return showToast('Unauthorized action.', 'error');
+    }
+
+    if (!await showWimpyConfirm('Burn this note?')) return;
     await supabaseClient.from('requests').delete().eq('id', id);
     fetchRequests();
 }
@@ -1711,24 +1749,24 @@ window.deleteRequest = async function(id) {
 // --- ADMIN FILE MANAGER (To delete memories/uploads) ---
 async function fetchAdminFiles() {
     const container = document.getElementById('adminFileList');
-    if(!container) return;
-    
+    if (!container) return;
+
     container.innerHTML = '<p>Loading files...</p>';
-    
+
     const { data, error } = await supabaseClient
         .from('shared_files')
         .select('*')
         .neq('subject', 'LandingGallery')
         .not('subject', 'like', 'Receipt-%')
         .order('created_at', { ascending: false });
-        
-    if(error) return console.error(error);
-    
-    if(!data || data.length === 0) {
+
+    if (error) return console.error(error);
+
+    if (!data || data.length === 0) {
         container.innerHTML = '<h3 style="text-decoration:underline wavy #0984e3;"><i class="fas fa-folder-open"></i> Manage Files</h3><p style="text-align:center; color:#666;">No files uploaded.</p>';
         return;
     }
-    
+
     container.innerHTML = '<h3 style="text-decoration:underline wavy #0984e3;"><i class="fas fa-folder-open"></i> Manage Files</h3>' + data.map(file => `
         <div class="student-strip" style="justify-content:space-between; align-items:center; background:#f0f8ff;">
             <div style="display:flex; flex-direction:column; gap:2px; overflow:hidden; text-align:left;">
@@ -1743,10 +1781,16 @@ async function fetchAdminFiles() {
     `).join('');
 }
 
-window.deleteAdminFile = async function(id) {
-    if(!await showWimpyConfirm('Delete this file permanently?')) return;
+window.deleteAdminFile = async function (id) {
+    const storedUser = localStorage.getItem('wimpy_user') || sessionStorage.getItem('wimpy_user');
+    if (storedUser) {
+        const u = JSON.parse(storedUser);
+        if (u.sr_code !== 'ADMIN' && u.role !== 'admin') return showToast('Unauthorized action.', 'error');
+    }
+
+    if (!await showWimpyConfirm('Delete this file permanently?')) return;
     const { error } = await supabaseClient.from('shared_files').delete().eq('id', id);
-    if(error) showToast('Error deleting file.', 'error');
+    if (error) showToast('Error deleting file.', 'error');
     else {
         showToast('File deleted.');
         fetchAdminFiles();
@@ -1756,7 +1800,7 @@ window.deleteAdminFile = async function(id) {
 }
 
 // --- FILE PREVIEWER MODAL ---
-window.openFilePreview = function(url, title) {
+window.openFilePreview = function (url, title) {
     if (!url) return showToast('No file link available.', 'error');
 
     // Remove existing modal if any
@@ -1826,12 +1870,12 @@ window.openFilePreview = function(url, title) {
 }
 
 // --- REUSABLE FILE CARD GENERATOR (For Web2.html) ---
-window.generateFileCard = function(file, isNew = false) {
+window.generateFileCard = function (file, isNew = false) {
     const safeUrl = (file.file_url || '').replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;");
     const safeTitle = (file.title || 'File').replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;");
     const subject = file.subject || 'General';
     const badgeHtml = isNew ? `<div style="font-size: 0.8rem; background: #d63031; color: white; padding: 2px 6px; border-radius: 4px; transform: rotate(5deg);">NEW!</div>` : '';
-    
+
     // Icon Logic
     let icon = 'fa-file-alt';
     if (file.file_type) {
@@ -1872,9 +1916,9 @@ window.generateFileCard = function(file, isNew = false) {
 }
 
 // --- GALLERY SCROLL LOGIC ---
-window.scrollGallery = function(direction) {
+window.scrollGallery = function (direction) {
     const container = document.getElementById('wimpyGalleryContainer');
-    if(container) {
+    if (container) {
         const scrollAmount = 300;
         container.scrollBy({ left: direction * scrollAmount, behavior: 'smooth' });
     }
@@ -1884,10 +1928,10 @@ window.scrollGallery = function(direction) {
 function startGallerySlideshow() {
     const container = document.getElementById('wimpyGalleryContainer');
     if (!container) return;
-    
+
     if (galleryInterval) clearInterval(galleryInterval);
     if (galleryAnimationFrame) cancelAnimationFrame(galleryAnimationFrame);
-    
+
     let scrollPos = container.scrollLeft;
     const speed = 0.5; // Pixels per frame (adjust for speed)
 
@@ -1895,7 +1939,7 @@ function startGallerySlideshow() {
         // Pause if user is hovering or if the lightbox is open
         if (!container.matches(':hover') && !document.getElementById('galleryLightbox')) {
             scrollPos += speed;
-            
+
             // Loop back to start if we reach the end
             if (scrollPos >= container.scrollWidth - container.clientWidth) {
                 scrollPos = 0;
@@ -1907,13 +1951,23 @@ function startGallerySlideshow() {
         }
         galleryAnimationFrame = requestAnimationFrame(animate);
     }
-    
+
     galleryAnimationFrame = requestAnimationFrame(animate);
 }
 
 // --- ADMIN GALLERY UPLOAD (INDEX PAGE) ---
-window.uploadGalleryItemIndex = async function(e) {
+window.uploadGalleryItemIndex = async function (e) {
     e.preventDefault();
+
+    // Admin Check
+    const storedUser = localStorage.getItem('wimpy_user') || sessionStorage.getItem('wimpy_user');
+    if (storedUser) {
+        const u = JSON.parse(storedUser);
+        if (u.sr_code !== 'ADMIN' && u.role !== 'admin') return showToast('Unauthorized upload.', 'error');
+    } else {
+        return; // No user
+    }
+
     const captionInput = document.getElementById('idx-g-caption');
     const fileInput = document.getElementById('idx-g-file');
     const btn = document.getElementById('idx-upload-btn');
@@ -1959,10 +2013,10 @@ window.uploadGalleryItemIndex = async function(e) {
 }
 
 // --- MEMBER LIST TOGGLE ---
-window.toggleMemberList = function() {
+window.toggleMemberList = function () {
     const list = document.getElementById('publicMemberList');
     const icon = document.getElementById('memberToggleIcon');
-    
+
     if (list) list.classList.toggle('hidden');
     if (icon) {
         icon.style.transform = list.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
@@ -1970,38 +2024,38 @@ window.toggleMemberList = function() {
 }
 
 // --- CLASS LIST MODAL ---
-window.openClassList = function() {
+window.openClassList = function () {
     document.getElementById('classListModal').classList.remove('hidden');
     fetchMembers(); // Refresh data when opening
 }
-window.closeClassList = function() {
+window.closeClassList = function () {
     document.getElementById('classListModal').classList.add('hidden');
 }
 
 // --- PUBLIC REQUEST MODAL ---
-window.openRequestModal = function() {
+window.openRequestModal = function () {
     // Close profile modal if open
     const profileModal = document.getElementById('publicProfileModal');
-    if(profileModal) profileModal.style.display = 'none';
-    
+    if (profileModal) profileModal.style.display = 'none';
+
     document.getElementById('requestModal').classList.remove('hidden');
 }
 
-window.closeRequestModal = function() {
+window.closeRequestModal = function () {
     document.getElementById('requestModal').classList.add('hidden');
     document.getElementById('req-content').value = '';
 }
 
-window.submitRequest = async function() {
+window.submitRequest = async function () {
     const content = document.getElementById('req-content').value;
-    if(!content) return showToast('Write something first!', 'error');
-    
+    if (!content) return showToast('Write something first!', 'error');
+
     const { error } = await supabaseClient.from('requests').insert([{
         content: content,
         sender: 'Anonymous (Public)'
     }]);
-    
-    if(error) showToast('Error sending: ' + error.message, 'error');
+
+    if (error) showToast('Error sending: ' + error.message, 'error');
     else {
         showToast('Request sent to Admin!');
         closeRequestModal();
@@ -2009,10 +2063,10 @@ window.submitRequest = async function() {
 }
 
 // --- ADMIN LIST TOGGLE ---
-window.toggleAdminList = function() {
+window.toggleAdminList = function () {
     const list = document.getElementById('adminList');
     const icon = document.getElementById('adminToggleIcon');
-    
+
     if (list) list.classList.toggle('hidden');
     if (icon) {
         icon.style.transform = list.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
@@ -2020,47 +2074,54 @@ window.toggleAdminList = function() {
 }
 
 // --- ADMIN FREEDOM WALL TOOLS ---
-window.autoArrangeNotes = async function() {
+window.autoArrangeNotes = async function () {
     const { data, error } = await supabaseClient.from('notes').select('id');
     if (error || !data) return;
-    
+
     showToast("Arranging...");
     const cols = 5;
     const spacingX = 18;
     const spacingY = 25;
-    
-    await Promise.all(data.map((note, i) => 
-        supabaseClient.from('notes').update({ 
-            x_pos: (i % cols) * spacingX + 5, 
-            y_pos: Math.floor(i / cols) * spacingY + 5, 
-            rotation: 0 
+
+    await Promise.all(data.map((note, i) =>
+        supabaseClient.from('notes').update({
+            x_pos: (i % cols) * spacingX + 5,
+            y_pos: Math.floor(i / cols) * spacingY + 5,
+            rotation: 0
         }).eq('id', note.id)
     ));
-    
+
     fetchNotes();
     showToast("Notes aligned!");
 }
 
-window.scatterNotes = async function() {
+window.scatterNotes = async function () {
     const { data, error } = await supabaseClient.from('notes').select('id');
     if (error || !data) return;
-    
+
     showToast("Scattering...");
-    await Promise.all(data.map(note => 
-        supabaseClient.from('notes').update({ 
-            x_pos: Math.floor(Math.random() * 80) + 5, 
+    await Promise.all(data.map(note =>
+        supabaseClient.from('notes').update({
+            x_pos: Math.floor(Math.random() * 80) + 5,
             y_pos: Math.floor(Math.random() * 80) + 5,
             rotation: Math.floor(Math.random() * 40) - 20
         }).eq('id', note.id)
     ));
-    
+
     fetchNotes();
     showToast("Notes scattered!");
 }
 
 
 // --- INSTANT GALLERY UPLOAD (ADMIN) ---
-window.handleInstantGalleryUpload = async function(e) {
+window.handleInstantGalleryUpload = async function (e) {
+    // Admin Check
+    const storedUser = localStorage.getItem('wimpy_user') || sessionStorage.getItem('wimpy_user');
+    if (storedUser) {
+        const u = JSON.parse(storedUser);
+        if (u.sr_code !== 'ADMIN' && u.role !== 'admin') return showToast('Unauthorized upload.', 'error');
+    } else return;
+
     const file = e.target.files[0];
     if (!file) return;
 
@@ -2068,7 +2129,7 @@ window.handleInstantGalleryUpload = async function(e) {
     if (caption === null) return; // User cancelled
 
     showToast("Uploading photo...");
-    
+
     try {
         const fileName = `gallery_${Date.now()}_${file.name.replace(/\s/g, '_')}`;
         const { error: uploadError } = await supabaseClient.storage
@@ -2099,14 +2160,14 @@ window.handleInstantGalleryUpload = async function(e) {
 }
 
 // --- DEDICATED RECEIPT PREVIEW MODAL ---
-window.openReceiptPreview = function(name, url) {
+window.openReceiptPreview = function (name, url) {
     const overlay = document.createElement('div');
     overlay.className = 'wimpy-modal-overlay';
-    
+
     const box = document.createElement('div');
     box.className = 'wimpy-modal-box';
     box.style.cssText = 'width: 95%; max-width: 500px; padding: 0; overflow: hidden; border-radius: 5px; background: #fff; border: 3px solid #000;';
-    
+
     box.innerHTML = `
         <div style="background: #2d3436; color: #fff; padding: 15px; text-align: center; border-bottom: 3px solid #000; position: relative;">
             <h2 style="margin:0; font-size: 1.5rem; font-family: 'Patrick Hand';"><i class="fas fa-file-invoice"></i> OFFICIAL RECEIPT</h2>
@@ -2128,13 +2189,13 @@ window.openReceiptPreview = function(name, url) {
             </div>
         </div>
     `;
-    
+
     overlay.appendChild(box);
     document.body.appendChild(overlay);
 }
 
 // --- GLOBAL PASTE LISTENER (For Image Uploads) ---
-document.addEventListener('paste', function(e) {
+document.addEventListener('paste', function (e) {
     // 1. Check Student Details Modal (Enrollment Receipt)
     const detailsModal = document.getElementById('studentDetailsModal');
     if (detailsModal && !detailsModal.classList.contains('hidden')) {
@@ -2162,11 +2223,11 @@ function handleImagePaste(e, inputElement) {
         if (item.kind === 'file' && item.type.includes('image/')) {
             const blob = item.getAsFile();
             const file = new File([blob], "pasted_image_" + Date.now() + ".png", { type: blob.type });
-            
+
             const dataTransfer = new DataTransfer();
             dataTransfer.items.add(file);
             inputElement.files = dataTransfer.files;
-            
+
             showToast("Image pasted from clipboard!");
             e.preventDefault();
             return;

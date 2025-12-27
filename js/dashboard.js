@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await refreshUserProfile(); // NEW: Fetch fresh data immediately
     await initLiveTracking(); // ADDED: Initialize live tracking here
     await initMessaging(); // ADDED: Initialize messaging
-    
+
     // Default load
     const day = new Date().toLocaleDateString('en-US', { weekday: 'long' });
     await loadSchedule(day);
@@ -48,11 +48,11 @@ function checkSession() {
     const storedUser = localStorage.getItem('wimpy_user') || sessionStorage.getItem('wimpy_user');
     if (!storedUser) {
         // If not logged in, go back to login page
-        window.location.href = 'index.html'; 
+        window.location.href = 'index.html';
         return;
     }
     user = JSON.parse(storedUser);
-    
+
     // Update last login for "Recently Spotted" tracker on session restore
     db.from('students')
         .update({ last_login: new Date().toISOString() })
@@ -68,13 +68,13 @@ function checkSession() {
 
     // Enrollment Status Badge
     updateEnrollmentBadge();
-    
+
     // Check if Admin
     if (user.sr_code === 'ADMIN' || user.role === 'admin') {
         isAdmin = true;
         // document.querySelectorAll('.admin-controls').forEach(el => el.style.display = 'block'); // Removed to allow menu toggling
         document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
-        
+
         // Show Revoke button only for Main Admin
         if (user.sr_code === 'ADMIN') {
             const revokeBtn = document.getElementById('btn-revoke-admin');
@@ -97,19 +97,37 @@ async function refreshUserProfile() {
         user.enrollment_status = data.enrollment_status || 'Not Enrolled';
         user.role = data.role;
         user.avatar_url = data.avatar_url;
-        
+
+        // --- SECURITY: VALIDATE ADMIN CLAIM ---
+        if (isAdmin && user.role !== 'admin' && user.sr_code !== 'ADMIN') {
+            const confirmedUser = user.name;
+            isAdmin = false;
+            // Purge local storage claim
+            const key = localStorage.getItem('wimpy_user') ? 'wimpy_user' : null;
+            if (key) localStorage.setItem('wimpy_user', JSON.stringify(user));
+            else sessionStorage.setItem('wimpy_user', JSON.stringify(user));
+
+            showToast(`Security Check: ${confirmedUser} is NOT an Admin.`);
+            setTimeout(() => {
+                alert("Nice try modifying local storage. Reloading as Student.");
+                window.location.reload();
+            }, 1000);
+            return;
+        }
+        // --------------------------------------
+
         // Update Storage
         const key = localStorage.getItem('wimpy_user') ? 'wimpy_user' : null;
-        if(key) localStorage.setItem('wimpy_user', JSON.stringify(user));
+        if (key) localStorage.setItem('wimpy_user', JSON.stringify(user));
         else sessionStorage.setItem('wimpy_user', JSON.stringify(user));
-        
+
         updateEnrollmentBadge(); // Re-render badge with fresh data
     }
 }
 
 function updateEnrollmentBadge() {
     const statusEl = document.getElementById('enrollment-badge');
-    if(!statusEl || !user) return;
+    if (!statusEl || !user) return;
 
     // Reset animation
     statusEl.classList.remove('rubber-stamp');
@@ -117,18 +135,18 @@ function updateEnrollmentBadge() {
 
     statusEl.style.display = 'block';
     statusEl.classList.add('rubber-stamp');
-    
+
     // Stamp Styling (Ink Look)
     if (user.sr_code === 'ADMIN' || user.role === 'admin') {
         statusEl.style.color = '#2d3436';
         statusEl.style.borderColor = '#2d3436';
         statusEl.innerHTML = 'SYSTEM ADMIN';
-    } else if(user.enrollment_status === 'Enrolled') {
+    } else if (user.enrollment_status === 'Enrolled') {
         statusEl.style.color = '#00b894';
         statusEl.style.borderColor = '#00b894';
         statusEl.innerHTML = 'OFFICIALLY ENROLLED';
     } else if (user.enrollment_status === 'Pending') {
-        statusEl.style.color = '#e67e22'; 
+        statusEl.style.color = '#e67e22';
         statusEl.style.borderColor = '#e67e22';
         statusEl.innerHTML = 'ENROLLMENT PENDING';
     } else {
@@ -139,7 +157,7 @@ function updateEnrollmentBadge() {
 }
 
 // FIX: Explicitly attach logout to window
-window.logout = async function() {
+window.logout = async function () {
     if (!await showWimpyConfirm("Pack up and leave?")) return;
     localStorage.removeItem('wimpy_user');
     // Clear BOTH to be safe
@@ -147,19 +165,23 @@ window.logout = async function() {
     window.location.href = 'index.html';
 }
 
-window.toggleWideMode = function() {
+window.toggleWideMode = function () {
     const binder = document.querySelector('.binder');
     binder.classList.toggle('wide-mode');
     showToast(binder.classList.contains('wide-mode') ? "Expanded View!" : "Normal View");
 }
 
 // --- TABS LOGIC ---
-window.switchTab = function(tabId, event) {
+window.switchTab = function (tabId, event) {
+    if (tabId === 'admin-tools' && !isAdmin) {
+        return showToast("Access Denied: Admin Restricted Area.");
+    }
+
     const targetBtn = event ? event.currentTarget : document.querySelector(`.tab-btn[onclick*="'${tabId}'"]`);
 
     document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-    
+
     const selectedTab = document.getElementById(tabId);
     if (selectedTab) {
         selectedTab.classList.remove('hidden');
@@ -170,7 +192,7 @@ window.switchTab = function(tabId, event) {
 }
 
 // --- SCHEDULE LOGIC ---
-window.filterSchedule = function(day) {
+window.filterSchedule = function (day) {
     loadSchedule(day);
 }
 
@@ -206,17 +228,17 @@ async function loadSchedule(dayFilter) {
     }
 
     list.innerHTML = data.map((cls, index) => {
-        const start = cls.start_time.substring(0, 5); 
+        const start = cls.start_time.substring(0, 5);
         const end = cls.end_time.substring(0, 5);
-        
+
         const deleteBtn = isAdmin ? `<button onclick="deleteClass(${cls.id})" class="sketch-btn danger" style="float:right;">X</button>` : '';
-        
+
         // Copy button for Meet link
-        const copyBtn = cls.meet_link ? 
+        const copyBtn = cls.meet_link ?
             `<button onclick="navigator.clipboard.writeText('${cls.meet_link}').then(()=>showToast('Link Copied!'))" 
              class="sketch-btn" style="border-color:#555; color:#555; padding: 8px 12px;" title="Copy Link">
              <i class="fas fa-copy"></i>
-             </button>` 
+             </button>`
             : '';
 
         return `
@@ -243,7 +265,7 @@ async function loadSchedule(dayFilter) {
 async function loadAssignments() {
     const list = document.getElementById('assignment-list');
     if (!list) return;
-    
+
     const data = await fetchData('assignments', 'due_date');
     if (!data || data.length === 0) {
         list.innerHTML = '<p style="text-align:center;">No homework? Miracle!</p>';
@@ -253,7 +275,7 @@ async function loadAssignments() {
     list.innerHTML = data.map((task, index) => {
         const date = task.due_date ? new Date(task.due_date).toLocaleDateString() : 'No date';
         const deleteBtn = isAdmin ? `<button onclick="deleteAssignment(${task.id})" class="sketch-btn danger" style="float:right;">X</button>` : '';
-        
+
         return `
             <div class="class-card" style="border-left: 5px solid #d32f2f; animation-delay: ${index * 0.1}s">
                 ${deleteBtn}
@@ -272,13 +294,13 @@ async function loadEvents() {
     renderCalendar();
 }
 
-window.renderCalendar = function() {
+window.renderCalendar = function () {
     const container = document.getElementById('calendar-root');
     if (!container) return;
 
     const year = currentCalDate.getFullYear();
     const month = currentCalDate.getMonth();
-    
+
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -312,12 +334,12 @@ window.renderCalendar = function() {
     container.innerHTML = html;
 }
 
-window.changeMonth = function(offset) {
+window.changeMonth = function (offset) {
     currentCalDate.setMonth(currentCalDate.getMonth() + offset);
     renderCalendar();
 }
 
-window.showDayDetails = function(dateStr) {
+window.showDayDetails = function (dateStr) {
     const dayEvents = globalEvents.filter(e => e.event_date === dateStr);
     const container = document.getElementById('day-details-view');
     let html = '';
@@ -337,8 +359,8 @@ window.showDayDetails = function(dateStr) {
         html += `<p style="text-align:center; color:#666; font-style:italic;">No events on ${dateStr}.</p>`;
     } else {
         html += dayEvents.map(evt => {
-        const deleteBtn = isAdmin ? `<button onclick="deleteEvent(${evt.id})" class="sketch-btn danger" style="float:right;">X</button>` : '';
-        return `
+            const deleteBtn = isAdmin ? `<button onclick="deleteEvent(${evt.id})" class="sketch-btn danger" style="float:right;">X</button>` : '';
+            return `
             <div class="class-card" style="border-left: 5px solid #1976d2; margin-bottom:10px;">
                 ${deleteBtn}
                 <h3>${evt.title}</h3>
@@ -355,7 +377,7 @@ window.showDayDetails = function(dateStr) {
 
 // --- ADMIN FUNCTIONS ---
 
-window.addClass = async function(e) {
+window.addClass = async function (e) {
     e.preventDefault();
     if (!isAdmin) return;
 
@@ -381,15 +403,17 @@ window.addClass = async function(e) {
     }
 }
 
-window.deleteClass = async function(id) {
-    if(!await showWimpyConfirm('Delete this class?')) return;
+window.deleteClass = async function (id) {
+    if (!isAdmin) return showToast('Nice try, hacker.');
+    if (!await showWimpyConfirm('Delete this class?')) return;
     await db.from('schedule').delete().eq('id', id);
     // Refresh current view (grab the day from the label or just reload 'All')
     loadSchedule('All');
 }
 
-window.addAssignment = async function(e) {
+window.addAssignment = async function (e) {
     e.preventDefault();
+    if (!isAdmin) return showToast('Nice try, hacker.');
     const newTask = {
         title: document.getElementById('a-title').value,
         subject: document.getElementById('a-subject').value,
@@ -402,14 +426,16 @@ window.addAssignment = async function(e) {
     e.target.reset();
 }
 
-window.deleteAssignment = async function(id) {
-    if(!await showWimpyConfirm('Delete task?')) return;
+window.deleteAssignment = async function (id) {
+    if (!isAdmin) return showToast('Nice try, hacker.');
+    if (!await showWimpyConfirm('Delete task?')) return;
     await db.from('assignments').delete().eq('id', id);
     loadAssignments();
 }
 
-window.addEvent = async function(e) {
+window.addEvent = async function (e) {
     e.preventDefault();
+    if (!isAdmin) return showToast('Nice try, hacker.');
     const newEvt = {
         title: document.getElementById('e-title').value,
         event_date: document.getElementById('e-date').value,
@@ -421,19 +447,20 @@ window.addEvent = async function(e) {
     e.target.reset();
 }
 
-window.deleteEvent = async function(id) {
-    if(!await showWimpyConfirm('Delete event?')) return;
+window.deleteEvent = async function (id) {
+    if (!isAdmin) return showToast('Nice try, hacker.');
+    if (!await showWimpyConfirm('Delete event?')) return;
     await db.from('events').delete().eq('id', id);
     loadEvents();
 }
 
 // --- CALENDAR ADD EVENT MODAL ---
-window.openAddEventModal = function(dateStr) {
+window.openAddEventModal = function (dateStr) {
     const modal = document.getElementById('addEventModal');
     const dateLabel = document.getElementById('addEventDateLabel');
     const dateInput = document.getElementById('cal-e-date');
-    
-    if(modal && dateLabel && dateInput) {
+
+    if (modal && dateLabel && dateInput) {
         const [y, m, day] = dateStr.split('-').map(Number);
         const localDate = new Date(y, m - 1, day);
         dateLabel.innerText = "Date: " + localDate.toDateString();
@@ -443,14 +470,15 @@ window.openAddEventModal = function(dateStr) {
     }
 }
 
-window.addEventFromCalendar = async function(e) {
+window.addEventFromCalendar = async function (e) {
     e.preventDefault();
+    if (!isAdmin) return showToast('Nice try, hacker.');
     const title = document.getElementById('cal-e-title').value;
     const date = document.getElementById('cal-e-date').value;
     const desc = document.getElementById('cal-e-desc').value;
-    
+
     const { error } = await db.from('events').insert([{ title, event_date: date, description: desc }]);
-    
+
     if (error) {
         showToast('Error adding event: ' + error.message);
     } else {
@@ -507,9 +535,9 @@ function checkLiveClass() {
     // Find a class that is happening RIGHT NOW
     const liveClass = todaysClasses.find(cls => {
         // Supabase time format is usually "HH:MM:SS"
-        const start = cls.start_time.substring(0, 5); 
+        const start = cls.start_time.substring(0, 5);
         const end = cls.end_time.substring(0, 5);
-        
+
         return currentTimeStr >= start && currentTimeStr < end;
     });
 
@@ -517,7 +545,7 @@ function checkLiveClass() {
         // Render the Live Card
         const start = liveClass.start_time.substring(0, 5);
         const end = liveClass.end_time.substring(0, 5);
-        
+
         container.innerHTML = `
             <div class="live-card">
                 <div class="live-card-details">
@@ -597,7 +625,7 @@ function renderActiveUsers(presenceState) {
     }
 
     users.forEach(u => {
-        const isMe = (u.user_id === user.id); 
+        const isMe = (u.user_id === user.id);
         const borderStyle = isMe ? 'border-color: #f1c40f;' : ''; // Gold border for self
 
         const div = document.createElement('div');
@@ -608,7 +636,7 @@ function renderActiveUsers(presenceState) {
         div.innerHTML = `<img src="${u.avatar}" alt="${u.name}">`;
         // Add Click to Chat
         div.onclick = () => openChatModal(u.user_id, u.name);
-        
+
         list.appendChild(div);
     });
 }
@@ -619,7 +647,7 @@ function setupAvatarUpdate(name, avatarUrl) {
     if (!avatarImg) return;
 
     avatarImg.src = avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
-    
+
     let updateInput = document.getElementById('updateAvatarInput');
     if (!updateInput) {
         updateInput = document.createElement('input');
@@ -641,7 +669,7 @@ function setupAvatarUpdate(name, avatarUrl) {
 async function updateProfilePic(id, file) {
     const fileExt = file.name.split('.').pop();
     const fileName = `avatar_${id}_${Date.now()}.${fileExt}`;
-    
+
     const { error: uploadError } = await db.storage
         .from('avatars')
         .upload(fileName, file, { upsert: true });
@@ -692,7 +720,7 @@ function showToast(message) {
 async function populateSubjectOptions() {
     // 1. Fetch all subjects from the Schedule table
     const { data, error } = await db.from('schedule').select('subject_code');
-    
+
     if (error || !data) {
         console.error("Error fetching subjects for dropdown:", error);
         return;
@@ -710,12 +738,12 @@ async function populateSubjectOptions() {
             <button class="sketch-btn" onclick="filterFiles('All')">All</button>
             <button class="sketch-btn" onclick="filterFiles('General')">General</button>
         `;
-        
+
         // Add a button for each subject in your schedule
         subjects.forEach(code => {
-             html += `<button class="sketch-btn" onclick="filterFiles('${code}')">${code}</button>`;
+            html += `<button class="sketch-btn" onclick="filterFiles('${code}')">${code}</button>`;
         });
-        
+
         filterContainer.innerHTML = html;
     }
 
@@ -727,12 +755,12 @@ async function populateSubjectOptions() {
             <option value="" disabled selected>Select Subject</option>
             <option value="General">General / Other</option>
         `;
-        
+
         // Add an option for each subject
         subjects.forEach(code => {
-             html += `<option value="${code}">${code}</option>`;
+            html += `<option value="${code}">${code}</option>`;
         });
-        
+
         select.innerHTML = html;
     }
 }
@@ -768,7 +796,7 @@ async function populateEmailDropdown() {
 // --- FILE UPLOAD & FILTERING LOGIC ---
 
 // New Function: Filter the files when button is clicked
-window.filterFiles = function(subject) {
+window.filterFiles = function (subject) {
     loadFiles(subject);
 }
 
@@ -777,7 +805,7 @@ async function loadFiles(subjectFilter = 'All') {
     const label = document.getElementById('file-filter-label');
     if (!list) return;
 
-    if(label) label.innerText = subjectFilter === 'All' ? 'Showing: All Files' : `Showing: ${subjectFilter}`;
+    if (label) label.innerText = subjectFilter === 'All' ? 'Showing: All Files' : `Showing: ${subjectFilter}`;
     list.innerHTML = '<div class="loader">Rummaging through files...</div>';
 
     // Start Query
@@ -813,7 +841,7 @@ async function loadFiles(subjectFilter = 'All') {
 
     list.innerHTML = data.map((file, index) => {
         const deleteBtn = isAdmin ? `<button onclick="deleteFile(${file.id})" class="sketch-btn danger" style="position:absolute; top:5px; right:5px; padding: 2px 8px; font-size: 0.8rem;">X</button>` : '';
-        
+
         // Choose icon
         let icon = 'fa-file';
         if (file.file_type.includes('pdf')) icon = 'fa-file-pdf';
@@ -842,7 +870,7 @@ async function loadFiles(subjectFilter = 'All') {
     }).join('');
 }
 
-window.uploadFile = async function(e) {
+window.uploadFile = async function (e) {
     e.preventDefault();
     if (!isAdmin) return;
 
@@ -860,7 +888,7 @@ window.uploadFile = async function(e) {
 
     try {
         const fileName = `${Date.now()}_${file.name.replace(/\s/g, '_')}`;
-        
+
         // 1. Upload
         const { error: uploadError } = await db.storage
             .from('class-resources')
@@ -896,8 +924,8 @@ window.uploadFile = async function(e) {
     }
 }
 
-window.deleteFile = async function(id) {
-    if(!await showWimpyConfirm('Delete this file?')) return;
+window.deleteFile = async function (id) {
+    if (!await showWimpyConfirm('Delete this file?')) return;
     const { error } = await db.from('shared_files').delete().eq('id', id);
     if (error) showToast('Error deleting file.');
     else {
@@ -908,12 +936,12 @@ window.deleteFile = async function(id) {
 
 // --- EMAIL BLAST LOGIC (EmailJS) ---
 
-window.sendEmailService = async function(e) {
+window.sendEmailService = async function (e) {
     e.preventDefault();
 
     // 🔴 YOUR SERVICE ID (Make sure this is correct)
-    const SERVICE_ID = 'service_crvq85j'; 
-    const TEMPLATE_ID = 'template_jhu61sc'; 
+    const SERVICE_ID = 'service_crvq85j';
+    const TEMPLATE_ID = 'template_jhu61sc';
 
     if (!isAdmin) return showToast("Admins only!");
 
@@ -948,7 +976,7 @@ window.sendEmailService = async function(e) {
 
             // Join all emails with commas
             emailList = data.map(s => s.email).join(',');
-        } 
+        }
         // SCENARIO 2: SEND TO SPECIFIC PERSON
         else {
             // The value of the option is already the email address
@@ -972,7 +1000,7 @@ window.sendEmailService = async function(e) {
         } else {
             showToast(`Sent to ${selectedName}!`);
         }
-        
+
         e.target.reset();
         // Reset dropdown to ALL
         recipientSelect.value = "ALL";
@@ -987,7 +1015,7 @@ window.sendEmailService = async function(e) {
 }
 
 // --- LANDING PAGE GALLERY MANAGER (ADMIN) ---
-window.uploadGalleryItem = async function(e) {
+window.uploadGalleryItem = async function (e) {
     e.preventDefault();
     if (!isAdmin) return;
 
@@ -1003,7 +1031,7 @@ window.uploadGalleryItem = async function(e) {
 
     try {
         const fileName = `gallery_${Date.now()}_${file.name.replace(/\s/g, '_')}`;
-        
+
         // Reuse class-resources bucket
         const { error: uploadError } = await db.storage
             .from('class-resources')
@@ -1025,7 +1053,7 @@ window.uploadGalleryItem = async function(e) {
         if (dbError) throw dbError;
 
         showToast('Posted to Landing Page!');
-        fetchAdminGalleryList(); 
+        fetchAdminGalleryList();
         e.target.reset();
 
     } catch (error) {
@@ -1037,12 +1065,12 @@ window.uploadGalleryItem = async function(e) {
     }
 }
 
-window.fetchAdminGalleryList = async function() {
+window.fetchAdminGalleryList = async function () {
     const list = document.getElementById('admin-gallery-list');
-    if(!list) return;
-    
+    if (!list) return;
+
     const { data, error } = await db.from('shared_files').select('*').eq('subject', 'LandingGallery').order('created_at', { ascending: false });
-    if(error || !data || data.length === 0) { list.innerHTML = '<p style="font-size:0.9rem; color:#666; text-align:center;">Gallery is empty.</p>'; return; }
+    if (error || !data || data.length === 0) { list.innerHTML = '<p style="font-size:0.9rem; color:#666; text-align:center;">Gallery is empty.</p>'; return; }
 
     list.innerHTML = data.map(item => `
         <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px dashed #ccc; padding:5px 0;">
@@ -1056,7 +1084,7 @@ window.fetchAdminGalleryList = async function() {
 }
 
 // Add this function anywhere in dashboard.js
-window.searchFiles = function() {
+window.searchFiles = function () {
     const input = document.getElementById('file-search');
     const filter = input.value.toLowerCase();
     const container = document.getElementById('file-list');
@@ -1072,7 +1100,7 @@ window.searchFiles = function() {
             } else {
                 cards[i].style.display = "none";
             }
-        }       
+        }
     }
 }
 
@@ -1081,10 +1109,10 @@ function showWimpyConfirm(message) {
     return new Promise((resolve) => {
         const overlay = document.createElement('div');
         overlay.className = 'wimpy-modal-overlay';
-        
+
         const box = document.createElement('div');
         box.className = 'wimpy-modal-box';
-        
+
         box.innerHTML = `
             <h2 style="margin:0 0 10px 0; font-size:2rem;">WAIT!</h2>
             <p style="font-size:1.3rem; margin-bottom:20px;">${message}</p>
@@ -1093,15 +1121,15 @@ function showWimpyConfirm(message) {
                 <button id="wimpy-yes" class="sketch-btn danger" style="flex:1; background:#000; color:#fff;">YEAH</button>
             </div>
         `;
-        
+
         overlay.appendChild(box);
         document.body.appendChild(overlay);
-        
+
         document.getElementById('wimpy-no').onclick = () => {
             overlay.remove();
             resolve(false);
         };
-        
+
         document.getElementById('wimpy-yes').onclick = () => {
             overlay.remove();
             resolve(true);
@@ -1110,25 +1138,25 @@ function showWimpyConfirm(message) {
 }
 
 // --- REQUEST / SECRET BOX LOGIC ---
-window.openRequestModal = function() {
+window.openRequestModal = function () {
     document.getElementById('requestModal').classList.remove('hidden');
 }
 
-window.closeRequestModal = function() {
+window.closeRequestModal = function () {
     document.getElementById('requestModal').classList.add('hidden');
     document.getElementById('req-content').value = '';
 }
 
-window.submitRequest = async function() {
+window.submitRequest = async function () {
     const content = document.getElementById('req-content').value;
-    if(!content) return showToast('Write something first!');
-    
+    if (!content) return showToast('Write something first!');
+
     const { error } = await db.from('requests').insert([{
         content: content,
         sender: user ? user.name : 'Anonymous'
     }]);
-    
-    if(error) showToast('Error sending: ' + error.message);
+
+    if (error) showToast('Error sending: ' + error.message);
     else {
         showToast('Request sent to Admin!');
         closeRequestModal();
@@ -1136,28 +1164,28 @@ window.submitRequest = async function() {
 }
 
 // --- FREEDOM WALL LOGIC (Binder Side) ---
-window.openFreedomWallModal = function() {
+window.openFreedomWallModal = function () {
     document.getElementById('freedomWallModal').classList.remove('hidden');
     if (isAdmin) {
         const controls = document.getElementById('fw-admin-controls');
-        if(controls) controls.classList.remove('hidden');
+        if (controls) controls.classList.remove('hidden');
     }
 
     fetchNotes();
     setTimeout(() => {
         resolveCollisions();
         const input = document.getElementById('fw-content');
-        if(input) input.focus();
+        if (input) input.focus();
     }, 100);
 }
 
 async function fetchNotes() {
     const noteLayer = document.getElementById('freedom-wall-board');
-    if(!noteLayer) return;
+    if (!noteLayer) return;
 
     const { data, error } = await db.from('notes').select('*');
     if (error) return;
-    
+
     noteLayer.innerHTML = '';
     data.forEach(note => {
         const div = document.createElement('div');
@@ -1178,7 +1206,7 @@ async function fetchNotes() {
             const btn = document.createElement('button');
             btn.className = 'delete-note-btn';
             btn.innerHTML = '<i class="fas fa-times"></i>';
-            btn.onmousedown = (e) => e.stopPropagation(); 
+            btn.onmousedown = (e) => e.stopPropagation();
             btn.onclick = () => deleteNote(note.id);
             div.appendChild(btn);
         }
@@ -1246,10 +1274,10 @@ function resolveCollisions() {
     }
 }
 
-window.deleteNote = async function(id) {
-    if(!await showWimpyConfirm("Tear off this note?")) return;
+window.deleteNote = async function (id) {
+    if (!await showWimpyConfirm("Tear off this note?")) return;
     const { error } = await db.from('notes').delete().eq('id', id);
-    if(error) showToast("Could not delete note.");
+    if (error) showToast("Could not delete note.");
     else {
         showToast("Note removed.");
         fetchNotes();
@@ -1262,35 +1290,35 @@ function makeDraggable(element, noteId) {
 
     element.onmousedown = dragMouseDown;
     element.ontouchstart = dragMouseDown;
-    
-    function dragMouseDown(e) { 
-        e = e || window.event; 
+
+    function dragMouseDown(e) {
+        e = e || window.event;
         element.style.zIndex = 1000;
         startLeft = element.offsetLeft; // Capture start position
         startTop = element.offsetTop;
 
-        if (e.type !== 'touchstart') e.preventDefault(); 
-        pos3 = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX; 
-        pos4 = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY; 
-        document.onmouseup = closeDragElement; 
-        document.onmousemove = elementDrag; 
-        document.ontouchend = closeDragElement; 
-        document.ontouchmove = elementDrag; 
+        if (e.type !== 'touchstart') e.preventDefault();
+        pos3 = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+        pos4 = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
+        document.onmouseup = closeDragElement;
+        document.onmousemove = elementDrag;
+        document.ontouchend = closeDragElement;
+        document.ontouchmove = elementDrag;
     }
-    
-    function elementDrag(e) { 
-        e = e || window.event; 
-        let clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX; 
-        let clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY; 
-        pos1 = pos3 - clientX; pos2 = pos4 - clientY; pos3 = clientX; pos4 = clientY; 
-        element.style.top = (element.offsetTop - pos2) + "px"; 
-        element.style.left = (element.offsetLeft - pos1) + "px"; 
+
+    function elementDrag(e) {
+        e = e || window.event;
+        let clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+        let clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+        pos1 = pos3 - clientX; pos2 = pos4 - clientY; pos3 = clientX; pos4 = clientY;
+        element.style.top = (element.offsetTop - pos2) + "px";
+        element.style.left = (element.offsetLeft - pos1) + "px";
     }
-    
-    function closeDragElement() { 
-        element.style.zIndex = 'auto'; 
-        document.onmouseup = null; document.onmousemove = null; 
-        document.ontouchend = null; document.ontouchmove = null; 
+
+    function closeDragElement() {
+        element.style.zIndex = 'auto';
+        document.onmouseup = null; document.onmousemove = null;
+        document.ontouchend = null; document.ontouchmove = null;
         const parent = element.parentElement;
 
         if (!parent || parent.offsetWidth <= 0 || parent.offsetHeight <= 0) return;
@@ -1298,77 +1326,77 @@ function makeDraggable(element, noteId) {
         // FIX: Only update if actually moved (prevents 400 errors on simple clicks)
         if (Math.abs(element.offsetLeft - startLeft) < 2 && Math.abs(element.offsetTop - startTop) < 2) return;
 
-        const xPercent = (element.offsetLeft / parent.offsetWidth) * 100; 
-        const yPercent = (element.offsetTop / parent.offsetHeight) * 100; 
+        const xPercent = (element.offsetLeft / parent.offsetWidth) * 100;
+        const yPercent = (element.offsetTop / parent.offsetHeight) * 100;
 
         if (!Number.isFinite(xPercent) || !Number.isFinite(yPercent)) return;
 
         resolveCollisions();
-        
+
         const finalX = parseFloat(Math.max(0, Math.min(xPercent, 95)).toFixed(2));
         const finalY = parseFloat(Math.max(0, Math.min(yPercent, 95)).toFixed(2));
-        db.from('notes').update({ x_pos: finalX, y_pos: finalY }).eq('id', noteId); 
+        db.from('notes').update({ x_pos: finalX, y_pos: finalY }).eq('id', noteId);
     }
 }
 
 // --- ADMIN FREEDOM WALL TOOLS ---
-window.autoArrangeNotes = async function() {
+window.autoArrangeNotes = async function () {
     const { data, error } = await db.from('notes').select('id');
     if (error || !data) return;
-    
+
     showToast("Arranging...");
     const cols = 5;
     const spacingX = 18;
     const spacingY = 25;
-    
-    await Promise.all(data.map((note, i) => 
-        db.from('notes').update({ 
-            x_pos: (i % cols) * spacingX + 5, 
-            y_pos: Math.floor(i / cols) * spacingY + 5, 
-            rotation: 0 
+
+    await Promise.all(data.map((note, i) =>
+        db.from('notes').update({
+            x_pos: (i % cols) * spacingX + 5,
+            y_pos: Math.floor(i / cols) * spacingY + 5,
+            rotation: 0
         }).eq('id', note.id)
     ));
-    
+
     fetchNotes();
     showToast("Notes aligned!");
 }
 
-window.scatterNotes = async function() {
+window.scatterNotes = async function () {
     const { data, error } = await db.from('notes').select('id');
     if (error || !data) return;
-    
+
     showToast("Scattering...");
-    await Promise.all(data.map(note => 
-        db.from('notes').update({ 
-            x_pos: Math.floor(Math.random() * 80) + 5, 
+    await Promise.all(data.map(note =>
+        db.from('notes').update({
+            x_pos: Math.floor(Math.random() * 80) + 5,
             y_pos: Math.floor(Math.random() * 80) + 5,
             rotation: Math.floor(Math.random() * 40) - 20
         }).eq('id', note.id)
     ));
-    
+
     fetchNotes();
     showToast("Notes scattered!");
 }
 
 // --- COLOR SELECTION (Binder) ---
-window.selectColor = function(el, color) {
+window.selectColor = function (el, color) {
     document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
     el.classList.add('selected');
     document.getElementById('fw-binder-color').value = color;
 }
 
-window.postFreedomWallNote = async function() {
+window.postFreedomWallNote = async function () {
     const text = document.getElementById('fw-content').value;
     if (!text) return showToast('Write something first!');
 
     // Random Position & Style
-    const randomX = Math.floor(Math.random() * 80) + 10; 
-    const randomY = Math.floor(Math.random() * 80) + 10; 
+    const randomX = Math.floor(Math.random() * 80) + 10;
+    const randomY = Math.floor(Math.random() * 80) + 10;
     const rotation = Math.floor(Math.random() * 20) - 10;
     const selectedColor = document.getElementById('fw-binder-color').value || 'white';
 
     const { error } = await db.from('notes').insert([{ content: text, x_pos: randomX, y_pos: randomY, rotation: rotation, color: selectedColor, likes: 0 }]);
-    
+
     if (error) showToast('Failed to post: ' + error.message);
     else {
         showToast('Note stuck to the wall!');
@@ -1379,14 +1407,14 @@ window.postFreedomWallNote = async function() {
 }
 
 // --- SYSTEM UPDATE MODAL (Ported for Binder) ---
-window.showWelcomeNote = function() {
+window.showWelcomeNote = function () {
     const modal = document.createElement('div');
     modal.className = 'wimpy-modal-overlay';
     // Override alignment for scrolling large content
-    modal.style.alignItems = 'flex-start'; 
+    modal.style.alignItems = 'flex-start';
     modal.style.overflowY = 'auto';
     modal.style.padding = '20px';
-    
+
     const note = document.createElement('div');
     note.className = 'wimpy-modal-box';
     // Override size for this specific modal
@@ -1394,7 +1422,7 @@ window.showWelcomeNote = function() {
     note.style.width = '100%';
     note.style.margin = '40px auto';
     note.style.background = '#fdfbf7';
-    
+
     note.innerHTML = `
         <style>
             .update-flex { display: flex; gap: 20px; justify-content: center; align-items: center; margin: 25px 0 15px 0; flex-wrap: wrap; }
@@ -1405,20 +1433,31 @@ window.showWelcomeNote = function() {
         <h2 style="margin-top:0; text-decoration: underline wavy #000;"><i class="fas fa-star"></i> SYSTEM UPDATE</h2>
         <p style="font-size:1.1rem; margin: 10px 0;">"Look at the upgrade guys! (Click pics to zoom)"</p>
         <div class="update-flex">
-            <div class="update-img-container" onclick="viewFullImage('Beforeimg.png')">
+            <div class="update-img-container" onclick="viewFullImage('assets/images/Beforeimg.png')">
                 <div style="font-weight: bold; background: #bdc3c7; color: #000; display: inline-block; padding: 2px 10px; transform: rotate(-3deg); border: 2px solid #000; position: absolute; top: -12px; left: -5px; z-index: 2; font-size: 0.8rem;">BEFORE:</div>
-                <img src="Beforeimg.png" alt="Old Website" style="width: 100%; height: auto; border: 3px solid #000; box-shadow: 4px 4px 0 rgba(0,0,0,0.2); background: #fff;">
+                <img src="assets/images/Beforeimg.png" alt="Old Website" style="width: 100%; height: auto; border: 3px solid #000; box-shadow: 4px 4px 0 rgba(0,0,0,0.2); background: #fff;">
             </div>
             <div class="update-arrow">→</div>
-            <div class="update-img-container" onclick="viewFullImage('Afterimg.png')">
+            <div class="update-img-container" onclick="viewFullImage('assets/images/Afterimg.png')">
                 <div style="font-weight: bold; background: #ffee58; color: #000; display: inline-block; padding: 2px 10px; transform: rotate(3deg); border: 2px solid #000; position: absolute; top: -12px; right: -5px; z-index: 2; font-size: 0.8rem;">NOW:</div>
-                <img src="Afterimg.png" alt="New Website" style="width: 100%; height: auto; border: 3px solid #000; box-shadow: 4px 4px 0 rgba(0,0,0,0.2); background: #fff;">
+                <img src="assets/images/Afterimg.png" alt="New Website" style="width: 100%; height: auto; border: 3px solid #000; box-shadow: 4px 4px 0 rgba(0,0,0,0.2); background: #fff;">
             </div>
         </div>
         <div style="text-align: left; background: #f9f9f9; border: 2px dashed #bbb; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
             <p style="font-weight: bold; margin: 0 0 10px 0; border-bottom: 2px solid #ddd; padding-bottom: 5px;"><i class="fas fa-edit"></i> What's New in this Update:</p>
             <ul style="padding-left: 20px; margin: 0; list-style-type: none; font-size: 1rem; line-height: 1.6;">
-                <li><i class="fas fa-paper-plane"></i> <b>Message Anyone:</b> New floating notepad button to chat with any classmate, even if they're offline!</li>
+                <li><i class="fas fa-shield-alt"></i> <b>Security Patch:</b> Strengthened admin protocols and fixed navigation loopholes.</li>
+                <li><i class="fas fa-user-lock"></i> <b>Session Integrity:</b> Added validation to prevent unauthorized access via storage modification.</li>
+                <li><i class="fas fa-folder-open"></i> <b>System Cleanup:</b> Organized file structure (CSS/JS/Assets) for better performance.</li>
+                <li><i class="fas fa-code"></i> <b>Optimized Codebase:</b> Extracted inline styles and scripts to improve load times.</li>
+                <li><i class="fas fa-check-circle"></i> <b>Data Ethics:</b> Reinforced authorized access controls for all users.</li>
+            </ul>
+        </div>
+        
+        <div style="text-align: left; background: #fffde7; border: 2px dashed #f1c40f; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+             <p style="font-weight: bold; margin: 0 0 10px 0; border-bottom: 2px solid #f39c12; padding-bottom: 5px;"><i class="fas fa-star"></i> Key Features:</p>
+             <ul style="padding-left: 20px; margin: 0; list-style-type: none; font-size: 1rem; line-height: 1.6;">
+                <li><i class="fas fa-paper-plane"></i> <b>Message Anyone:</b> New floating notepad button to chat with any classmate!</li>
                 <li><i class="fas fa-mobile-alt"></i> <b>Mobile Optimization:</b> Reorganized header layout to prevent overlapping on phone screens.</li>
                 <li><i class="fas fa-camera-retro"></i> <b>Memories Gallery:</b> New photo gallery added to the login page!</li>
                 <li><i class="fas fa-question-circle"></i> <b>Help Guide:</b> Added a user guide tab inside the binder.</li>
@@ -1429,34 +1468,33 @@ window.showWelcomeNote = function() {
                 <li><i class="fas fa-eye"></i> <b>File Previewer:</b> Preview PDFs and images instantly before downloading.</li>
                 <li><i class="fas fa-clock"></i> <b>Live Class Tracker:</b> See exactly which class is happening right now.</li>
                 <li><i class="fas fa-folder"></i> <b>Subject Cabinet:</b> Files are now organized by subject folders.</li>
-                <li><i class="fas fa-paint-brush"></i> <b>New Look:</b> Added doodles, coffee stains, and a credits section to the login page.</li>
-            </ul>
+             </ul>
         </div>
         <button onclick="showCongratsMessage(this.closest('.wimpy-modal-overlay'))" style="background: #000; color: #fff; border: 2px solid #000; font-family: 'Patrick Hand'; font-size: 1.2rem; cursor: pointer; width: 100%; border-radius: 5px; padding: 10px;">SHEESH!</button>
     `;
-    
+
     modal.appendChild(note);
-    modal.onclick = (e) => { if(e.target === modal) modal.remove(); }
+    modal.onclick = (e) => { if (e.target === modal) modal.remove(); }
     document.body.appendChild(modal);
 }
 
-window.viewFullImage = function(src) {
+window.viewFullImage = function (src) {
     const overlay = document.createElement('div');
     overlay.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:10000; display:flex; justify-content:center; align-items:center; cursor: zoom-out; animation: fadeIn 0.3s;';
     const img = document.createElement('img');
     img.src = src;
     img.style.cssText = 'max-width:90%; max-height:90%; border: 5px solid #fff; box-shadow: 0 0 30px rgba(0,0,0,0.5); object-fit: contain;';
     overlay.appendChild(img);
-    overlay.onclick = function() { overlay.remove(); };
+    overlay.onclick = function () { overlay.remove(); };
     document.body.appendChild(overlay);
 }
 
-window.showCongratsMessage = function(prevModal) {
+window.showCongratsMessage = function (prevModal) {
     if (prevModal) prevModal.remove();
 
     const overlay = document.createElement('div');
     overlay.className = 'wimpy-modal-overlay';
-    
+
     const box = document.createElement('div');
     box.className = 'wimpy-modal-box';
     box.innerHTML = `
@@ -1464,7 +1502,7 @@ window.showCongratsMessage = function(prevModal) {
         <p style="font-size:1.3rem; margin-bottom:20px;">Congrays Guys at naipasa natin ang First Sem, Goodluck sa Second Sem!<br><br>- Jv</p>
         <button onclick="this.closest('.wimpy-modal-overlay').remove()" class="sketch-btn" style="background: #000; color: #fff; width: 100%;">LET'S GO!</button>
     `;
-    
+
     overlay.appendChild(box);
     document.body.appendChild(overlay);
 
@@ -1480,14 +1518,14 @@ window.showCongratsMessage = function(prevModal) {
 }
 
 // --- ADMIN TOOL TOGGLE ---
-window.showAdminTool = function(toolId, btnElement) {
+window.showAdminTool = function (toolId, btnElement) {
     // 1. Reset all buttons
     document.querySelectorAll('.filter-bar .sketch-btn').forEach(b => b.classList.remove('active-tool'));
 
     // Hide all admin forms
     const forms = ['admin-schedule-form', 'admin-assignment-form', 'admin-event-form', 'admin-file-form', 'admin-email-form', 'admin-message-manager', 'admin-gallery-form', 'admin-storage-view', 'admin-promote-form', 'admin-revoke-form'];
     let isAlreadyOpen = false;
-    
+
     forms.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
@@ -1497,7 +1535,7 @@ window.showAdminTool = function(toolId, btnElement) {
     });
 
     const hint = document.getElementById('admin-tool-hint');
-    
+
     // 2. Show selected if not already open (Toggle logic)
     if (toolId && !isAlreadyOpen) {
         const selected = document.getElementById(toolId);
@@ -1511,20 +1549,20 @@ window.showAdminTool = function(toolId, btnElement) {
 }
 
 // --- STORAGE MONITOR ---
-window.fetchStorageStats = async function() {
+window.fetchStorageStats = async function () {
     const display = document.getElementById('storage-stats-display');
-    if(!display) return;
-    
+    if (!display) return;
+
     display.innerHTML = '<div class="loader">Scanning crates...</div>';
-    
-    const buckets = ['class-resources', 'avatars']; 
+
+    const buckets = ['class-resources', 'avatars'];
     let bucketHtml = '';
     let grandTotalBytes = 0;
-    
+
     for (const bucket of buckets) {
         // Fetch list of files (limit 1000 to get a good count)
         const { data, error } = await db.storage.from(bucket).list('', { limit: 1000 });
-        
+
         if (error) {
             bucketHtml += `<div class="class-card" style="border-left: 5px solid #d63031; margin-bottom: 10px;"><p>Error scanning <b>${bucket}</b>: ${error.message}</p></div>`;
             continue;
@@ -1536,7 +1574,7 @@ window.fetchStorageStats = async function() {
         grandTotalBytes += totalSize;
 
         const sizeMB = (totalSize / (1024 * 1024)).toFixed(2);
-        
+
         bucketHtml += `
             <div class="class-card" style="margin-bottom: 10px; border-left: 5px solid #6c5ce7;">
                 <h3 style="margin-top:0;">Bucket: ${bucket}</h3>
@@ -1553,7 +1591,7 @@ window.fetchStorageStats = async function() {
     const limitGB = 1; // 1GB Limit
     const limitBytes = limitGB * 1024 * 1024 * 1024;
     const percent = Math.min(100, ((grandTotalBytes / limitBytes) * 100)).toFixed(1);
-    
+
     const summaryHtml = `
         <div class="class-card" style="margin-bottom: 20px; border: 2px solid #000; background: #fff740; transform: rotate(-1deg);">
             <h3 style="margin-top:0; text-align:center; border-bottom: 2px dashed #000; padding-bottom: 10px;">
@@ -1574,7 +1612,7 @@ window.fetchStorageStats = async function() {
 }
 
 // --- PROMOTE USER LOGIC ---
-window.populatePromoteDropdown = async function() {
+window.populatePromoteDropdown = async function () {
     const dropdown = document.getElementById('promote-user-select');
     if (!dropdown) return;
 
@@ -1595,16 +1633,17 @@ window.populatePromoteDropdown = async function() {
     });
 }
 
-window.promoteUser = async function(e) {
+window.promoteUser = async function (e) {
     e.preventDefault();
     const userId = document.getElementById('promote-user-select').value;
-    if(!userId) return showToast("Select a user first!");
+    if (!isAdmin) return showToast('Nice try, hacker.');
+    if (!userId) return showToast("Select a user first!");
 
     const { error } = await db.from('students').update({ role: 'admin' }).eq('id', userId.trim());
-    
-    if(error) {
+
+    if (error) {
         console.error(error);
-        if(error.message && error.message.includes('role')) showToast("Error: DB missing 'role' column.");
+        if (error.message && error.message.includes('role')) showToast("Error: DB missing 'role' column.");
         else showToast("Error: " + error.message);
     } else {
         showToast("User promoted to Admin!");
@@ -1613,7 +1652,7 @@ window.promoteUser = async function(e) {
 }
 
 // --- REVOKE ADMIN LOGIC ---
-window.populateRevokeDropdown = async function() {
+window.populateRevokeDropdown = async function () {
     const dropdown = document.getElementById('revoke-user-select');
     if (!dropdown) return;
 
@@ -1638,16 +1677,17 @@ window.populateRevokeDropdown = async function() {
     });
 }
 
-window.revokeAdmin = async function(e) {
+window.revokeAdmin = async function (e) {
     e.preventDefault();
     const userId = document.getElementById('revoke-user-select').value;
-    if(!userId) return showToast("Select a user first!");
+    if (!isAdmin) return showToast('Nice try, hacker.');
+    if (!userId) return showToast("Select a user first!");
 
-    if(!await showWimpyConfirm("Revoke admin access?")) return;
+    if (!await showWimpyConfirm("Revoke admin access?")) return;
 
     const { error } = await db.from('students').update({ role: 'student' }).eq('id', userId);
-    
-    if(error) {
+
+    if (error) {
         showToast("Error: " + error.message);
     } else {
         showToast("Access revoked.");
@@ -1659,7 +1699,7 @@ window.revokeAdmin = async function(e) {
 // --- MESSAGING SYSTEM ---
 let currentChatPartnerId = null;
 
-window.initMessaging = async function() {
+window.initMessaging = async function () {
     if (!user) return;
 
     // Prevent duplicate subscriptions
@@ -1667,25 +1707,25 @@ window.initMessaging = async function() {
 
     // Subscribe to incoming messages
     window.msgSubscription = db.channel('public:messages')
-        .on('postgres_changes', { 
-            event: 'INSERT', 
-            schema: 'public', 
+        .on('postgres_changes', {
+            event: 'INSERT',
+            schema: 'public',
             table: 'messages',
-            filter: `receiver_id=eq.${user.id}` 
+            filter: `receiver_id=eq.${user.id}`
         }, payload => {
             handleIncomingMessage(payload.new);
         })
         .subscribe();
-        
+
     checkUnreadCount();
 }
 
 // --- NEW CHAT / RECIPIENT LOGIC ---
 let allClassmates = [];
 
-window.openNewChatModal = async function() {
+window.openNewChatModal = async function () {
     const modal = document.getElementById('newChatModal');
-    if(!modal) return;
+    if (!modal) return;
 
     modal.classList.remove('hidden');
     const list = document.getElementById('recipient-list');
@@ -1728,13 +1768,13 @@ function renderRecipientList(students) {
     }).join('');
 }
 
-window.filterRecipients = function() {
+window.filterRecipients = function () {
     const q = document.getElementById('recipient-search').value.toLowerCase();
     const filtered = allClassmates.filter(s => s.name.toLowerCase().includes(q) || s.sr_code.toLowerCase().includes(q));
     renderRecipientList(filtered);
 }
 
-window.openChatModal = async function(partnerId, partnerName) {
+window.openChatModal = async function (partnerId, partnerName) {
     if (!user) return;
     if (partnerId === user.id) return showToast("Talking to yourself?");
 
@@ -1742,12 +1782,12 @@ window.openChatModal = async function(partnerId, partnerName) {
     document.getElementById('chat-with-name').innerHTML = `<i class="fas fa-comments"></i> Chat with ${partnerName}`;
     document.getElementById('chat-target-id').value = partnerId;
     document.getElementById('chatModal').classList.remove('hidden');
-    
+
     await loadChatHistory(partnerId);
     markMessagesAsRead(partnerId);
 }
 
-window.closeChatModal = function() {
+window.closeChatModal = function () {
     document.getElementById('chatModal').classList.add('hidden');
     currentChatPartnerId = null;
 }
@@ -1783,7 +1823,7 @@ function renderMessages(messages) {
     container.scrollTop = container.scrollHeight;
 }
 
-window.sendChatMessage = async function(e) {
+window.sendChatMessage = async function (e) {
     e.preventDefault();
     const input = document.getElementById('chat-input');
     const content = input.value.trim();
@@ -1827,14 +1867,14 @@ function handleIncomingMessage(msg) {
 
         // Interactive Toast (Click to Open Inbox)
         const container = document.getElementById('toast-container');
-        if(container) {
+        if (container) {
             const toast = document.createElement('div');
             toast.className = 'toast';
             toast.style.cursor = 'pointer';
             toast.innerHTML = `<b><i class="fas fa-envelope"></i> New Note!</b><br><span style="font-size:0.9rem">Click to read</span>`;
             toast.onclick = () => { toast.remove(); openInboxModal(); };
             container.appendChild(toast);
-            setTimeout(() => { if(toast.parentNode) toast.remove(); }, 5000);
+            setTimeout(() => { if (toast.parentNode) toast.remove(); }, 5000);
         }
     }
 }
@@ -1853,19 +1893,19 @@ async function markMessagesAsRead(senderId) {
     checkUnreadCount();
 }
 
-window.openInboxModal = async function() {
+window.openInboxModal = async function () {
     const modal = document.getElementById('inboxModal');
-    if(!modal) return;
+    if (!modal) return;
 
     modal.classList.remove('hidden');
     await refreshInboxList(true); // true = show loading spinner on first open
 }
 
-window.refreshInboxList = async function(showLoader = true) {
+window.refreshInboxList = async function (showLoader = true) {
     const list = document.getElementById('inbox-list');
-    if(!list) return;
+    if (!list) return;
 
-    if(showLoader) list.innerHTML = '<div class="loader" style="font-size:1rem;">Checking mail...</div>';
+    if (showLoader) list.innerHTML = '<div class="loader" style="font-size:1rem;">Checking mail...</div>';
 
     if (!user) return;
 
@@ -1892,7 +1932,7 @@ window.refreshInboxList = async function(showLoader = true) {
     msgs.forEach(m => {
         const isMe = m.sender_id === user.id;
         const partnerId = isMe ? m.receiver_id : m.sender_id;
-        
+
         if (!conversations[partnerId]) {
             conversations[partnerId] = { partnerId, lastMessage: m, unreadCount: 0 };
         }
@@ -1932,16 +1972,16 @@ window.refreshInboxList = async function(showLoader = true) {
 }
 
 // --- MESSAGE MANAGER (ADMIN) ---
-window.fetchAdminMessages = async function() {
+window.fetchAdminMessages = async function () {
     const list = document.getElementById('admin-message-list');
-    if(!list) return;
-    
+    if (!list) return;
+
     list.innerHTML = '<div class="loader" style="font-size:1rem;">Loading conversations...</div>';
 
     // 1. Fetch Students Map
     const { data: students, error: sError } = await db.from('students').select('id, name');
-    if(sError) { console.error(sError); return; }
-    
+    if (sError) { console.error(sError); return; }
+
     const studentMap = {};
     students.forEach(s => studentMap[s.id] = s.name);
 
@@ -1968,7 +2008,7 @@ window.fetchAdminMessages = async function() {
     msgs.forEach(m => {
         // Create a unique key for the pair (sorted IDs ensures A-B is same as B-A)
         const key = [m.sender_id, m.receiver_id].sort().join('::');
-        
+
         if (!conversations[key]) {
             conversations[key] = {
                 lastMsg: m,
@@ -1982,7 +2022,7 @@ window.fetchAdminMessages = async function() {
     list.innerHTML = Object.keys(conversations).map(key => {
         const [u1, u2] = key.split('::');
         const conv = conversations[key];
-        
+
         const name1 = studentMap[u1] || 'Unknown';
         const name2 = studentMap[u2] || 'Unknown';
         const date = new Date(conv.lastMsg.created_at).toLocaleDateString();
@@ -2003,15 +2043,15 @@ window.fetchAdminMessages = async function() {
     }).join('');
 }
 
-window.viewAdminConversation = async function(id1, id2) {
+window.viewAdminConversation = async function (id1, id2) {
     const list = document.getElementById('admin-message-list');
     list.innerHTML = '<div class="loader" style="font-size:1rem;">Loading chat history...</div>';
 
     // Fetch names
     const { data: students } = await db.from('students').select('id, name').in('id', [id1, id2]);
     const nameMap = {};
-    if(students) students.forEach(s => nameMap[s.id] = s.name);
-    
+    if (students) students.forEach(s => nameMap[s.id] = s.name);
+
     const name1 = nameMap[id1] || 'Unknown';
     const name2 = nameMap[id2] || 'Unknown';
 
@@ -2050,41 +2090,41 @@ window.viewAdminConversation = async function(id1, id2) {
     list.innerHTML = header + `<div style="max-height:350px; overflow-y:auto;">${body || '<p style="text-align:center;">No messages found.</p>'}</div>`;
 }
 
-window.deleteConversation = async function(id1, id2) {
-    if(!await showWimpyConfirm('Delete ENTIRE conversation history?')) return;
-    
+window.deleteConversation = async function (id1, id2) {
+    if (!await showWimpyConfirm('Delete ENTIRE conversation history?')) return;
+
     const { error } = await db
         .from('messages')
         .delete()
         .or(`and(sender_id.eq.${id1},receiver_id.eq.${id2}),and(sender_id.eq.${id2},receiver_id.eq.${id1})`);
 
-    if(error) showToast('Error: ' + error.message);
+    if (error) showToast('Error: ' + error.message);
     else {
         showToast('Conversation deleted.');
         fetchAdminMessages();
     }
 }
 
-window.deleteMessage = async function(id, viewId1, viewId2) {
-    if(!await showWimpyConfirm('Delete this message?')) return;
+window.deleteMessage = async function (id, viewId1, viewId2) {
+    if (!await showWimpyConfirm('Delete this message?')) return;
     const { error } = await db.from('messages').delete().eq('id', id);
-    if(error) showToast('Error: ' + error.message); 
-    else { 
-        showToast('Message deleted.'); 
-        if(viewId1 && viewId2) viewAdminConversation(viewId1, viewId2);
+    if (error) showToast('Error: ' + error.message);
+    else {
+        showToast('Message deleted.');
+        if (viewId1 && viewId2) viewAdminConversation(viewId1, viewId2);
         else fetchAdminMessages();
     }
 }
 
-window.deleteOldMessages = async function() {
-    if(!await showWimpyConfirm('Delete ALL messages older than 30 days?')) return;
+window.deleteOldMessages = async function () {
+    if (!await showWimpyConfirm('Delete ALL messages older than 30 days?')) return;
     const date = new Date(); date.setDate(date.getDate() - 30);
     const { error } = await db.from('messages').delete().lt('created_at', date.toISOString());
-    if(error) showToast('Error: ' + error.message); else { showToast('Old messages cleared.'); fetchAdminMessages(); }
+    if (error) showToast('Error: ' + error.message); else { showToast('Old messages cleared.'); fetchAdminMessages(); }
 }
 
 // --- GLOBAL PASTE LISTENER (Binder Uploads) ---
-document.addEventListener('paste', function(e) {
+document.addEventListener('paste', function (e) {
     // 1. Admin Tools
     const adminTools = document.getElementById('admin-tools');
     if (adminTools && !adminTools.classList.contains('hidden')) {
@@ -2095,7 +2135,7 @@ document.addEventListener('paste', function(e) {
             if (input) handleImagePaste(e, input);
             return;
         }
-        
+
         const galleryForm = document.getElementById('admin-gallery-form');
         if (galleryForm && galleryForm.style.display === 'block') {
             const input = document.getElementById('g-file');
@@ -2123,11 +2163,11 @@ function handleImagePaste(e, inputElement) {
         if (item.kind === 'file' && item.type.includes('image/')) {
             const blob = item.getAsFile();
             const file = new File([blob], "pasted_image_" + Date.now() + ".png", { type: blob.type });
-            
+
             const dataTransfer = new DataTransfer();
             dataTransfer.items.add(file);
             inputElement.files = dataTransfer.files;
-            
+
             showToast("Image pasted from clipboard!");
             e.preventDefault();
             return;

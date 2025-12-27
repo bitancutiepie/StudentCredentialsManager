@@ -1,750 +1,93 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <!-- Favicon -->
-    <link rel="icon" type="image/png" href="logo.png">
-    <link rel="apple-touch-icon" href="logo.png">
+    <link rel="icon" type="image/png" href="assets/images/logo.png">
+    <link rel="apple-touch-icon" href="assets/images/logo.png">
     <!-- Open Graph / Social Media Sharing Image -->
-    <meta property="og:image" content="logo.png">
+    <meta property="og:image" content="assets/images/logo.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema ni JV</title>
-    
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
-    <style>
-        /* --- WIMPY KID THEME & ANIMATIONS --- */
-        body {
-            font-family: 'Patrick Hand', cursive;
-            background-color: #fcf5e5;
-            background-image: repeating-linear-gradient(#fcf5e5 0px, #fcf5e5 24px, #a8d5e5 25px);
-            padding: 30px;
-            color: #222;
-            overflow-x: hidden;
-            position: relative;
-            min-height: 100vh;
-        }
-
-        /* --- FREEDOM WALL BOARD --- */
-        #freedom-wall-board {
-            position: relative;
-            width: 100%;
-            /* height: 100%; Removed to prevent overflow in flex container */
-            background-color: #fff;
-            background-image: radial-gradient(#bdc3c7 1px, transparent 1px);
-            background-size: 20px 20px;
-            border: 2px solid #000;
-            /* Sketchy border radius */
-            border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
-            overflow: auto;
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
-        }
-
-        .sticky-note {
-            position: absolute;
-            width: 180px;
-            padding: 20px 15px;
-            font-family: 'Patrick Hand', cursive;
-            font-size: 1.2rem;
-            color: #2d3436;
-            background: #fff;
-            border: 2px solid #2d3436;
-            /* Sketchy border radius */
-            border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
-            box-shadow: 4px 4px 0 rgba(0,0,0,0.1);
-            pointer-events: auto; 
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            cursor: grab;
-            user-select: none;
-            word-wrap: break-word;
-        }
-
-        .sticky-note:active {
-            cursor: grabbing;
-            transform: scale(1.05) !important;
-            box-shadow: 8px 8px 0 rgba(0,0,0,0.2);
-            z-index: 1000 !important; 
-        }
-
-        .sticky-note::after {
-            content: '';
-            position: absolute;
-            top: -10px;
-            left: 40%;
-            width: 50px;
-            height: 25px;
-            background: rgba(255,255,255,0.5);
-            border: 1px solid #ddd;
-            box-shadow: 0 1px 1px rgba(0,0,0,0.1);
-            transform: rotate(-3deg);
-        }
-
-        /* Lined Paper Variant */
-        .sticky-note.lined {
-            background-image: repeating-linear-gradient(transparent, transparent 29px, #a4b0be 30px);
-            line-height: 30px;
-        }
-
-        /* Color Variants */
-        .sticky-note.yellow { background-color: #fff740; }
-        .sticky-note.pink { background-color: #ff7eb9; }
-        .sticky-note.blue { background-color: #7afcff; }
-        .sticky-note.green { background-color: #98ff98; }
-        .sticky-note.white, .sticky-note.plain { background-color: #ffffff; }
-
-        /* Color Picker Styles */
-        .color-option {
-            width: 30px; height: 30px; border-radius: 50%; cursor: pointer; 
-            border: 2px solid rgba(0,0,0,0.1); transition: transform 0.2s;
-        }
-        .color-option:hover { transform: scale(1.2); }
-        .color-option.selected { border: 2px solid #000; transform: scale(1.1); }
-
-        /* Delete Button for Notes */
-        .sticky-note .delete-note-btn {
-            position: absolute;
-            top: 2px;
-            right: 2px;
-            background: rgba(255,0,0,0.1);
-            color: #d63031;
-            border: none;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            font-size: 0.8rem;
-            cursor: pointer;
-            display: flex; /* Visible for admins (JS only creates it for them) */
-            align-items: center;
-            justify-content: center;
-        }
-        .sticky-note:hover .delete-note-btn {
-            display: flex;
-        }
-        .sticky-note .delete-note-btn:hover {
-            background: #d63031;
-            color: white;
-        }
-
-        /* Like Sticker (Heart/Star) */
-        .like-sticker {
-            position: absolute;
-            bottom: 5px;
-            right: 5px;
-            font-size: 1.1rem;
-            color: #b2bec3;
-            cursor: pointer;
-            transition: transform 0.2s, color 0.2s;
-            z-index: 10;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            background: rgba(255,255,255,0.6);
-            padding: 2px 6px;
-            border-radius: 15px;
-            border: 1px solid transparent;
-        }
-        .like-sticker:hover { transform: scale(1.1); color: #ff7675; background: #fff; border-color: #ff7675; }
-        .like-sticker.liked { color: #ff7675; background: #fff; border-color: #ff7675; }
-        .like-count { font-size: 0.9rem; font-weight: bold; color: #2d3436; font-family: 'Patrick Hand'; }
-
-        /* --- MAIN APP BOX --- */
-        .sketch-box {
-            background: white;
-            max-width: 650px;
-            margin: 20px auto;
-            padding: 30px;
-            border: 3px solid #000;
-            border-radius: 2% 6% 5% 4% / 1% 1% 2% 4%;
-            box-shadow: 10px 10px 0px rgba(0,0,0,0.1);
-            position: relative;
-            animation: slideUp 0.6s ease-out;
-            z-index: 100; 
-            transition: max-width 0.3s ease;
-        }
-
-        /* --- NEW: Nervous Pencil Animation --- */
-        @keyframes nervousWrite {
-            0% { transform: scale(1); }
-            25% { transform: scale(1.01) rotate(0.5deg); }
-            50% { transform: scale(1.01) rotate(-0.5deg); }
-            75% { transform: scale(1.01) rotate(0.5deg); }
-            100% { transform: scale(1); }
-        }
-
-        .sketch-box::before {
-            content: '';
-            position: absolute;
-            top: -15px;
-            left: 45%;
-            width: 60px;
-            height: 25px;
-            background-color: rgba(255, 255, 255, 0.6);
-            border: 1px solid #ddd;
-            transform: rotate(-2deg);
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        
-        .sketch-box.wide-mode { max-width: 95%; }
-
-        h2 { font-size: 2.5rem; text-align: center; margin-top: 0; text-decoration: underline; text-decoration-style: wavy; text-decoration-skip-ink: none; }
-
-        /* --- SKETCH BUTTON CLASS --- */
-        .sketch-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
-            padding: 8px 15px;
-            background: #fff;
-            color: #000;
-            border: 2px solid #000;
-            border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
-            font-family: 'Patrick Hand', cursive;
-            font-size: 1.2rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            text-decoration: none;
-            width: auto !important;
-            margin: 0 !important;
-        }
-        .sketch-btn:hover { background: #000; color: #fff; transform: rotate(-2deg) scale(1.05); }
-        .sketch-btn.danger { background: #d63031; color: #fff; }
-
-        input, textarea {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            background: transparent;
-            border: none;
-            border-bottom: 2px solid #333;
-            font-family: 'Patrick Hand', cursive;
-            font-size: 1.2rem;
-            outline: none;
-            transition: border-color 0.3s;
-            box-sizing: border-box;
-        }
-        input:focus { 
-            border-bottom: 3px solid #000; 
-            animation: nervousWrite 0.3s ease-in-out;
-        }
-
-        button {
-            width: 100%;
-            padding: 12px;
-            background: #000;
-            color: #fff;
-            border: 2px solid #000;
-            border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
-            font-family: 'Patrick Hand', cursive;
-            font-size: 1.5rem;
-            cursor: pointer;
-            margin-top: 15px;
-            transition: all 0.2s ease;
-        }
-        button:hover {
-            background: #fff;
-            color: #000;
-            transform: rotate(-2deg) scale(1.05);
-            animation: nervousWrite 0.4s infinite; /* Wiggle on hover */
-            box-shadow: 3px 3px 0px rgba(0,0,0,0.2);
-        }
-        button:active { transform: scale(0.95); }
-
-        .toggle-link { text-align: center; display: block; margin-top: 15px; cursor: pointer; font-size: 1.2rem; color: #444; }
-        .hidden { display: none !important; }
-
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 1.1rem; }
-        th { border-bottom: 2px solid #000; text-align: left; padding: 12px 10px; background: rgba(0,0,0,0.05); }
-        td { border-bottom: 1px solid #ccc; padding: 12px 10px; vertical-align: middle; }
-        tr:hover { background-color: rgba(255,255,255,0.6); }
-        
-        .flex-cell { display: flex; align-items: center; gap: 10px; }
-        .btn-icon { width: auto; padding: 5px 10px; font-size: 1rem; margin: 0 2px; border-radius: 5px; }
-        .btn-copy { background: #ffc107; color: #000; border-color: #e0a800; cursor: pointer; }
-        .btn-delete { background: #dc3545; color: #fff; border-color: #c82333; cursor: pointer; }
-
-        .id-badge {
-            border: 2px solid #000;
-            padding: 20px;
-            text-align: center;
-            transform: rotate(2deg);
-            margin-top: 20px;
-            background: #fff;
-            box-shadow: 5px 5px 0px rgba(0,0,0,0.1);
-        }
-        .sketch-face-container {
-            display: inline-block;
-            margin-bottom: 10px;
-            animation: float 3s ease-in-out infinite;
-        }
-        .sketch-face { 
-            height: 70px;
-            width: auto;
-            display: block;
-            transition: transform 0.3s ease;
-        }
-        .sketch-face:hover { transform: scale(1.2); }
-
-        .member-list-section { margin-top: 30px; border-top: 2px dashed #999; padding-top: 20px; }
-        .member-list-title { text-align: center; font-weight: bold; font-size: 1.3rem; margin-bottom: 10px; transform: rotate(-1deg); }
-        
-        /* --- MEMBER COUNT BADGE --- */
-        .member-count-badge {
-            display: inline-block;
-            background: #d63031;
-            color: #fff;
-            border: 2px solid #000;
-            border-radius: 12px;
-            padding: 1px 8px;
-            font-size: 0.9rem;
-            margin: 0 5px;
-            vertical-align: middle;
-            opacity: 0;
-            transform: scale(0.5) rotate(-10deg);
-            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); /* Bouncy spring effect */
-        }
-        .member-count-badge.pop {
-            opacity: 1;
-            transform: scale(1) rotate(5deg);
-        }
-
-        /* UPDATED GRID LAYOUT */
-        .member-tags { 
-            display: flex; 
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 8px; 
-            padding: 5px;
-        }
-        .member-tag { 
-            background: #fff; 
-            border: 2px solid #333; 
-            padding: 4px 10px; 
-            border-radius: 20px; 
-            font-size: 0.9rem; 
-            box-shadow: 2px 2px 0 rgba(0,0,0,0.1); 
-            transition: transform 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .member-tag:hover { transform: scale(1.05); z-index: 5; }
-
-        .note-input-area { margin-top: 20px; border-top: 2px dashed #000; padding-top: 15px; }
-
-        #toast-container { position: fixed; top: 20px; right: 20px; z-index: 20000; }
-        .toast {
-            background: #fff740;
-            color: #000;
-            padding: 15px 20px;
-            margin-bottom: 10px;
-            border: 1px solid #d4c600;
-            box-shadow: 3px 3px 5px rgba(0,0,0,0.2);
-            font-family: 'Patrick Hand', cursive;
-            font-size: 1.2rem;
-            transform: rotate(-2deg);
-            opacity: 0;
-            animation: toastIn 0.5s forwards;
-        }
-
-        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
-        @keyframes toastIn { from { transform: translateX(100%) rotate(0deg); opacity: 0; } to { transform: translateX(0) rotate(-2deg); opacity: 1; } }
-        @keyframes toastOut { from { opacity: 1; } to { opacity: 0; transform: translateY(-20px); } }
-
-        /* --- NEW: Refresh Button Spin Animation --- */
-        .spin-animation {
-            animation: spin 1s infinite linear;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        @media (max-width: 600px) {
-            .sketch-box { width: 94%; margin: 10px auto; padding: 20px 15px; }
-            .sticky-note { width: 90px; font-size: 0.75rem; padding: 8px; min-height: 50px; }
-            #toast-container { left: 50%; transform: translateX(-50%); right: auto; width: 90%; text-align: center; }
-            .toast { width: 100%; box-sizing: border-box; }
-            /* Make table text slightly smaller but buttons easier to tap */
-            table { font-size: 0.8rem; }
-            th, td { padding: 8px 4px; }
-            .btn-icon { padding: 8px 10px; margin: 2px; font-size: 1rem; } 
-            /* Ensure modal fits */
-            #publicProfileModal .sketch-box { width: 90% !important; max-width: 300px; }
-            h2 { font-size: 2rem; }
-            input, button { font-size: 1.1rem; }
-        }
-
-        /* --- FIX FOR CHECKBOX --- */
-        input[type="checkbox"] {
-            width: auto !important; /* Stop it from being 100% wide */
-            margin: 0 10px 0 0 !important; /* Add space between box and text */
-            transform: scale(1.3); /* Make it slightly bigger to fit the theme */
-            cursor: pointer;
-            vertical-align: middle;
-        }
-
-        .checkbox-container {
-            display: flex;
-            align-items: center;
-            justify-content: flex-start; /* Aligns to left */
-            margin: 15px 0 5px 0;
-            padding-left: 5px;
-        }
-
-        /* --- WIMPY POP-UP MODAL --- */
-        .wimpy-modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.6); z-index: 10000;
-            display: flex; justify-content: center; align-items: center;
-            backdrop-filter: blur(3px);
-        }
-        .wimpy-modal-box {
-            background: #fff; border: 3px solid #000;
-            border-radius: 2% 6% 5% 4% / 1% 1% 2% 4%;
-            padding: 30px; width: 90%; max-width: 400px;
-            text-align: center; box-shadow: 10px 10px 0 rgba(0,0,0,0.2);
-            transform: rotate(-1deg);
-            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        @keyframes popIn { from { transform: scale(0.8) rotate(-5deg); opacity: 0; } to { transform: scale(1) rotate(-1deg); opacity: 1; } }
-
-        /* --- NEW BLACK LIST CARD STYLES --- */
-        .student-strip {
-            background: #fff;
-            border: 2px solid #000;
-            /* Sketchy border radius */
-            border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
-            padding: 15px 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 15px;
-            box-shadow: 3px 3px 0 rgba(0,0,0,0.1);
-            transition: transform 0.2s;
-            margin-bottom: 15px;
-        }
-        .student-strip:hover {
-            transform: scale(1.01);
-            box-shadow: 5px 5px 0 rgba(0,0,0,0.15);
-        }
-        .student-info {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            flex: 1.5;
-            text-align: left;
-        }
-        .student-avatar {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid #000;
-            flex-shrink: 0;
-        }
-        .student-creds {
-            flex: 1;
-            background: #f1f2f6;
-            padding: 8px 15px;
-            border-radius: 5px;
-            border: 1px dashed #999;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            font-family: monospace;
-            font-size: 1.1rem;
-        }
-        .student-actions {
-            display: flex;
-            gap: 10px;
-        }
-        @media (max-width: 700px) {
-            .student-strip { flex-direction: column; align-items: stretch; text-align: center; gap: 15px; }
-            .student-info { flex-direction: column; text-align: center; }
-            .student-creds { justify-content: center; gap: 10px; }
-            .student-actions { justify-content: center; }
-        }
-
-        /* --- BACKGROUND DECORATIONS (Desk Doodles) --- */
-        .coffee-stain {
-            width: 180px;
-            height: 180px;
-            border-radius: 50%;
-            border: 12px solid rgba(101, 67, 33, 0.08); /* Faint brown */
-            position: absolute;
-            box-shadow: 0 0 10px rgba(101, 67, 33, 0.05), inset 0 0 20px rgba(101, 67, 33, 0.05);
-            filter: blur(1px);
-            transform: scale(1, 0.95); /* Imperfect circle */
-            pointer-events: none;
-        }
-        
-        .bg-doodle {
-            position: absolute;
-            color: rgba(44, 62, 80, 0.08); /* Faint ink color */
-            z-index: -1;
-            pointer-events: none;
-        }
-
-        /* --- WIMPY GALLERY STYLES --- */
-        .gallery-scroll-container {
-            display: flex;
-            overflow-x: auto;
-            gap: 25px;
-            padding: 20px 10px 40px 10px; /* Extra bottom padding for hover effects */
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: none; /* Firefox */
-        }
-        .gallery-scroll-container::-webkit-scrollbar { display: none; }
-
-        .polaroid-card {
-            background: #fff;
-            padding: 12px 12px 40px 12px;
-            box-shadow: 3px 3px 8px rgba(0,0,0,0.2);
-            min-width: 220px;
-            max-width: 220px;
-            flex-shrink: 0;
-            transform: rotate(-2deg);
-            transition: all 0.3s ease;
-            position: relative;
-            cursor: pointer;
-            border: 1px solid #ddd;
-        }
-        .polaroid-card:nth-child(even) { transform: rotate(1deg); }
-        .polaroid-card:hover { transform: scale(1.05) rotate(0deg) translateY(-5px); z-index: 10; box-shadow: 10px 10px 15px rgba(0,0,0,0.3); }
-        
-        .polaroid-card img {
-            width: 100%;
-            height: 200px;
-            object-fit: cover;
-            border: 1px solid #eee;
-            background: #f0f0f0;
-        }
-        
-        .polaroid-caption {
-            font-family: 'Patrick Hand', cursive;
-            font-size: 1.3rem;
-            color: #2c3e50;
-            margin-top: 15px;
-            text-align: center;
-            line-height: 1.1;
-        }
-        
-        .tape-strip {
-            position: absolute;
-            top: -12px;
-            left: 50%;
-            transform: translateX(-50%) rotate(-2deg);
-            width: 80px;
-            height: 25px;
-            background-color: rgba(255, 255, 255, 0.4);
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-            border-left: 1px dashed rgba(0,0,0,0.1);
-            border-right: 1px dashed rgba(0,0,0,0.1);
-            z-index: 2;
-        }
-
-        /* --- GALLERY NAV BUTTONS --- */
-        .gallery-nav-btn {
-            position: absolute;
-            top: 50%;
-            z-index: 20;
-            width: 50px !important;
-            height: 50px !important;
-            border-radius: 50% !important;
-            padding: 0 !important;
-            display: flex !important;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 3px 3px 8px rgba(0,0,0,0.3) !important;
-            background: #fff740 !important; /* Sticky note yellow for visibility */
-            color: #000 !important;
-            border: 3px solid #000 !important;
-            cursor: pointer;
-            margin: 0 !important;
-            transform: translateY(-50%) !important; /* Keep centered vertically */
-            transition: transform 0.2s, background 0.2s !important;
-        }
-        .gallery-nav-btn:hover {
-            background: #000 !important;
-            color: #fff !important;
-            transform: translateY(-50%) scale(1.1) !important; /* Scale but keep centered */
-            animation: none !important; /* Stop nervous wiggle */
-        }
-
-        /* Compact List Styles */
-        .enrollment-col {
-            flex: 1;
-            max-height: 300px;
-            overflow-y: auto;
-            font-size: 0.9rem;
-        }
-        .enrollment-col ul {
-            padding-left: 0;
-            list-style: none;
-            margin: 5px 0;
-        }
-        .enrollment-col li {
-            padding: 2px 0;
-            border-bottom: 1px dashed #eee;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        /* --- FIXED ACTION BUTTONS --- */
-        #fixed-action-buttons {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        #fixed-action-buttons > div {
-            width: fit-content;
-        }
-
-        @media (max-width: 650px) {
-            #fixed-action-buttons {
-                flex-direction: row;
-                justify-content: space-evenly;
-                align-items: center;
-                gap: 5px;
-                position: fixed;
-                top: auto;
-                bottom: 0;
-                left: 0;
-                right: 0;
-                width: 100%;
-                background: rgba(252, 245, 229, 0.9); /* Slightly opaque background from body */
-                padding: 8px 5px;
-                border-top: 2px solid #000;
-                box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-                backdrop-filter: blur(2px);
-            }
-
-            #fixed-action-buttons > div {
-                font-size: 0.8rem !important;
-                padding: 8px 8px !important;
-                margin: 0 !important;
-                flex-grow: 1;
-                text-align: center;
-                transform: rotate(0deg) !important; /* Reset rotation */
-            }
-            #fixed-action-buttons > div:hover {
-                 transform: scale(1.05) !important; /* Keep hover effect simple */
-            }
-
-            #fixed-action-buttons > div .fas {
-                display: block;
-                margin-bottom: 3px;
-                font-size: 1rem;
-            }
-
-            #check-enrolled-btn {
-                font-size: 0.7rem !important;
-            }
-        }
-
-        /* --- ADMIN MOBILE NAV --- */
-        #admin-mobile-nav { display: none; }
-        @media (max-width: 650px) {
-            #admin-mobile-nav {
-                display: flex;
-                position: fixed;
-                bottom: 0; left: 0; width: 100%;
-                background: #fdfbf7; /* Paper color */
-                border-top: 3px solid #000;
-                padding: 8px 0;
-                z-index: 9999;
-                justify-content: space-around;
-                box-shadow: 0 -5px 15px rgba(0,0,0,0.1);
-            }
-            #admin-mobile-nav.hidden { display: none !important; }
-            
-            .admin-nav-item {
-                text-align: center; font-family: 'Patrick Hand', cursive; font-size: 0.9rem; color: #2d3436; cursor: pointer; flex: 1;
-            }
-            .admin-nav-item i { display: block; font-size: 1.3rem; margin-bottom: 2px; }
-            .admin-nav-item:active { transform: scale(0.95); color: #000; }
-        }
-
-        /* JUMPSCARE */
-        @keyframes shake {
-            0% { transform: translate(1px, 1px) rotate(0deg); }
-            10% { transform: translate(-1px, -2px) rotate(-1deg); }
-            20% { transform: translate(-3px, 0px) rotate(1deg); }
-            30% { transform: translate(3px, 2px) rotate(0deg); }
-            40% { transform: translate(1px, -1px) rotate(1deg); }
-            50% { transform: translate(-1px, 2px) rotate(-1deg); }
-            60% { transform: translate(-3px, 1px) rotate(0deg); }
-            70% { transform: translate(3px, 1px) rotate(-1deg); }
-            80% { transform: translate(-1px, -1px) rotate(1deg); }
-            90% { transform: translate(1px, 2px) rotate(0deg); }
-            100% { transform: translate(1px, -2px) rotate(-1deg); }
-        }
-    </style>
+    <link rel="stylesheet" href="css/style.css">
 </head>
+
 <body>
 
     <div id="fixed-action-buttons">
         <!-- FIXED UPDATE BUTTON (Accessible Sticky Note) -->
-        <div id="updates-btn" onclick="showWelcomeNote()" style="background: #ff7675; color: #fff; padding: 10px 15px; border: 2px solid #000; transform: rotate(-3deg); cursor: pointer; box-shadow: 3px 3px 0 rgba(0,0,0,0.2); font-size: 1.2rem; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.1) rotate(0deg)'" onmouseout="this.style.transform='scale(1) rotate(-3deg)'">
+        <div id="updates-btn" onclick="showWelcomeNote()"
+            style="background: #ff7675; color: #fff; padding: 10px 15px; border: 2px solid #000; transform: rotate(-3deg); cursor: pointer; box-shadow: 3px 3px 0 rgba(0,0,0,0.2); font-size: 1.2rem; transition: transform 0.2s;"
+            onmouseover="this.style.transform='scale(1.1) rotate(0deg)'"
+            onmouseout="this.style.transform='scale(1) rotate(-3deg)'">
             <i class="fas fa-bullhorn"></i> UPDATES
         </div>
 
         <!-- FIXED FREEDOM WALL BUTTON -->
-        <div id="freedom-wall-btn" onclick="openFreedomWall()" style="background: #55efc4; color: #2d3436; padding: 10px 15px; border: 2px solid #000; transform: rotate(2deg); cursor: pointer; box-shadow: 3px 3px 0 rgba(0,0,0,0.2); font-size: 1.2rem; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.1) rotate(0deg)'" onmouseout="this.style.transform='scale(1) rotate(2deg)'">
+        <div id="freedom-wall-btn" onclick="openFreedomWall()"
+            style="background: #55efc4; color: #2d3436; padding: 10px 15px; border: 2px solid #000; transform: rotate(2deg); cursor: pointer; box-shadow: 3px 3px 0 rgba(0,0,0,0.2); font-size: 1.2rem; transition: transform 0.2s;"
+            onmouseover="this.style.transform='scale(1.1) rotate(0deg)'"
+            onmouseout="this.style.transform='scale(1) rotate(2deg)'">
             <i class="fas fa-sticky-note"></i> FREEDOM WALL
         </div>
 
         <!-- FIXED CLASS LIST BUTTON -->
-        <div id="check-enrolled-btn" onclick="openClassList()" style="background: #0984e3; color: #fff; padding: 10px 15px; border: 2px solid #000; transform: rotate(-2deg); cursor: pointer; box-shadow: 3px 3px 0 rgba(0,0,0,0.2); font-size: 1.2rem; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.1) rotate(0deg)'" onmouseout="this.style.transform='scale(1) rotate(-2deg)'">
+        <div id="check-enrolled-btn" onclick="openClassList()"
+            style="background: #0984e3; color: #fff; padding: 10px 15px; border: 2px solid #000; transform: rotate(-2deg); cursor: pointer; box-shadow: 3px 3px 0 rgba(0,0,0,0.2); font-size: 1.2rem; transition: transform 0.2s;"
+            onmouseover="this.style.transform='scale(1.1) rotate(0deg)'"
+            onmouseout="this.style.transform='scale(1) rotate(-2deg)'">
             <i class="fas fa-clipboard-list"></i> Check Enrolled/Not Enrolled
         </div>
     </div>
 
     <!-- ADMIN MOBILE NAVIGATION (Hidden by default) -->
     <div id="admin-mobile-nav" class="hidden">
-        <div class="admin-nav-item" onclick="fetchStudents(); showToast('List refreshed!')"><i class="fas fa-sync-alt"></i> Refresh</div>
+        <div class="admin-nav-item" onclick="fetchStudents(); showToast('List refreshed!')"><i
+                class="fas fa-sync-alt"></i> Refresh</div>
         <div class="admin-nav-item" onclick="openPortalWindow()"><i class="fas fa-globe"></i> Portal</div>
         <div class="admin-nav-item" onclick="returnToAdminChoice()"><i class="fas fa-undo"></i> Menu</div>
-        <div class="admin-nav-item" onclick="logout()" style="color: #d63031;"><i class="fas fa-sign-out-alt"></i> Exit</div>
+        <div class="admin-nav-item" onclick="logout()" style="color: #d63031;"><i class="fas fa-sign-out-alt"></i> Exit
+        </div>
     </div>
 
     <!-- JUMPSCARE OVERLAY -->
-    <div id="jumpscare-overlay" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 100000; display: flex; justify-content: center; align-items: center; pointer-events: none;">
-        <img src="pat.png" style="width: 100%; height: 100%; object-fit: contain; animation: shake 0.5s infinite;">
+    <div id="jumpscare-overlay" class="hidden"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 100000; display: flex; justify-content: center; align-items: center; pointer-events: none;">
+        <img src="assets/images/pat.png"
+            style="width: 100%; height: 100%; object-fit: contain; animation: shake 0.5s infinite;">
     </div>
 
     <div id="toast-container"></div>
 
     <!-- BACKGROUND DECORATIONS (Fills empty space) -->
-    <div id="background-decorations" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; overflow: hidden;">
+    <div id="background-decorations"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; overflow: hidden;">
         <!-- Coffee Stains -->
         <div class="coffee-stain" style="top: 10%; left: 5%;"></div>
-        <div class="coffee-stain" style="bottom: 15%; right: 10%; width: 120px; height: 120px; border-width: 8px; opacity: 0.6;"></div>
-        
+        <div class="coffee-stain"
+            style="bottom: 15%; right: 10%; width: 120px; height: 120px; border-width: 8px; opacity: 0.6;"></div>
+
         <!-- Random Doodles -->
         <i class="fas fa-star bg-doodle" style="top: 15%; right: 15%; transform: rotate(15deg); font-size: 4rem;"></i>
         <i class="fas fa-bolt bg-doodle" style="bottom: 20%; left: 8%; transform: rotate(-10deg); font-size: 5rem;"></i>
-        <i class="fas fa-paper-plane bg-doodle" style="bottom: 40%; right: 5%; transform: rotate(25deg); font-size: 3rem;"></i>
-        <i class="fas fa-pencil-alt bg-doodle" style="top: 5%; right: 35%; transform: rotate(45deg); font-size: 2.5rem; opacity: 0.05;"></i>
-        <i class="fas fa-gamepad bg-doodle" style="top: 40%; left: 2%; transform: rotate(-15deg); font-size: 3.5rem;"></i>
+        <i class="fas fa-paper-plane bg-doodle"
+            style="bottom: 40%; right: 5%; transform: rotate(25deg); font-size: 3rem;"></i>
+        <i class="fas fa-pencil-alt bg-doodle"
+            style="top: 5%; right: 35%; transform: rotate(45deg); font-size: 2.5rem; opacity: 0.05;"></i>
+        <i class="fas fa-gamepad bg-doodle"
+            style="top: 40%; left: 2%; transform: rotate(-15deg); font-size: 3.5rem;"></i>
         <i class="fas fa-music bg-doodle" style="bottom: 5%; left: 40%; transform: rotate(10deg); font-size: 3rem;"></i>
     </div>
 
     <div id="authSection">
-      <div class="sketch-box">
-        <img src="logo.png" alt="Sistema ni JV Logo" style="
+        <div class="sketch-box">
+            <img src="assets/images/logo.png" alt="Sistema ni JV Logo" style="
             max-width: 80%;
             height: auto;
             display: block;
@@ -754,110 +97,143 @@
             box-shadow: 5px 5px 0px rgba(0,0,0,0.1); /* Hand-drawn shadow */
             transform: rotate(-2deg); /* Slight tilt */
         ">
-        
-        <!-- ADMIN CONTROLS (Hidden by default) -->
-        <div id="adminLandingControls" class="hidden" style="text-align: center; margin-bottom: 20px; border-bottom: 2px dashed #000; padding-bottom: 20px;">
-            <h3><i class="fas fa-user-shield"></i> ADMIN MODE</h3>
-            <p>Welcome back, Boss! What's the plan?</p>
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-                <button onclick="showAdminPanel('Admin')" style="background: #2d3436; color: white; font-size: 1.1rem;">
-                    <i class="fas fa-users-cog"></i> Manage Users (Black List)
-                </button>
-                <button onclick="window.location.href='web2.html'" style="background: #0984e3; color: white; font-size: 1.1rem;">
-                    <i class="fas fa-book"></i> Go to Binder
-                </button>
-                <button onclick="logout()" style="background: #d63031; color: white; font-size: 1.1rem;">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </button>
-            </div>
-        </div>
 
-        <!-- LOGIN UI WRAPPER -->
-        <div id="loginUI">
-            <h2 id="formTitle">Sistema ni Jv</h2>
-            <p id="authModeMessage" style="text-align: center; font-size: 1.1rem; margin-top: -10px; margin-bottom: 15px; color: #555;"></p>
-            <form id="authForm">
-                <input type="text" id="name" placeholder="YOUR NAME (Full Name)" class="hidden">
-                <input type="text" id="srCode" placeholder="SR CODE" required>
-                <!-- REPLACE the existing password input line with this block -->
-                <div style="position: relative; width: 100%;">
-                    <input type="password" id="password" placeholder="PASSWORD" required style="padding-right: 40px;">
-                    <span id="togglePassword" style="position: absolute; right: 10px; top: 20px; cursor: pointer; font-size: 1.2rem; user-select: none; color: #555;">
-                        <i class="fas fa-eye-slash"></i>
-                    </span>
+            <!-- ADMIN CONTROLS (Hidden by default) -->
+            <div id="adminLandingControls" class="hidden"
+                style="text-align: center; margin-bottom: 20px; border-bottom: 2px dashed #000; padding-bottom: 20px;">
+                <h3><i class="fas fa-user-shield"></i> ADMIN MODE</h3>
+                <p>Welcome back, Boss! What's the plan?</p>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <button onclick="showAdminPanel('Admin')"
+                        style="background: #2d3436; color: white; font-size: 1.1rem;">
+                        <i class="fas fa-users-cog"></i> Manage Users (Black List)
+                    </button>
+                    <button onclick="window.location.href='web2.html'"
+                        style="background: #0984e3; color: white; font-size: 1.1rem;">
+                        <i class="fas fa-book"></i> Go to Binder
+                    </button>
+                    <button onclick="logout()" style="background: #d63031; color: white; font-size: 1.1rem;">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
                 </div>
-                
-                <!-- FIXED CHECKBOX LAYOUT - Re-added for login functionality -->
-                <div class="checkbox-container" id="keepLoggedInContainer">
-                    <input type="checkbox" id="keepLoggedIn" checked> 
-                    <label for="keepLoggedIn" style="cursor: pointer; font-size: 1.2rem; margin: 0;">Keep me logged in</label>
+            </div>
+
+            <!-- LOGIN UI WRAPPER -->
+            <div id="loginUI">
+                <h2 id="formTitle">Sistema ni Jv</h2>
+                <p id="authModeMessage"
+                    style="text-align: center; font-size: 1.1rem; margin-top: -10px; margin-bottom: 15px; color: #555;">
+                </p>
+                <form id="authForm">
+                    <input type="text" id="name" placeholder="YOUR NAME (Full Name)" class="hidden">
+                    <input type="text" id="srCode" placeholder="SR CODE" required>
+                    <!-- REPLACE the existing password input line with this block -->
+                    <div style="position: relative; width: 100%;">
+                        <input type="password" id="password" placeholder="PASSWORD" required
+                            style="padding-right: 40px;">
+                        <span id="togglePassword"
+                            style="position: absolute; right: 10px; top: 20px; cursor: pointer; font-size: 1.2rem; user-select: none; color: #555;">
+                            <i class="fas fa-eye-slash"></i>
+                        </span>
+                    </div>
+
+                    <!-- FIXED CHECKBOX LAYOUT - Re-added for login functionality -->
+                    <div class="checkbox-container" id="keepLoggedInContainer">
+                        <input type="checkbox" id="keepLoggedIn" checked>
+                        <label for="keepLoggedIn" style="cursor: pointer; font-size: 1.2rem; margin: 0;">Keep me logged
+                            in</label>
+                    </div>
+
+                    <button type="submit" id="submitBtn">ENTER &rarr;</button>
+                </form>
+                <span class="toggle-link" id="toggleAuth">Magpapalista? <b>Come here mga kosa click this</b></span>
+            </div>
+
+            <div id="adminSection" class="member-list-section hidden"
+                style="border-top: 2px dashed #d63031; margin-top: 20px;">
+                <div class="member-list-title" onclick="toggleAdminList()"
+                    style="cursor: pointer; color: #d63031; transform: rotate(-1deg);" title="Click to show/hide"><i
+                        class="fas fa-user-shield"></i> Admin <i class="fas fa-chevron-down" id="adminToggleIcon"
+                        style="transition: transform 0.3s; transform: rotate(180deg);"></i></div>
+                <div class="member-tags" id="adminList" style="justify-content: center;"></div>
+            </div>
+
+            <div class="member-list-section">
+                <div class="member-list-title" onclick="toggleMemberList()" style="cursor: pointer;"
+                    title="Click to show/hide"><i class="fas fa-clipboard-list"></i> Members currently in the club <span
+                        id="memberCountBadge" class="member-count-badge">0</span> <i class="fas fa-chevron-down"
+                        id="memberToggleIcon" style="transition: transform 0.3s;"></i></div>
+                <div class="member-tags hidden" id="publicMemberList">
+                    <span style="color:#666;">Loading list...</span>
                 </div>
+            </div>
 
-                <button type="submit" id="submitBtn">ENTER &rarr;</button>
-            </form>
-            <span class="toggle-link" id="toggleAuth">Magpapalista? <b>Come here mga kosa click this</b></span>
+            <div class="member-list-section" style="border-top: none; margin-top: 10px;">
+                <div class="member-list-title"><i class="fas fa-eye"></i> Just Spotted:</div>
+                <div id="recentLoginsList"
+                    style="display:flex; flex-direction:column; gap:5px; align-items:center; font-size: 0.9rem;">
+                    <span style="color:#666; font-style:italic;">No recent activity...</span>
+                </div>
+            </div>
+
+            <!-- === ADD THIS NEW BLOCK BELOW === -->
+            <div id="newUpdatesSection" class="hidden"
+                style="margin-top: 20px; border-top: 2px dashed #000; padding-top: 15px; animation: slideUp 0.5s;">
+                <div class="member-list-title"
+                    style="background: #000; color: #fff; display: inline-block; padding: 3px 12px; transform: rotate(-2deg); border-radius: 3px; margin-bottom: 10px;">
+                    <i class="fas fa-fire"></i> FRESH DROPS
+                </div>
+                <div id="newUpdatesList"
+                    style="display:flex; flex-direction:column; gap:10px; align-items:center; width: 100%;">
+                    <!-- Javascript will put files here -->
+                </div>
+            </div>
+            <!-- === END NEW BLOCK === -->
+
+            <!-- CREDITS SECTION -->
+            <div style="margin-top: 25px; border-top: 2px solid #000; padding-top: 15px; text-align: center;">
+                <small style="font-family: 'Patrick Hand'; font-size: 1rem; color: #555;">Developed by: <b>Jv
+                        Bitancor</b></small>
+                <div style="display: flex; justify-content: center; gap: 20px; margin-top: 10px;">
+                    <a href="https://www.facebook.com/joshua.vincent.moena.bitancor/" target="_blank" title="Facebook"
+                        style="color: #1877F2; font-size: 1.8rem; transition: transform 0.2s;"
+                        onmouseover="this.style.transform='scale(1.2) rotate(-5deg)'"
+                        onmouseout="this.style.transform='scale(1) rotate(0deg)'">
+                        <i class="fab fa-facebook"></i>
+                    </a>
+                    <a href="https://github.com/bitancutiepie" target="_blank" title="GitHub"
+                        style="color: #333; font-size: 1.8rem; transition: transform 0.2s;"
+                        onmouseover="this.style.transform='scale(1.2) rotate(5deg)'"
+                        onmouseout="this.style.transform='scale(1) rotate(0deg)'">
+                        <i class="fab fa-github"></i>
+                    </a>
+                </div>
+            </div>
+
         </div>
 
-        <div id="adminSection" class="member-list-section hidden" style="border-top: 2px dashed #d63031; margin-top: 20px;">
-            <div class="member-list-title" onclick="toggleAdminList()" style="cursor: pointer; color: #d63031; transform: rotate(-1deg);" title="Click to show/hide"><i class="fas fa-user-shield"></i> Admin <i class="fas fa-chevron-down" id="adminToggleIcon" style="transition: transform 0.3s; transform: rotate(180deg);"></i></div>
-            <div class="member-tags" id="adminList" style="justify-content: center;"></div>
-        </div>
-
-        <div class="member-list-section">
-            <div class="member-list-title" onclick="toggleMemberList()" style="cursor: pointer;" title="Click to show/hide"><i class="fas fa-clipboard-list"></i> Members currently in the club <span id="memberCountBadge" class="member-count-badge">0</span> <i class="fas fa-chevron-down" id="memberToggleIcon" style="transition: transform 0.3s;"></i></div>
-            <div class="member-tags hidden" id="publicMemberList">
-                <span style="color:#666;">Loading list...</span>
+        <!-- === WIMPY GALLERY SECTION (Separate Space) === -->
+        <div id="wimpyGallerySection" class="sketch-box hidden" style="margin-top: 20px; animation: slideUp 0.7s;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <div class="member-list-title"
+                    style="background: #fff740; color: #000; display: inline-block; padding: 3px 12px; transform: rotate(1deg); border: 2px solid #000; margin: 0;">
+                    <i class="fas fa-camera-retro"></i> MEMORIES
+                </div>
+                <div id="admin-gallery-add-trigger" class="hidden">
+                    <button onclick="document.getElementById('instant-g-file').click()" class="sketch-btn"
+                        style="width: auto; margin: 0; padding: 5px 15px; font-size: 1rem; background: #00b894; color: #fff;">
+                        <i class="fas fa-plus"></i> ADD PHOTO
+                    </button>
+                    <input type="file" id="instant-g-file" class="hidden" accept="image/*"
+                        onchange="handleInstantGalleryUpload(event)">
+                </div>
+            </div>
+            <div style="position: relative;">
+                <div id="wimpyGalleryContainer" class="gallery-scroll-container">
+                    <!-- Photos will be injected here -->
+                </div>
             </div>
         </div>
-
-        <div class="member-list-section" style="border-top: none; margin-top: 10px;">
-            <div class="member-list-title"><i class="fas fa-eye"></i> Just Spotted:</div>
-            <div id="recentLoginsList" style="display:flex; flex-direction:column; gap:5px; align-items:center; font-size: 0.9rem;">
-                <span style="color:#666; font-style:italic;">No recent activity...</span>
-            </div>
-        </div>
-
-        <!-- === ADD THIS NEW BLOCK BELOW === -->
-        <div id="newUpdatesSection" class="hidden" style="margin-top: 20px; border-top: 2px dashed #000; padding-top: 15px; animation: slideUp 0.5s;">
-            <div class="member-list-title" style="background: #000; color: #fff; display: inline-block; padding: 3px 12px; transform: rotate(-2deg); border-radius: 3px; margin-bottom: 10px;"><i class="fas fa-fire"></i> FRESH DROPS</div>
-            <div id="newUpdatesList" style="display:flex; flex-direction:column; gap:10px; align-items:center; width: 100%;">
-                <!-- Javascript will put files here -->
-            </div>
-        </div>
-        <!-- === END NEW BLOCK === -->
-
-        <!-- CREDITS SECTION -->
-        <div style="margin-top: 25px; border-top: 2px solid #000; padding-top: 15px; text-align: center;">
-            <small style="font-family: 'Patrick Hand'; font-size: 1rem; color: #555;">Developed by: <b>Jv Bitancor</b></small>
-            <div style="display: flex; justify-content: center; gap: 20px; margin-top: 10px;">
-                <a href="https://www.facebook.com/joshua.vincent.moena.bitancor/" target="_blank" title="Facebook" style="color: #1877F2; font-size: 1.8rem; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.2) rotate(-5deg)'" onmouseout="this.style.transform='scale(1) rotate(0deg)'">
-                    <i class="fab fa-facebook"></i>
-                </a>
-                <a href="https://github.com/bitancutiepie" target="_blank" title="GitHub" style="color: #333; font-size: 1.8rem; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.2) rotate(5deg)'" onmouseout="this.style.transform='scale(1) rotate(0deg)'">
-                    <i class="fab fa-github"></i>
-                </a>
-            </div>
-        </div>
-
-      </div>
-
-      <!-- === WIMPY GALLERY SECTION (Separate Space) === -->
-      <div id="wimpyGallerySection" class="sketch-box hidden" style="margin-top: 20px; animation: slideUp 0.7s;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-              <div class="member-list-title" style="background: #fff740; color: #000; display: inline-block; padding: 3px 12px; transform: rotate(1deg); border: 2px solid #000; margin: 0;"><i class="fas fa-camera-retro"></i> MEMORIES</div>
-              <div id="admin-gallery-add-trigger" class="hidden">
-                  <button onclick="document.getElementById('instant-g-file').click()" class="sketch-btn" style="width: auto; margin: 0; padding: 5px 15px; font-size: 1rem; background: #00b894; color: #fff;">
-                      <i class="fas fa-plus"></i> ADD PHOTO
-                  </button>
-                  <input type="file" id="instant-g-file" class="hidden" accept="image/*" onchange="handleInstantGalleryUpload(event)">
-              </div>
-          </div>
-          <div style="position: relative;">
-              <div id="wimpyGalleryContainer" class="gallery-scroll-container">
-                  <!-- Photos will be injected here -->
-              </div>
-          </div>
-      </div>
     </div>
 
     <div class="sketch-box hidden" id="adminDashboard">
@@ -865,22 +241,30 @@
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
             <p style="margin:0;">Current Admin: <b id="adminNameDisplay">Greg</b></p>
             <div>
-                <button onclick="toggleWideMode()" style="width:auto; font-size:1rem; background:#fff; color:#000; padding:5px 10px; margin:0;" title="Expand"><i class="fas fa-expand"></i></button>
-                <button onclick="openPortalWindow()" style="width:auto; font-size:1rem; background:#4CAF50; border-color:green; color:white; padding:5px 10px; margin:0;"><i class="fas fa-globe"></i> OPEN PORTAL</button>
-                <button onclick="returnToAdminChoice()" style="width:auto; font-size:1rem; background:#6c757d; border-color:#5a6268; color:white; padding:5px 10px; margin:0;"><i class="fas fa-undo"></i> ADMIN MENU</button>
+                <button onclick="toggleWideMode()"
+                    style="width:auto; font-size:1rem; background:#fff; color:#000; padding:5px 10px; margin:0;"
+                    title="Expand"><i class="fas fa-expand"></i></button>
+                <button onclick="openPortalWindow()"
+                    style="width:auto; font-size:1rem; background:#4CAF50; border-color:green; color:white; padding:5px 10px; margin:0;"><i
+                        class="fas fa-globe"></i> OPEN PORTAL</button>
+                <button onclick="returnToAdminChoice()"
+                    style="width:auto; font-size:1rem; background:#6c757d; border-color:#5a6268; color:white; padding:5px 10px; margin:0;"><i
+                        class="fas fa-undo"></i> ADMIN MENU</button>
                 <button onclick="logout()" style="width:auto; font-size:1rem; padding:5px 10px; margin:0;">EXIT</button>
             </div>
         </div>
-        
+
         <input type="text" id="searchInput" placeholder="Search by name or SR code..." style="margin-bottom: 15px;">
 
         <!-- INCOMING REQUESTS SECTION (Moved to Top) -->
-        <div id="adminRequestsList" style="margin-bottom:30px; border-bottom:3px dashed #000; padding-bottom:20px;"></div>
+        <div id="adminRequestsList" style="margin-bottom:30px; border-bottom:3px dashed #000; padding-bottom:20px;">
+        </div>
 
         <!-- GALLERY UPLOAD SECTION (New) -->
         <div style="margin-bottom:30px; border-bottom:3px dashed #000; padding-bottom:20px;">
             <h3><i class="fas fa-camera"></i> Upload to Memories</h3>
-            <form onsubmit="uploadGalleryItemIndex(event)" style="display:flex; gap:10px; flex-wrap:wrap; align-items: center;">
+            <form onsubmit="uploadGalleryItemIndex(event)"
+                style="display:flex; gap:10px; flex-wrap:wrap; align-items: center;">
                 <input type="text" id="idx-g-caption" placeholder="Caption" required style="flex:1; margin:0;">
                 <input type="file" id="idx-g-file" required accept="image/*" style="flex:1; margin:0;">
                 <button type="submit" id="idx-upload-btn" style="width:auto; margin:0;">Upload</button>
@@ -900,12 +284,12 @@
     <div id="adminChoiceModal" class="sketch-box hidden" style="text-align: center;">
         <h2><i class="fas fa-user-lock"></i> ADMIN ACCESS GRANTED</h2>
         <p>"Where do you want to go, Boss?"</p>
-        
+
         <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 20px;">
             <button onclick="chooseAdminPath('manage')" style="background: #2d3436; color: white;">
                 <i class="fas fa-clipboard-list"></i> MANAGE USERS (Black List)
             </button>
-            
+
             <button onclick="chooseAdminPath('dashboard')" style="background: #d63031; color: white;">
                 <i class="fas fa-book"></i> GO TO BINDER (As Admin)
             </button>
@@ -919,9 +303,9 @@
         <h2>MY PROFILE</h2>
         <div class="id-badge">
             <div class="sketch-face-container">
-                <img src="pat.png" class="sketch-face" id="userAvatarDisplay" alt="Profile Pic">
+                <img src="assets/images/pat.png" class="sketch-face" id="userAvatarDisplay" alt="Profile Pic">
             </div>
-            
+
             <h3>NAME: <span id="studentNameDisplay"></span></h3>
             <h3>CODE: <span id="studentCodeDisplay"></span></h3>
             <h3>STATUS: <span id="studentStatusDisplay" style="color:#d63031;">Checking...</span></h3>
@@ -945,7 +329,8 @@
         <div class="wimpy-modal-box" style="text-align: left;">
             <h2 style="margin-top:0;">Drop a Note</h2>
             <p>Got a request or a secret question for the admin?</p>
-            <textarea id="req-content" placeholder="Type here..." style="width:100%; height:100px; font-family:'Patrick Hand'; font-size:1.2rem; padding:10px; border:2px solid #000;"></textarea>
+            <textarea id="req-content" placeholder="Type here..."
+                style="width:100%; height:100px; font-family:'Patrick Hand'; font-size:1.2rem; padding:10px; border:2px solid #000;"></textarea>
             <div style="margin-top:10px; display:flex; gap:10px;">
                 <button onclick="closeRequestModal()" style="background:#fff; color:#000;">Cancel</button>
                 <button onclick="submitRequest()" style="background:#000; color:#fff;">Send</button>
@@ -957,7 +342,8 @@
     <div id="studentDetailsModal" class="wimpy-modal-overlay hidden">
         <div class="wimpy-modal-box" style="max-width: 400px; text-align: center;">
             <div style="text-align: right; margin-bottom: -20px;">
-                <button onclick="closeStudentDetails()" class="sketch-btn danger" style="width: auto; padding: 2px 8px; font-size: 0.9rem; border-radius: 50%;">X</button>
+                <button onclick="closeStudentDetails()" class="sketch-btn danger"
+                    style="width: auto; padding: 2px 8px; font-size: 0.9rem; border-radius: 50%;">X</button>
             </div>
             <div id="studentDetailsContent" style="margin-top: 20px;"></div>
         </div>
@@ -965,75 +351,108 @@
 
     <!-- FREEDOM WALL MODAL (Landing Page) -->
     <div id="freedomWallModal" class="wimpy-modal-overlay hidden">
-        <div class="wimpy-modal-box" style="width: 95%; max-width: 1200px; height: 85vh; display: flex; flex-direction: column; padding: 20px;">
+        <div class="wimpy-modal-box"
+            style="width: 95%; max-width: 1200px; height: 85vh; display: flex; flex-direction: column; padding: 20px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                 <h2 style="margin:0; font-size: 2rem;"><i class="fas fa-sticky-note"></i> FREEDOM WALL</h2>
-                <button onclick="closeFreedomWall()" class="sketch-btn danger" style="width:auto; margin:0; padding: 5px 15px;">CLOSE</button>
+                <button onclick="closeFreedomWall()" class="sketch-btn danger"
+                    style="width:auto; margin:0; padding: 5px 15px;">CLOSE</button>
             </div>
-            <div id="freedom-wall-board" style="flex: 1; width: 100%; position: relative; border: 2px solid #000; background-color: #fff; background-image: radial-gradient(#bdc3c7 1px, transparent 1px); background-size: 20px 20px; border-radius: 5px; overflow: auto; box-shadow: inset 0 0 20px rgba(0,0,0,0.05);">
+            <div id="freedom-wall-board"
+                style="flex: 1; width: 100%; position: relative; border: 2px solid #000; background-color: #fff; background-image: radial-gradient(#bdc3c7 1px, transparent 1px); background-size: 20px 20px; border-radius: 5px; overflow: auto; box-shadow: inset 0 0 20px rgba(0,0,0,0.05);">
                 <!-- Notes injected here -->
             </div>
             <!-- Admin Controls for Freedom Wall -->
-            <div id="fw-admin-controls" class="hidden" style="margin-top: 10px; display: flex; gap: 10px; justify-content: center;">
-                <button onclick="autoArrangeNotes()" class="sketch-btn" style="width: auto; background: #0984e3; color: #fff; font-size: 1rem; padding: 5px 15px;">AUTO ARRANGE</button>
-                <button onclick="scatterNotes()" class="sketch-btn" style="width: auto; background: #e67e22; color: #fff; font-size: 1rem; padding: 5px 15px;">SCATTER</button>
+            <div id="fw-admin-controls" class="hidden"
+                style="margin-top: 10px; display: flex; gap: 10px; justify-content: center;">
+                <button onclick="autoArrangeNotes()" class="sketch-btn"
+                    style="width: auto; background: #0984e3; color: #fff; font-size: 1rem; padding: 5px 15px;">AUTO
+                    ARRANGE</button>
+                <button onclick="scatterNotes()" class="sketch-btn"
+                    style="width: auto; background: #e67e22; color: #fff; font-size: 1rem; padding: 5px 15px;">SCATTER</button>
             </div>
             <!-- Color Picker -->
             <div style="margin-top: 10px; display:flex; gap:10px; justify-content:center; align-items:center;">
-                <div class="color-option selected" onclick="selectColor(this, 'white')" style="background:#fff;" title="Plain"></div>
-                <div class="color-option" onclick="selectColor(this, 'lined')" style="background: repeating-linear-gradient(transparent, transparent 4px, #a4b0be 5px); background-color: #fff;" title="Lined"></div>
-                <div class="color-option" onclick="selectColor(this, 'yellow')" style="background:#fff740;" title="Yellow"></div>
-                <div class="color-option" onclick="selectColor(this, 'pink')" style="background:#ff7eb9;" title="Pink"></div>
-                <div class="color-option" onclick="selectColor(this, 'blue')" style="background:#7afcff;" title="Blue"></div>
-                <div class="color-option" onclick="selectColor(this, 'green')" style="background:#98ff98;" title="Green"></div>
+                <div class="color-option selected" onclick="selectColor(this, 'white')" style="background:#fff;"
+                    title="Plain"></div>
+                <div class="color-option" onclick="selectColor(this, 'lined')"
+                    style="background: repeating-linear-gradient(transparent, transparent 4px, #a4b0be 5px); background-color: #fff;"
+                    title="Lined"></div>
+                <div class="color-option" onclick="selectColor(this, 'yellow')" style="background:#fff740;"
+                    title="Yellow"></div>
+                <div class="color-option" onclick="selectColor(this, 'pink')" style="background:#ff7eb9;" title="Pink">
+                </div>
+                <div class="color-option" onclick="selectColor(this, 'blue')" style="background:#7afcff;" title="Blue">
+                </div>
+                <div class="color-option" onclick="selectColor(this, 'green')" style="background:#98ff98;"
+                    title="Green"></div>
                 <input type="hidden" id="fw-landing-color" value="white">
             </div>
             <!-- New Instant Input Section -->
-            <div style="margin-top: 15px; display: flex; gap: 10px; align-items: center; background: #f1f2f6; padding: 10px; border: 2px dashed #000; border-radius: 5px;">
+            <div
+                style="margin-top: 15px; display: flex; gap: 10px; align-items: center; background: #f1f2f6; padding: 10px; border: 2px dashed #000; border-radius: 5px;">
                 <i class="fas fa-pencil-alt" style="font-size: 1.5rem;"></i>
-                <input type="text" id="fw-landing-input" placeholder="Write on the wall..." maxlength="60" style="flex: 1; border: none; background: transparent; border-bottom: 2px solid #000; font-family: 'Patrick Hand'; font-size: 1.3rem; outline: none;" onkeydown="if(event.key === 'Enter') postLandingNote()">
-                <button id="fw-landing-btn" onclick="postLandingNote()" class="sketch-btn" style="width: auto; margin: 0; background: #2d3436; color: #fff; transform: rotate(-1deg);">STICK IT</button>
+                <input type="text" id="fw-landing-input" placeholder="Write on the wall..." maxlength="60"
+                    style="flex: 1; border: none; background: transparent; border-bottom: 2px solid #000; font-family: 'Patrick Hand'; font-size: 1.3rem; outline: none;"
+                    onkeydown="if(event.key === 'Enter') postLandingNote()">
+                <button id="fw-landing-btn" onclick="postLandingNote()" class="sketch-btn"
+                    style="width: auto; margin: 0; background: #2d3436; color: #fff; transform: rotate(-1deg);">STICK
+                    IT</button>
             </div>
         </div>
     </div>
 
     <!-- Class List Modal -->
     <div id="classListModal" class="wimpy-modal-overlay hidden">
-        <div class="wimpy-modal-box" style="width: 90%; max-width: 800px; height: 80vh; display: flex; flex-direction: column;">
+        <div class="wimpy-modal-box"
+            style="width: 90%; max-width: 800px; height: 80vh; display: flex; flex-direction: column;">
             <!-- Header -->
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom: 2px dashed #000; padding-bottom: 10px;">
+            <div
+                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom: 2px dashed #000; padding-bottom: 10px;">
                 <h2 style="margin:0;"><i class="fas fa-clipboard-list"></i> CLASS LIST</h2>
                 <div style="display:flex; gap:10px;">
-                    <button id="classListRefreshBtn" onclick="fetchMembers()" class="sketch-btn" style="width:auto; margin:0; font-size:1rem;"><i id="classListRefreshIcon" class="fas fa-sync-alt"></i> Refresh</button>
-                    <button onclick="closeClassList()" class="sketch-btn danger" style="width:auto; margin:0;">CLOSE</button>
+                    <button id="classListRefreshBtn" onclick="fetchMembers()" class="sketch-btn"
+                        style="width:auto; margin:0; font-size:1rem;"><i id="classListRefreshIcon"
+                            class="fas fa-sync-alt"></i> Refresh</button>
+                    <button onclick="closeClassList()" class="sketch-btn danger"
+                        style="width:auto; margin:0;">CLOSE</button>
                 </div>
             </div>
-            <div style="background: #fff740; color: #000; padding: 10px 15px; margin: 10px auto; border: 2px solid #000; box-shadow: 3px 3px 0 rgba(0,0,0,0.1); transform: rotate(-1deg); text-align: center; max-width: 80%; font-size: 1.2rem;">
+            <div
+                style="background: #fff740; color: #000; padding: 10px 15px; margin: 10px auto; border: 2px solid #000; box-shadow: 3px 3px 0 rgba(0,0,0,0.1); transform: rotate(-1deg); text-align: center; max-width: 80%; font-size: 1.2rem;">
                 <i class="fas fa-bullhorn"></i> Note: Enrollment starts at <strong>January 5, 2026</strong>
             </div>
             <!-- Content -->
             <div style="display:flex; gap:20px; flex:1; overflow:hidden; flex-wrap: wrap;">
                 <!-- Enrolled Column -->
-                <div class="enrollment-col" style="flex:1; min-width: 250px; border: 2px solid #00b894; border-radius: 10px; padding: 10px; overflow-y: auto; background: #f0fff4;">
-                    <strong style="color: #00b894; font-size: 1.2rem; display:block; border-bottom:2px solid #00b894; margin-bottom:10px; position:sticky; top:0; background:#f0fff4; z-index: 1; transform: translateZ(0);"><i class="fas fa-check"></i> ENROLLED (<span id="count-in">0</span>)</strong>
+                <div class="enrollment-col"
+                    style="flex:1; min-width: 250px; border: 2px solid #00b894; border-radius: 10px; padding: 10px; overflow-y: auto; background: #f0fff4;">
+                    <strong
+                        style="color: #00b894; font-size: 1.2rem; display:block; border-bottom:2px solid #00b894; margin-bottom:10px; position:sticky; top:0; background:#f0fff4; z-index: 1; transform: translateZ(0);"><i
+                            class="fas fa-check"></i> ENROLLED (<span id="count-in">0</span>)</strong>
                     <div id="enrolled-list" class="member-tags" style="justify-content: flex-start;">Loading...</div>
                 </div>
                 <!-- Not Enrolled Column -->
-                <div class="enrollment-col" style="flex:1; min-width: 250px; border: 2px solid #d63031; border-radius: 10px; padding: 10px; overflow-y: auto; background: #fff0f0;">
-                    <strong style="color: #d63031; font-size: 1.2rem; display:block; border-bottom:2px solid #d63031; margin-bottom:10px; position:sticky; top:0; background:#fff0f0; z-index: 1; transform: translateZ(0);"><i class="fas fa-times"></i> NOT ENROLLED (<span id="count-out">0</span>)</strong>
-                    <div id="not-enrolled-list" class="member-tags" style="justify-content: flex-start;">Loading...</div>
+                <div class="enrollment-col"
+                    style="flex:1; min-width: 250px; border: 2px solid #d63031; border-radius: 10px; padding: 10px; overflow-y: auto; background: #fff0f0;">
+                    <strong
+                        style="color: #d63031; font-size: 1.2rem; display:block; border-bottom:2px solid #d63031; margin-bottom:10px; position:sticky; top:0; background:#fff0f0; z-index: 1; transform: translateZ(0);"><i
+                            class="fas fa-times"></i> NOT ENROLLED (<span id="count-out">0</span>)</strong>
+                    <div id="not-enrolled-list" class="member-tags" style="justify-content: flex-start;">Loading...
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <script src="script.js?v=202405152300"></script>
+    <script src="js/script.js?v=202405152300"></script>
     <script>
         const faceElement = document.querySelector('.sketch-face');
-        const faceFrames = ['pat.png']; 
-        if(faceElement) {
+        const faceFrames = ['assets/images/pat.png'];
+        if (faceElement) {
             faceFrames.forEach(src => new Image().src = src);
         }
     </script>
 </body>
+
 </html>

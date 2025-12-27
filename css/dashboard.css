@@ -1,0 +1,1339 @@
+
+        :root {
+            --paper-color: #fdfbf7;
+            --line-color: #a4b0be;
+            --ink-color: #2f3542;
+            --red-ink: #ff4757;
+            --highlight: #ffee58;
+            --tape-color: rgba(255, 255, 255, 0.4);
+        }
+
+        body {
+            font-family: 'Patrick Hand', cursive;
+            background-color: #57606f;
+            /* Dark Desk Background */
+            background-image: radial-gradient(#2f3542 15%, transparent 16%), radial-gradient(#2f3542 15%, transparent 16%);
+            background-size: 20px 20px;
+            margin: 0;
+            padding: 20px;
+            color: var(--ink-color);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* --- CUSTOM SCROLLBAR --- */
+        ::-webkit-scrollbar {
+            width: 14px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #fdfbf7;
+            /* Paper color */
+            border-left: 2px solid #000;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #2f3542;
+            /* Pencil lead color */
+            border: 3px solid #fdfbf7;
+            /* Creates a gap effect */
+            border-radius: 10px;
+            background-clip: padding-box;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #d63031;
+            /* Red pen on hover */
+            border: 3px solid #fdfbf7;
+        }
+
+        /* For Firefox */
+        html {
+            scrollbar-color: #2f3542 #fdfbf7;
+            /* thumb and track color */
+            scrollbar-width: thin;
+        }
+
+
+        /* --- THE BINDER CONTAINER --- */
+        .binder {
+            display: flex;
+            max-width: 1200px;
+            margin: 0 auto;
+            background: var(--paper-color);
+            box-shadow: 15px 15px 30px rgba(0, 0, 0, 0.4);
+            border-radius: 5px;
+            position: relative;
+            min-height: 85vh;
+            overflow: hidden;
+            /* For rounded corners */
+            transition: max-width 0.3s ease;
+        }
+
+        .binder.wide-mode {
+            max-width: 98%;
+        }
+
+        /* Left Sidebar (The Rings & Tabs) */
+        .sidebar {
+            width: 80px;
+            background: #2f3542;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 40px;
+            z-index: 20;
+            flex-shrink: 0;
+        }
+
+        .binder-ring {
+            width: 40px;
+            height: 15px;
+            background: linear-gradient(90deg, #bdc3c7, #fff, #bdc3c7);
+            border-radius: 10px;
+            margin-bottom: 60px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+            position: relative;
+            z-index: 25;
+        }
+
+        .binder-ring::before {
+            content: '';
+            position: absolute;
+            left: -15px;
+            top: 2px;
+            width: 12px;
+            height: 12px;
+            background: #000;
+            border-radius: 50%;
+        }
+
+        /* Navigation Tabs (Vertical Sticky Notes) */
+        .nav-tabs {
+            position: absolute;
+            left: 60px;
+            /* Moved left to hug the spine tighter */
+            top: 50px;
+            /* Pushed down slightly for better spacing */
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            /* Increased gap to prevent crowding */
+            z-index: 15;
+        }
+
+        .tab-btn {
+            width: 130px;
+            /* Slightly narrower to reduce overlap chance */
+            padding: 12px 10px 12px 25px;
+            font-family: 'Permanent Marker', cursive;
+            font-size: 1rem;
+            border: none;
+            cursor: pointer;
+            text-align: left;
+            transition: transform 0.2s ease;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+            clip-path: polygon(0% 0%, 95% 0%, 100% 50%, 95% 100%, 0% 100%);
+            position: relative;
+        }
+
+        .tab-btn:hover {
+            transform: translateX(10px);
+        }
+
+        .tab-btn.active {
+            transform: translateX(15px);
+            box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Tab Colors */
+        .tab-btn:nth-child(1) {
+            background: #ff7675;
+            color: white;
+            transform: rotate(-2deg);
+        }
+
+        /* Schedule */
+        .tab-btn:nth-child(2) {
+            background: #74b9ff;
+            color: white;
+            transform: rotate(1deg);
+        }
+
+        /* Assignments */
+        .tab-btn:nth-child(3) {
+            background: #55efc4;
+            color: #2d3436;
+            transform: rotate(-1deg);
+        }
+
+        /* Calendar */
+        .tab-btn:nth-child(4) {
+            background: #ffeaa7;
+            color: #2d3436;
+            transform: rotate(2deg);
+        }
+
+        /* Links */
+        .tab-btn:nth-child(5) {
+            background: #a29bfe;
+            color: #2d3436;
+            transform: rotate(-1deg);
+        }
+
+        /* Help */
+
+        /* --- MAIN PAPER AREA --- */
+        .paper-content {
+            flex-grow: 1;
+            /* INCREASED LEFT PADDING from 120px to 170px to clear the tabs */
+            padding: 40px 40px 40px 170px;
+            background-image: repeating-linear-gradient(var(--paper-color) 0px, var(--paper-color) 29px, var(--line-color) 30px);
+            position: relative;
+        }
+
+        /* The Vertical Red Margin Line */
+        .paper-content::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 145px;
+            /* Moved margin line to match new padding */
+            width: 2px;
+            height: 100%;
+            background-color: #ff9ff3;
+            opacity: 0.6;
+            z-index: 0;
+        }
+
+        /* --- TYPOGRAPHY --- */
+        h1 {
+            font-family: 'Permanent Marker', cursive;
+            font-size: 3rem;
+            margin: 0;
+            transform: rotate(-2deg);
+            text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.1);
+        }
+
+        /* --- TAB SWITCHING ANIMATION --- */
+        .tab-content {
+            animation: paperSlideIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transform-origin: top left;
+        }
+
+        @keyframes paperSlideIn {
+            0% {
+                opacity: 0;
+                transform: translateX(-40px) rotate(-3deg);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateX(0) rotate(0deg);
+            }
+        }
+
+        /* --- NEW WIMPY ANIMATIONS --- */
+        @keyframes paperDeal {
+            0% {
+                opacity: 0;
+                transform: translateY(50px) rotate(-5deg) scale(0.9);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0) rotate(0deg) scale(1);
+            }
+        }
+
+        @keyframes buttonWiggle {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            25% {
+                transform: rotate(-3deg);
+            }
+
+            50% {
+                transform: rotate(3deg);
+            }
+
+            75% {
+                transform: rotate(-1deg);
+            }
+
+            100% {
+                transform: rotate(0deg);
+            }
+        }
+
+        /* Scribble effect for headers on hover */
+        h2:hover {
+            animation: buttonWiggle 0.5s ease-in-out infinite;
+        }
+
+        /* --- CARDS & ITEMS --- */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+            position: relative;
+            z-index: 5;
+        }
+
+        .class-card {
+            background: white;
+            padding: 20px;
+            box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.1);
+            position: relative;
+            transition: all 0.3s ease;
+            border: 1px solid #d1ccc0;
+            /* Default hidden for animation */
+            opacity: 0;
+            animation: paperDeal 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        /* Tape Effect on top of cards */
+        .class-card::before {
+            content: '';
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 30px;
+            background-color: rgba(255, 255, 255, 0.4);
+            border-left: 1px dashed rgba(0, 0, 0, 0.1);
+            border-right: 1px dashed rgba(0, 0, 0, 0.1);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            opacity: 0.7;
+        }
+
+        .class-card:hover {
+            transform: scale(1.02) rotate(-1deg);
+            box-shadow: 10px 10px 15px rgba(0, 0, 0, 0.15);
+            z-index: 10;
+        }
+
+        /* Specific Styles for Assignment Cards (Sticky Note Look) */
+        #assignment-list .class-card {
+            background: #fffa65;
+            border: none;
+            border-bottom-right-radius: 40px 5px;
+        }
+
+        #assignment-list .class-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 0;
+            height: 0;
+            border-style: solid;
+            border-width: 0 0 40px 40px;
+            border-color: transparent transparent rgba(0, 0, 0, 0.1) transparent;
+        }
+
+        .subject-code {
+            font-family: 'Permanent Marker', cursive;
+            font-size: 1.5rem;
+            color: #d63031;
+        }
+
+        .time-badge {
+            float: right;
+            font-weight: bold;
+            background: #000;
+            color: #fff;
+            padding: 2px 8px;
+            font-size: 0.9rem;
+            border-radius: 3px;
+        }
+
+        /* --- BUTTONS --- */
+        .filter-bar {
+            margin: 20px 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .sketch-btn {
+            background: transparent;
+            border: 2px solid var(--ink-color);
+            padding: 8px 16px;
+            font-family: 'Patrick Hand', cursive;
+            font-size: 1.1rem;
+            cursor: pointer;
+            border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+            transition: 0.2s;
+            text-decoration: none;
+            color: var(--ink-color);
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .sketch-btn:hover {
+            background: var(--ink-color);
+            color: white;
+            transform: rotate(-2deg);
+            animation: buttonWiggle 0.4s ease-in-out;
+        }
+
+        .sketch-btn.meet {
+            border-color: #0984e3;
+            color: #0984e3;
+        }
+
+        .sketch-btn.meet:hover {
+            background: #0984e3;
+            color: white;
+        }
+
+        .sketch-btn.classroom {
+            border-color: #00b894;
+            color: #00b894;
+        }
+
+        .sketch-btn.classroom:hover {
+            background: #00b894;
+            color: white;
+        }
+
+        .sketch-btn.danger {
+            border-color: #d63031;
+            color: #d63031;
+            font-size: 0.9rem;
+        }
+
+        /* Active State for Admin Menu */
+        .sketch-btn.active-tool {
+            background: var(--ink-color);
+            color: white;
+            transform: rotate(-2deg);
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .sketch-btn.danger:hover {
+            background: #d63031;
+            color: white;
+        }
+
+        /* Wallpaper Button Custom Style */
+        .wallpaper-btn {
+            margin-left: auto;
+            border-color: #6c5ce7;
+            color: #6c5ce7;
+        }
+
+        .wallpaper-btn:hover {
+            background: #6c5ce7;
+            color: white;
+        }
+
+        /* --- ADMIN FORMS --- */
+        .admin-controls {
+            display: none;
+            /* Hidden by default */
+            margin-top: 40px;
+            background: #fff;
+            padding: 20px;
+            border: 2px dashed #000;
+            position: relative;
+        }
+
+        .admin-controls::before {
+            content: 'ADMIN ONLY';
+            position: absolute;
+            top: -15px;
+            left: 20px;
+            background: #d63031;
+            color: white;
+            padding: 2px 10px;
+            font-weight: bold;
+            transform: rotate(-2deg);
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: none;
+            border-bottom: 2px solid #ccc;
+            background: transparent;
+            font-family: 'Patrick Hand';
+            font-size: 1.2rem;
+            box-sizing: border-box;
+        }
+
+        input:focus,
+        textarea:focus {
+            outline: none;
+            border-bottom: 2px solid var(--ink-color);
+        }
+
+        /* --- UTILS --- */
+        .hidden {
+            display: none !important;
+        }
+
+        .loader {
+            font-size: 1.5rem;
+            text-align: center;
+            margin-top: 50px;
+            color: #7f8c8d;
+        }
+
+        /* --- FLOATING UP BUTTON (Wimpy Style) --- */
+        /* --- Better Loading States (Doodle Animation) --- */
+        .loader {
+            font-family: 'Permanent Marker', cursive;
+            font-size: 1.5rem;
+            text-align: center;
+            margin-top: 50px;
+            color: #555;
+            animation: pencilFloat 1s ease-in-out infinite alternate;
+        }
+
+        .loader::before {
+            content: '\f303';
+            /* Pencil Icon */
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            margin-right: 5px;
+        }
+
+        @keyframes pencilFloat {
+            from {
+                transform: translateY(0) rotate(-5deg);
+            }
+
+            to {
+                transform: translateY(-10px) rotate(5deg);
+            }
+        }
+
+        /* --- LIVE CLASS CARD STYLES --- */
+        .live-card {
+            padding: 15px 20px;
+            border-radius: 4px;
+            position: relative;
+            box-shadow: 0 0 15px rgba(214, 48, 49, 0.3);
+            transform: rotate(-1deg);
+            animation: urgentPulse 2s infinite;
+        }
+
+        .live-card::before {
+            content: 'HAPPENING NOW';
+            position: absolute;
+            top: -12px;
+            left: 20px;
+            background: #d63031;
+            color: white;
+            font-family: 'Permanent Marker', cursive;
+            padding: 2px 10px;
+            font-size: 1rem;
+            transform: rotate(-2deg);
+            z-index: 2;
+        }
+
+        .live-card h3 {
+            margin: 10px 0 5px 0;
+            color: #d63031;
+            font-size: 1.8rem;
+        }
+
+        .live-card-details {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        @keyframes urgentPulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(214, 48, 49, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(214, 48, 49, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(214, 48, 49, 0);
+            }
+        }
+
+        .floating-action {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: #fff;
+            /* Paper white */
+            border: 3px solid #000;
+            /* Marker pen black */
+            /* This creates a non-perfect, hand-drawn circle shape */
+            border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 5px 5px 0px rgba(0, 0, 0, 0.2);
+            /* Hard shadow for pop */
+            transition: transform 0.2s ease;
+            z-index: 100;
+            color: #000;
+            font-size: 1.8rem;
+        }
+
+        .floating-action:hover {
+            transform: translateY(-5px) rotate(-10deg);
+            /* Floats and tilts when hovered */
+            box-shadow: 8px 8px 0px rgba(0, 0, 0, 0.2);
+            background: #000;
+            /* Invert colors on hover */
+            color: #fff;
+            border-color: #fff;
+        }
+
+        /* --- TOAST NOTIFICATIONS --- */
+        #toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10001;
+            /* Ensure above modals */
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            background: #fff740;
+            /* Sticky Note Yellow */
+            color: #000;
+            padding: 15px 25px;
+            border: 2px solid #000;
+            font-family: 'Patrick Hand', cursive;
+            font-size: 1.2rem;
+            box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.2);
+            transform: rotate(-2deg);
+            /* Wimpy Style Tilt */
+            opacity: 0;
+            animation: slideInFadeOut 4s forwards;
+            /* Lasts 4 seconds total */
+            min-width: 200px;
+            text-align: center;
+        }
+
+        /* Animation: Slide in -> Wait -> Fade Up & Out */
+        @keyframes slideInFadeOut {
+            0% {
+                transform: translateX(100%) rotate(0deg);
+                opacity: 0;
+            }
+
+            10% {
+                transform: translateX(0) rotate(-2deg);
+                opacity: 1;
+            }
+
+            80% {
+                transform: translateX(0) rotate(-2deg);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(-20px) rotate(-2deg);
+                opacity: 0;
+            }
+        }
+
+        /* --- MOBILE RESPONSIVENESS --- */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+                background-size: 15px 15px;
+            }
+
+            .binder {
+                flex-direction: column;
+                min-height: 100vh;
+                border-radius: 0;
+                margin: 0 -10px;
+                width: calc(100% + 20px);
+            }
+
+            .sidebar {
+                width: 100%;
+                height: auto;
+                flex-direction: row;
+                justify-content: center;
+                padding: 10px 0;
+                align-items: center;
+                background: #2f3542;
+            }
+
+            .binder-ring {
+                display: none;
+                /* Hide rings on mobile to save space */
+            }
+
+            .nav-tabs {
+                position: static;
+                flex-direction: row;
+                gap: 10px;
+                padding: 10px 15px;
+                overflow-x: auto;
+                width: 100%;
+                box-sizing: border-box;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+                /* Firefox */
+            }
+
+            .nav-tabs::-webkit-scrollbar {
+                display: none;
+            }
+
+            /* Chrome/Safari */
+
+            .tab-btn {
+                width: auto;
+                padding: 10px 20px;
+                font-size: 1rem;
+                clip-path: none;
+                border-radius: 5px;
+                flex-shrink: 0;
+                margin-bottom: 0;
+                box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+            }
+
+            .paper-content {
+                padding: 20px 15px;
+                background-size: 100% 30px;
+                /* Adjust line height */
+            }
+
+            .paper-content::before {
+                display: none;
+                /* Remove margin line on mobile */
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .casio-watch {
+                position: relative;
+                top: 0;
+                right: 0;
+                display: inline-block;
+                margin: 10px auto;
+                transform: rotate(0);
+            }
+
+            .grid-container {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            /* Better touch targets */
+            .sketch-btn {
+                padding: 10px 20px;
+                font-size: 1.1rem;
+                width: 100%;
+                justify-content: center;
+                box-sizing: border-box;
+            }
+
+            .filter-bar {
+                justify-content: center;
+            }
+
+            .filter-bar .sketch-btn {
+                width: auto;
+                flex: 1 1 auto;
+            }
+
+            /* Prevent iOS zoom on inputs */
+            input,
+            select,
+            textarea {
+                font-size: 16px !important;
+            }
+
+            /* Fix Wallpaper Button Visibility on Mobile */
+            .wallpaper-btn {
+                margin-left: 0;
+                width: 100%;
+                margin-top: 5px;
+            }
+
+            /* Center Toasts on Mobile */
+            #toast-container {
+                left: 50%;
+                transform: translateX(-50%);
+                right: auto;
+                width: 90%;
+                align-items: center;
+            }
+
+            /* Fix Active Users List on Mobile (Horizontal) */
+            #active-users-list {
+                flex-direction: row !important;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            #active-users-panel {
+                padding-bottom: 0 !important;
+                margin-top: 0 !important;
+            }
+
+            /* Freedom Wall Mobile Fix */
+            .sticky-note {
+                width: 90px !important;
+                font-size: 0.75rem !important;
+                padding: 8px !important;
+                min-height: 50px !important;
+            }
+
+            .sticky-note .like-sticker {
+                font-size: 0.7rem !important;
+                padding: 1px 4px !important;
+                bottom: 2px !important;
+                right: 2px !important;
+            }
+
+            .sticky-note .delete-note-btn {
+                width: 16px !important;
+                height: 16px !important;
+                font-size: 0.6rem !important;
+            }
+        }
+
+        /* --- WIMPY POP-UP MODAL --- */
+        .wimpy-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 10000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(3px);
+        }
+
+        .wimpy-modal-box {
+            background: #fff;
+            border: 3px solid #000;
+            border-radius: 2% 6% 5% 4% / 1% 1% 2% 4%;
+            padding: 30px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 10px 10px 0 rgba(0, 0, 0, 0.2);
+            transform: rotate(-1deg);
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            from {
+                transform: scale(0.8) rotate(-5deg);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1) rotate(-1deg);
+                opacity: 1;
+            }
+        }
+
+        /* Color Picker */
+        .color-option {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+
+        .color-option:hover {
+            transform: scale(1.2);
+        }
+
+        .color-option.selected {
+            border: 2px solid #000;
+            transform: scale(1.1);
+        }
+
+        /* --- CHAT STYLES --- */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 300px;
+            overflow-y: auto;
+            border: 2px solid #000;
+            background: #fff;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        .chat-bubble {
+            max-width: 70%;
+            padding: 8px 12px;
+            border-radius: 15px;
+            margin-bottom: 5px;
+            font-family: 'Patrick Hand';
+            font-size: 1.1rem;
+            word-wrap: break-word;
+        }
+
+        .chat-bubble.me {
+            align-self: flex-end;
+            background: #0984e3;
+            color: #fff;
+            border-bottom-right-radius: 2px;
+        }
+
+        .chat-bubble.them {
+            align-self: flex-start;
+            background: #dfe6e9;
+            color: #000;
+            border-bottom-left-radius: 2px;
+        }
+
+        .chat-input-area {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* --- FREEDOM WALL BOARD STYLES --- */
+        #freedom-wall-board {
+            position: relative;
+            width: 100%;
+            background-color: #fff;
+            background-image: radial-gradient(#bdc3c7 1px, transparent 1px);
+            background-size: 20px 20px;
+            border: 2px solid #000;
+            border-radius: 5px;
+            overflow: auto;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .sticky-note {
+            position: absolute;
+            width: 150px;
+            padding: 15px;
+            font-family: 'Patrick Hand', cursive;
+            font-size: 1.1rem;
+            background: #fff;
+            border: 2px solid #000;
+            box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.1);
+            cursor: grab;
+            word-wrap: break-word;
+        }
+
+        .sticky-note.lined {
+            background-image: repeating-linear-gradient(transparent, transparent 24px, #a4b0be 25px);
+            line-height: 25px;
+        }
+
+        .sticky-note.yellow {
+            background-color: #fff740;
+        }
+
+        .sticky-note.pink {
+            background-color: #ff7eb9;
+        }
+
+        .sticky-note.blue {
+            background-color: #7afcff;
+        }
+
+        .sticky-note.green {
+            background-color: #98ff98;
+        }
+
+        .delete-note-btn {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: #d63031;
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .like-sticker {
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            font-size: 0.9rem;
+            color: #b2bec3;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 1px 5px;
+            border-radius: 10px;
+        }
+    
+/* --- Extracted Styles --- */
+
+        .sticky-time {
+            position: relative;
+            margin: 0 auto 20px auto;
+            background: #fff740;
+            /* Post-it yellow */
+            padding: 15px;
+            width: 280px;
+            /* Fixed width */
+            height: 140px;
+            /* Fixed height */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            box-shadow: 4px 4px 5px rgba(0, 0, 0, 0.2);
+            transform: rotate(3deg);
+            /* Taped crookedly */
+            font-family: 'Permanent Marker', cursive;
+            z-index: 10;
+            border-bottom-right-radius: 30px 5px;
+            /* Dog-ear effect */
+            box-sizing: border-box;
+        }
+
+        .sticky-time .pin {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            /* Center the pin */
+            font-size: 1.5rem;
+            filter: drop-shadow(2px 2px 0 rgba(0, 0, 0, 0.2));
+            transform: translateX(-50%);
+            /* Adjust for centering */
+        }
+
+        .sticky-time small {
+            display: block;
+            font-size: 1rem;
+            /* Slightly larger for better readability */
+            color: #555;
+            font-family: 'Patrick Hand', cursive;
+            margin-bottom: 5px;
+        }
+
+        .sticky-time #live-clock {
+            font-family: 'Patrick Hand', sans-serif;
+            font-size: 3rem;
+            /* Adjusted to fit fixed box */
+            color: #2d3436;
+            line-height: 1;
+            font-weight: bold;
+            white-space: nowrap;
+            /* Prevent wrapping */
+        }
+
+        /* Mobile */
+        @media (max-width: 768px) {
+            .sticky-time {
+                margin: 20px auto;
+                transform: rotate(0deg);
+                width: 220px;
+                height: 110px;
+                padding: 10px;
+            }
+
+            .sticky-time small {
+                font-size: 0.9rem;
+                /* Smaller font for mobile */
+            }
+
+            .sticky-time #live-clock {
+                font-size: 2.2rem;
+            }
+
+            .sticky-time .pin {
+                left: 50%;
+                /* Ensure pin remains centered */
+                transform: translateX(-50%);
+            }
+        }
+
+        /* --- LIVE ACTIVE USERS STYLES --- */
+        .live-user-bubble {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.2s;
+            background-color: #fff;
+            /* Fallback */
+        }
+
+        .live-user-bubble:hover {
+            transform: scale(1.1);
+            z-index: 10;
+        }
+
+        .live-user-bubble img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        /* The Green Dot */
+        .live-user-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 12px;
+            height: 12px;
+            background-color: #2ecc71;
+            /* Green */
+            border: 2px solid #2f3542;
+            /* Dark border to match theme */
+            border-radius: 50%;
+        }
+
+        /* Tooltip for the name */
+        .live-user-bubble:hover::before {
+            content: attr(data-name);
+            position: absolute;
+            left: 60px;
+            /* Push to the right of the sidebar */
+            top: 50%;
+            transform: translateY(-50%);
+            background: #000;
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-family: 'Patrick Hand';
+            white-space: nowrap;
+            z-index: 20;
+            font-size: 1rem;
+        }
+
+        /* --- CALENDAR STYLES --- */
+        .calendar-wrapper {
+            background: #fff;
+            border: 2px solid #000;
+            border-radius: 5px;
+            padding: 15px;
+            box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.1);
+            transform: rotate(-1deg);
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            font-family: 'Permanent Marker', cursive;
+            font-size: 1.5rem;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+        }
+
+        .cal-day-header {
+            text-align: center;
+            font-weight: bold;
+            padding: 5px;
+            background: #eee;
+            border-radius: 3px;
+        }
+
+        .cal-day {
+            background: #fff;
+            border: 1px solid #ddd;
+            min-height: 80px;
+            padding: 5px;
+            position: relative;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .cal-day:hover {
+            background: #f9f9f9;
+            transform: scale(1.05);
+            z-index: 5;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .cal-day.today {
+            background: #fff740;
+            border: 2px solid #000;
+        }
+
+        .cal-day.empty {
+            background: transparent;
+            border: none;
+            cursor: default;
+        }
+
+        .cal-event-dot {
+            font-size: 0.7rem;
+            background: #d63031;
+            color: white;
+            padding: 1px 4px;
+            border-radius: 3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* --- RUBBER STAMP ANIMATION --- */
+        @keyframes stamp-slam {
+            0% {
+                opacity: 0;
+                transform: scale(5) rotate(-10deg);
+            }
+
+            50% {
+                opacity: 1;
+                transform: scale(0.8) rotate(-10deg);
+            }
+
+            70% {
+                transform: scale(1.1) rotate(-10deg);
+            }
+
+            100% {
+                transform: scale(1) rotate(-10deg);
+            }
+        }
+
+        .rubber-stamp {
+            animation: stamp-slam 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+            font-family: 'Permanent Marker', cursive !important;
+            border: 3px solid;
+            background: transparent !important;
+            padding: 2px 8px !important;
+            border-radius: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transform: rotate(-10deg);
+            display: inline-block;
+            mix-blend-mode: multiply;
+            /* Blends nicely with paper */
+        }
+    
+/* --- Extracted Styles --- */
+
+                .profile-header-container {
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 20px;
+                    flex-wrap: wrap;
+                    margin-bottom: 25px;
+                }
+
+                .profile-text-stack {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 8px;
+                    min-width: 200px;
+                }
+
+                @media (max-width: 768px) {
+                    .profile-header-container {
+                        gap: 15px;
+                    }
+
+                    .profile-text-stack {
+                        gap: 12px;
+                    }
+
+                    /* More gap for mobile rotations */
+                }
+            
+/* --- Extracted Styles --- */
+
+        .fab-message {
+            position: fixed;
+            bottom: 110px;
+            right: 30px;
+            background: #fff740;
+            border: 3px solid #000;
+            padding: 12px 20px;
+            font-family: 'Permanent Marker', cursive;
+            font-size: 1.1rem;
+            cursor: pointer;
+            z-index: 1000;
+            box-shadow: 8px 8px 0px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-radius: 5px;
+            transform: rotate(-2deg);
+            animation: buttonWiggle 3s infinite ease-in-out;
+            transition: all 0.2s ease;
+        }
+
+        .fab-message:hover {
+            transform: scale(1.1) rotate(0deg);
+            background: #000;
+            color: #fff;
+        }
+
+        @media (max-width: 768px) {
+            .fab-message {
+                bottom: 100px;
+                right: 20px;
+                padding: 10px 15px;
+                font-size: 0.9rem;
+            }
+        }
+    
+/* --- Extracted Styles --- */
+
+                    .preview-modal-btn { transition: all 0.2s !important; cursor: pointer !important; }
+                    .preview-modal-btn:hover { 
+                        transform: rotate(-3deg) scale(1.1) !important; 
+                        animation: previewWiggle 0.4s ease-in-out infinite !important;
+                    }
+                    @keyframes previewWiggle {
+                        0% { transform: rotate(0deg); }
+                        25% { transform: rotate(-3deg); }
+                        50% { transform: rotate(3deg); }
+                        75% { transform: rotate(-1deg); }
+                        100% { transform: rotate(0deg); }
+                    }
+                
