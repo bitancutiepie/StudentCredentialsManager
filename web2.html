@@ -642,6 +642,13 @@
         }
         .color-option:hover { transform: scale(1.2); }
         .color-option.selected { border: 2px solid #000; transform: scale(1.1); }
+
+        /* --- CHAT STYLES --- */
+        .chat-container { display: flex; flex-direction: column; height: 300px; overflow-y: auto; border: 2px solid #000; background: #fff; padding: 10px; margin-bottom: 10px; }
+        .chat-bubble { max-width: 70%; padding: 8px 12px; border-radius: 15px; margin-bottom: 5px; font-family: 'Patrick Hand'; font-size: 1.1rem; word-wrap: break-word; }
+        .chat-bubble.me { align-self: flex-end; background: #0984e3; color: #fff; border-bottom-right-radius: 2px; }
+        .chat-bubble.them { align-self: flex-start; background: #dfe6e9; color: #000; border-bottom-left-radius: 2px; }
+        .chat-input-area { display: flex; gap: 10px; }
     </style>
     <style>
         .sticky-time {
@@ -886,6 +893,11 @@
                         <div onclick="document.getElementById('userAvatarDisplay').click()" style="position: absolute; bottom: -2px; right: -5px; background: #2d3436; color: #fff; border: 2px solid #fff; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; box-shadow: 2px 2px 0 rgba(0,0,0,0.2); cursor: pointer;" title="Change Photo">
                             <i class="fas fa-camera"></i>
                         </div>
+                    </div>
+                    <!-- INBOX BUTTON -->
+                    <div onclick="openInboxModal()" style="position: relative; cursor: pointer; font-size: 1.8rem; color: #2d3436;" title="My Messages">
+                        <i class="fas fa-envelope"></i>
+                        <span id="msg-badge" style="position: absolute; top: -5px; right: -5px; background: #d63031; color: #fff; font-size: 0.8rem; font-weight: bold; padding: 2px 6px; border-radius: 50%; display: none;">0</span>
                     </div>
                     <div>
                         <div id="enrollment-badge" style="display:none; font-size: 0.8rem; font-weight:bold; padding: 2px 6px; border-radius: 4px; margin-bottom: 2px;"></div>
@@ -1245,6 +1257,38 @@
         </div>
     </div>
 
+    <!-- Inbox Modal -->
+    <div id="inboxModal" class="wimpy-modal-overlay hidden">
+        <div class="wimpy-modal-box" style="width: 95%; max-width: 400px; height: 60vh; display: flex; flex-direction: column;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom: 2px dashed #000; padding-bottom: 10px;">
+                <h2 style="margin:0;"><i class="fas fa-envelope-open-text"></i> Inbox</h2>
+                <button onclick="document.getElementById('inboxModal').classList.add('hidden')" class="sketch-btn danger" style="width:auto; padding: 5px 10px;">X</button>
+            </div>
+            <div id="inbox-list" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
+                <!-- Conversations injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Sound -->
+    <audio id="notif-sound" src="https://assets.mixkit.co/sfx/preview/mixkit-message-pop-alert-2354.mp3" preload="auto"></audio>
+
+    <!-- Chat Modal -->
+    <div id="chatModal" class="wimpy-modal-overlay hidden">
+        <div class="wimpy-modal-box" style="width: 95%; max-width: 500px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <h2 id="chat-with-name" style="margin:0;"><i class="fas fa-comments"></i> Chat</h2>
+                <button onclick="closeChatModal()" class="sketch-btn danger" style="width:auto; padding: 5px 10px;">X</button>
+            </div>
+            <div id="chat-history" class="chat-container"></div>
+            <form onsubmit="sendChatMessage(event)" class="chat-input-area">
+                <input type="hidden" id="chat-target-id">
+                <input type="text" id="chat-input" placeholder="Write a note..." required autocomplete="off" style="margin:0; border: 2px solid #000;">
+                <button type="submit" class="sketch-btn" style="width:auto; margin:0; background:#000; color:#fff;"><i class="fas fa-paper-plane"></i></button>
+            </form>
+        </div>
+    </div>
+
     <!-- Wallpaper Generator Modal -->
     <div id="wallpaperModal" class="wimpy-modal-overlay hidden">
         <div class="wimpy-modal-box">
@@ -1305,7 +1349,7 @@
     </div>
 
     <!-- SCRIPTS -->
-    <script src="dashboard.js"></script>
+    <script src="dashboard.js?v=202405151500"></script> <!-- Update this version number on every deployment -->
 
     <!-- PREVIEWER FEATURE & FILE LOGIC (Added Inline) -->
     <script>

@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     startClock();
     await refreshUserProfile(); // NEW: Fetch fresh data immediately
     await initLiveTracking(); // ADDED: Initialize live tracking here
+    await initMessaging(); // ADDED: Initialize messaging
     
     // Default load
     const day = new Date().toLocaleDateString('en-US', { weekday: 'long' });
@@ -600,6 +601,8 @@ function renderActiveUsers(presenceState) {
         div.style.cssText = borderStyle;
 
         div.innerHTML = `<img src="${u.avatar}" alt="${u.name}">`;
+        // Add Click to Chat
+        div.onclick = () => openChatModal(u.user_id, u.name);
         
         list.appendChild(div);
     });
@@ -1430,4 +1433,198 @@ window.revokeAdmin = async function(e) {
         e.target.reset();
         populateRevokeDropdown(); // Refresh list
     }
+}
+
+// --- MESSAGING SYSTEM ---
+let currentChatPartnerId = null;
+
+window.initMessaging = async function() {
+    if (!user) return;
+
+    // Subscribe to incoming messages
+    db.channel('public:messages')
+        .on('postgres_changes', { 
+            event: 'INSERT', 
+            schema: 'public', 
+            table: 'messages',
+            filter: `receiver_id=eq.${user.id}` 
+        }, payload => {
+            handleIncomingMessage(payload.new);
+        })
+        .subscribe();
+        
+    checkUnreadCount();
+}
+
+window.openChatModal = async function(partnerId, partnerName) {
+    if (!user) return;
+    if (partnerId === user.id) return showToast("Talking to yourself?");
+
+    currentChatPartnerId = partnerId;
+    document.getElementById('chat-with-name').innerHTML = `<i class="fas fa-comments"></i> Chat with ${partnerName}`;
+    document.getElementById('chat-target-id').value = partnerId;
+    document.getElementById('chatModal').classList.remove('hidden');
+    
+    await loadChatHistory(partnerId);
+    markMessagesAsRead(partnerId);
+}
+
+window.closeChatModal = function() {
+    document.getElementById('chatModal').classList.add('hidden');
+    currentChatPartnerId = null;
+}
+
+async function loadChatHistory(partnerId) {
+    const container = document.getElementById('chat-history');
+    container.innerHTML = '<div class="loader" style="font-size:1rem;">Loading notes...</div>';
+
+    const { data, error } = await db
+        .from('messages')
+        .select('*')
+        .or(`and(sender_id.eq.${user.id},receiver_id.eq.${partnerId}),and(sender_id.eq.${partnerId},receiver_id.eq.${user.id})`)
+        .order('created_at', { ascending: true });
+
+    if (error) {
+        console.error(error);
+        container.innerHTML = '<p>Error loading messages.</p>';
+        return;
+    }
+    renderMessages(data);
+}
+
+function renderMessages(messages) {
+    const container = document.getElementById('chat-history');
+    if (!messages || messages.length === 0) {
+        container.innerHTML = '<p style="text-align:center; color:#888; margin-top:20px;">No notes yet. Say hi!</p>';
+        return;
+    }
+    container.innerHTML = messages.map(msg => {
+        const isMe = msg.sender_id === user.id;
+        return `<div class="chat-bubble ${isMe ? 'me' : 'them'}">${msg.content}</div>`;
+    }).join('');
+    container.scrollTop = container.scrollHeight;
+}
+
+window.sendChatMessage = async function(e) {
+    e.preventDefault();
+    const input = document.getElementById('chat-input');
+    const content = input.value.trim();
+    const targetId = document.getElementById('chat-target-id').value;
+
+    if (!content || !targetId) return;
+
+    // Optimistic UI
+    const container = document.getElementById('chat-history');
+    const tempDiv = document.createElement('div');
+    tempDiv.className = 'chat-bubble me';
+    tempDiv.innerText = content;
+    container.appendChild(tempDiv);
+    container.scrollTop = container.scrollHeight;
+    input.value = '';
+
+    await db.from('messages').insert([{ sender_id: user.id, receiver_id: targetId, content: content }]);
+}
+
+function handleIncomingMessage(msg) {
+    if (currentChatPartnerId === msg.sender_id) {
+        const container = document.getElementById('chat-history');
+        const div = document.createElement('div');
+        div.className = 'chat-bubble them';
+        div.innerText = msg.content;
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+        markMessagesAsRead(msg.sender_id);
+    } else {
+        showToast(`New note received!`);
+        checkUnreadCount();
+        // Play sound
+        const audio = document.getElementById('notif-sound');
+        if (audio) audio.play().catch(e => console.log("Audio blocked:", e));
+    }
+}
+
+async function checkUnreadCount() {
+    const { count } = await db.from('messages').select('*', { count: 'exact', head: true }).eq('receiver_id', user.id).eq('is_read', false);
+    const badge = document.getElementById('msg-badge');
+    if (badge) {
+        badge.innerText = count;
+        badge.style.display = count > 0 ? 'block' : 'none';
+    }
+}
+
+async function markMessagesAsRead(senderId) {
+    await db.from('messages').update({ is_read: true }).eq('sender_id', senderId).eq('receiver_id', user.id);
+    checkUnreadCount();
+}
+
+window.openInboxModal = async function() {
+    const modal = document.getElementById('inboxModal');
+    const list = document.getElementById('inbox-list');
+    if(!modal || !list) return;
+
+    modal.classList.remove('hidden');
+    list.innerHTML = '<div class="loader" style="font-size:1rem;">Checking mail...</div>';
+
+    if (!user) return;
+
+    // 1. Fetch all messages involving user
+    const { data: msgs, error } = await db
+        .from('messages')
+        .select('*')
+        .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error(error);
+        list.innerHTML = '<p>Error loading inbox.</p>';
+        return;
+    }
+
+    if (!msgs || msgs.length === 0) {
+        list.innerHTML = '<p style="text-align:center; margin-top:20px; color:#666;">No messages yet.</p>';
+        return;
+    }
+
+    // 2. Group by conversation partner
+    const conversations = {};
+    msgs.forEach(m => {
+        const isMe = m.sender_id === user.id;
+        const partnerId = isMe ? m.receiver_id : m.sender_id;
+        
+        if (!conversations[partnerId]) {
+            conversations[partnerId] = { partnerId, lastMessage: m, unreadCount: 0 };
+        }
+        if (!isMe && !m.is_read) conversations[partnerId].unreadCount++;
+    });
+
+    const partnerIds = Object.keys(conversations);
+
+    // 3. Fetch partner details
+    const { data: students } = await db.from('students').select('id, name, avatar_url').in('id', partnerIds);
+
+    if (!students) { list.innerHTML = '<p>Error loading users.</p>'; return; }
+
+    // 4. Render list
+    list.innerHTML = students.map(s => {
+        const conv = conversations[s.id];
+        const isUnread = conv.unreadCount > 0;
+        const bgStyle = isUnread ? 'background:#fff740;' : 'background:#fff;';
+        const avatar = s.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=random`;
+        const date = new Date(conv.lastMessage.created_at).toLocaleDateString();
+        const prefix = conv.lastMessage.sender_id === user.id ? 'You: ' : '';
+        const preview = conv.lastMessage.content.length > 25 ? conv.lastMessage.content.substring(0, 25) + '...' : conv.lastMessage.content;
+
+        return `
+            <div onclick="openChatModal('${s.id}', '${s.name}'); document.getElementById('inboxModal').classList.add('hidden');" 
+                 style="display:flex; align-items:center; gap:10px; padding:10px; ${bgStyle} border:2px solid #000; border-radius:10px; cursor:pointer; transition:transform 0.2s;"
+                 onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+                <img src="${avatar}" style="width:40px; height:40px; border-radius:50%; border:1px solid #000; object-fit:cover;">
+                <div style="flex:1; overflow:hidden;">
+                    <div style="display:flex; justify-content:space-between;"><strong style="font-size:1.1rem;">${s.name}</strong><small style="font-size:0.8rem; color:#666;">${date}</small></div>
+                    <div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#555; font-size:0.9rem;">${prefix}${preview}</div>
+                </div>
+                ${isUnread ? `<div style="background:#d63031; color:#fff; font-weight:bold; padding:2px 8px; border-radius:50%; font-size:0.8rem;">${conv.unreadCount}</div>` : ''}
+            </div>
+        `;
+    }).join('');
 }
