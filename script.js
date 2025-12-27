@@ -116,6 +116,9 @@ const initApp = async () => {
     if (authModeMessage) {
         authModeMessage.innerText = 'Enter your credentials to log in.';
     }
+
+    // Start Jumpscare Timer
+    startJumpscareTimer();
 };
 
 // --- HELPER: Load Public Content ---
@@ -408,6 +411,12 @@ function showAdminPanel(name) {
     fetchStudents(); 
     fetchRequests(); // Load requests when admin panel opens
     fetchAdminFiles(); // Load files
+
+    // Toggle Mobile Navs
+    const fixedNav = document.getElementById('fixed-action-buttons');
+    const adminNav = document.getElementById('admin-mobile-nav');
+    if(fixedNav) fixedNav.classList.add('hidden');
+    if(adminNav) adminNav.classList.remove('hidden');
 }
 
 // --- ADMIN FEATURES (Black List) ---
@@ -447,36 +456,51 @@ function displayStudents(students) {
         return;
     }
 
-    const batchSection = document.createElement('div');
-    batchSection.style.marginBottom = '20px';
-    
-    const title = document.createElement('h4');
-    title.style.cssText = 'margin: 0 0 10px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px; color: #555; text-align: left;';
-    title.innerText = `BSIT 2106`;
-    batchSection.appendChild(title);
+    // Filter groups
+    const notEnrolled = validStudents.filter(s => !s.enrollment_status || s.enrollment_status === 'Not Enrolled');
+    const enrolled = validStudents.filter(s => s.enrollment_status === 'Enrolled');
 
-    const grid = document.createElement('div');
-    grid.style.cssText = 'display: flex; flex-wrap: wrap; gap: 10px;';
-    
-    validStudents.forEach(student => {
-        const avatar = student.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random`;
+    // Helper function to render a section
+    const renderSection = (title, list, color) => {
+        if (list.length === 0) return;
         
-        const chip = document.createElement('div');
-        chip.className = 'member-tag';
-        chip.style.cssText = 'cursor: pointer; padding: 5px 10px; font-size: 0.9rem; background: #fff; border: 2px solid #000; display: flex; align-items: center; gap: 8px; transition: transform 0.2s;';
-        chip.onmouseover = () => chip.style.transform = 'scale(1.05)';
-        chip.onmouseout = () => chip.style.transform = 'scale(1)';
-        chip.onclick = () => openStudentDetails(student.id);
+        const section = document.createElement('div');
+        section.style.marginBottom = '20px';
+        
+        const header = document.createElement('h4');
+        header.style.cssText = `margin: 0 0 10px 0; border-bottom: 2px solid ${color}; padding-bottom: 5px; color: ${color}; text-align: left; text-transform: uppercase;`;
+        header.innerText = `${title} (${list.length})`;
+        section.appendChild(header);
 
-        chip.innerHTML = `
-            <img src="${avatar}" style="width:24px; height:24px; border-radius:50%; object-fit:cover; border:1px solid #000;">
-            <span style="font-weight:bold; white-space: nowrap; max-width: 150px; overflow: hidden; text-overflow: ellipsis;">${student.name}</span>
-        `;
-        grid.appendChild(chip);
-    });
+        const grid = document.createElement('div');
+        grid.style.cssText = 'display: flex; flex-wrap: wrap; gap: 10px;';
+        
+        list.forEach(student => {
+            const avatar = student.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random`;
+            
+            const chip = document.createElement('div');
+            chip.className = 'member-tag';
+            chip.style.cssText = `cursor: pointer; padding: 5px 10px; font-size: 0.9rem; background: #fff; border: 2px solid ${color}; display: flex; align-items: center; gap: 8px; transition: transform 0.2s;`;
+            chip.onmouseover = () => chip.style.transform = 'scale(1.05)';
+            chip.onmouseout = () => chip.style.transform = 'scale(1)';
+            chip.onclick = () => openStudentDetails(student.id);
 
-    batchSection.appendChild(grid);
-    studentListContainer.appendChild(batchSection);
+            chip.innerHTML = `
+                <img src="${avatar}" style="width:24px; height:24px; border-radius:50%; object-fit:cover; border:1px solid ${color};">
+                <span style="font-weight:bold; white-space: nowrap; max-width: 150px; overflow: hidden; text-overflow: ellipsis;">${student.name}</span>
+            `;
+            grid.appendChild(chip);
+        });
+        section.appendChild(grid);
+        studentListContainer.appendChild(section);
+    };
+
+    renderSection('Not Enrolled', notEnrolled, '#d63031');
+    renderSection('Enrolled', enrolled, '#00b894');
+
+    if (notEnrolled.length === 0 && enrolled.length === 0) {
+        studentListContainer.innerHTML = '<p style="text-align:center; color:#666;">No students found (Filtered by Enrolled/Not Enrolled).</p>';
+    }
 }
 
 async function deleteStudent(id) {
@@ -559,7 +583,7 @@ window.openStudentDetails = function(id) {
                 <option value="Irregular" ${currentStatus === 'Irregular' ? 'selected' : ''}>Irregular</option>
             </select>
             <div style="margin-top:10px;">
-                <strong><i class="fas fa-file-upload"></i> Upload Receipt (Optional):</strong>
+                <strong><i class="fas fa-file-upload"></i> Upload Receipt (Optional):</strong> <small style="color:#666;">(or Paste Image Ctrl+V)</small>
                 <input type="file" id="receiptInput-${student.id}" accept="image/*" style="width:100%; margin-top:5px; font-size:0.9rem;">
                 ${receiptLink}
             </div>
@@ -819,6 +843,23 @@ async function fetchMembers() {
             refreshIcon.classList.remove('spin-animation');
         }
     }
+}
+
+// --- JUMPSCARE LOGIC ---
+function startJumpscareTimer() {
+    setInterval(() => {
+        const authSection = document.getElementById('authSection');
+        // Only trigger if we are on the landing page (auth section is visible)
+        if (authSection && !authSection.classList.contains('hidden')) {
+            const overlay = document.getElementById('jumpscare-overlay');
+            if (overlay) {
+                overlay.classList.remove('hidden');
+                setTimeout(() => {
+                    overlay.classList.add('hidden');
+                }, 500);
+            }
+        }
+    }, 20000);
 }
 
 function showPublicProfile(name, avatarUrl, status) {
@@ -1270,6 +1311,12 @@ async function logout() {
     if (loginUI) loginUI.classList.remove('hidden');
     if (adminControls) adminControls.classList.add('hidden');
 
+    // Reset Mobile Navs
+    const fixedNav = document.getElementById('fixed-action-buttons');
+    const adminNav = document.getElementById('admin-mobile-nav');
+    if(fixedNav) fixedNav.classList.remove('hidden');
+    if(adminNav) adminNav.classList.add('hidden');
+
     if(adminChoiceModal) adminChoiceModal.classList.add('hidden');
     srCodeInput.value = '';
     passwordInput.value = '';
@@ -1283,6 +1330,12 @@ function returnToAdminChoice() {
     // Show landing page again (which has admin controls)
     const authSection = document.getElementById('authSection');
     if(authSection) authSection.classList.remove('hidden');
+
+    // Reset Mobile Navs
+    const fixedNav = document.getElementById('fixed-action-buttons');
+    const adminNav = document.getElementById('admin-mobile-nav');
+    if(fixedNav) fixedNav.classList.remove('hidden');
+    if(adminNav) adminNav.classList.add('hidden');
 }
 
 function showWelcomeNote() {
@@ -1493,7 +1546,7 @@ async function fetchLandingGallery() {
     galleryItems = data; // Store for lightbox
     section.classList.remove('hidden');
     container.innerHTML = data.map((item, index) => {
-        const deleteBtn = isAdmin ? `<button onclick="event.stopPropagation(); deleteAdminFile(${item.id})" class="sketch-btn danger" style="position:absolute; top:-10px; right:-10px; width:30px; height:30px; border-radius:50%; padding:0; display:flex; align-items:center; justify-content:center; z-index:20; font-size:0.9rem;">X</button>` : '';
+        const deleteBtn = isAdmin ? `<button onclick="event.stopPropagation(); deleteAdminFile(${item.id})" class="sketch-btn danger" style="position:absolute; top:-10px; right:-10px; width:30px !important; height:30px !important; border-radius:50% !important; padding:0 !important; display:flex; align-items:center; justify-content:center; z-index:20; font-size:0.9rem;">X</button>` : '';
         return `
         <div class="polaroid-card" onclick="openGalleryLightbox(${index})" 
              tabindex="0" role="button" aria-label="View photo: ${item.title}"
@@ -1633,7 +1686,7 @@ async function fetchRequests() {
     if(error) return console.error(error);
     
     if(!data || data.length === 0) {
-        container.innerHTML = '<h3 style="text-align:center; color:#666;">No new requests.</h3>';
+        container.innerHTML = '<h3 style="text-decoration:underline wavy #d63031;"><i class="fas fa-envelope-open-text"></i> Inbox / Requests</h3><p style="text-align:center; color:#666;">No new requests.</p>';
         return;
     }
     
@@ -1672,7 +1725,7 @@ async function fetchAdminFiles() {
     if(error) return console.error(error);
     
     if(!data || data.length === 0) {
-        container.innerHTML = '<h3 style="text-align:center; color:#666;">No files uploaded.</h3>';
+        container.innerHTML = '<h3 style="text-decoration:underline wavy #0984e3;"><i class="fas fa-folder-open"></i> Manage Files</h3><p style="text-align:center; color:#666;">No files uploaded.</p>';
         return;
     }
     
@@ -2078,4 +2131,45 @@ window.openReceiptPreview = function(name, url) {
     
     overlay.appendChild(box);
     document.body.appendChild(overlay);
+}
+
+// --- GLOBAL PASTE LISTENER (For Image Uploads) ---
+document.addEventListener('paste', function(e) {
+    // 1. Check Student Details Modal (Enrollment Receipt)
+    const detailsModal = document.getElementById('studentDetailsModal');
+    if (detailsModal && !detailsModal.classList.contains('hidden')) {
+        const fileInput = detailsModal.querySelector('input[type="file"][id^="receiptInput-"]');
+        if (fileInput) handleImagePaste(e, fileInput);
+        return;
+    }
+
+    // 2. Check Admin Dashboard Gallery Upload (Index Page)
+    const adminDash = document.getElementById('adminDashboard');
+    if (adminDash && !adminDash.classList.contains('hidden')) {
+        const galleryInput = document.getElementById('idx-g-file');
+        // Only if the input is visible/part of the active view
+        if (galleryInput && galleryInput.offsetParent !== null) {
+            handleImagePaste(e, galleryInput);
+            return;
+        }
+    }
+});
+
+function handleImagePaste(e, inputElement) {
+    const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+    for (let index in items) {
+        const item = items[index];
+        if (item.kind === 'file' && item.type.includes('image/')) {
+            const blob = item.getAsFile();
+            const file = new File([blob], "pasted_image_" + Date.now() + ".png", { type: blob.type });
+            
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            inputElement.files = dataTransfer.files;
+            
+            showToast("Image pasted from clipboard!");
+            e.preventDefault();
+            return;
+        }
+    }
 }

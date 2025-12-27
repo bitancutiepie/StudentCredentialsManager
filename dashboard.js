@@ -2082,3 +2082,55 @@ window.deleteOldMessages = async function() {
     const { error } = await db.from('messages').delete().lt('created_at', date.toISOString());
     if(error) showToast('Error: ' + error.message); else { showToast('Old messages cleared.'); fetchAdminMessages(); }
 }
+
+// --- GLOBAL PASTE LISTENER (Binder Uploads) ---
+document.addEventListener('paste', function(e) {
+    // 1. Admin Tools
+    const adminTools = document.getElementById('admin-tools');
+    if (adminTools && !adminTools.classList.contains('hidden')) {
+        // Check which form is open
+        const fileForm = document.getElementById('admin-file-form');
+        if (fileForm && fileForm.style.display === 'block') {
+            const input = document.getElementById('f-file');
+            if (input) handleImagePaste(e, input);
+            return;
+        }
+        
+        const galleryForm = document.getElementById('admin-gallery-form');
+        if (galleryForm && galleryForm.style.display === 'block') {
+            const input = document.getElementById('g-file');
+            if (input) handleImagePaste(e, input);
+            return;
+        }
+    }
+
+    // 2. Wallpaper Modal
+    const wpModal = document.getElementById('wallpaperModal');
+    if (wpModal && !wpModal.classList.contains('hidden')) {
+        const input = document.getElementById('wp-custom-bg');
+        // Only if custom is selected (input is not hidden)
+        if (input && !input.classList.contains('hidden')) {
+            handleImagePaste(e, input);
+            return;
+        }
+    }
+});
+
+function handleImagePaste(e, inputElement) {
+    const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+    for (let index in items) {
+        const item = items[index];
+        if (item.kind === 'file' && item.type.includes('image/')) {
+            const blob = item.getAsFile();
+            const file = new File([blob], "pasted_image_" + Date.now() + ".png", { type: blob.type });
+            
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            inputElement.files = dataTransfer.files;
+            
+            showToast("Image pasted from clipboard!");
+            e.preventDefault();
+            return;
+        }
+    }
+}

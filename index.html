@@ -653,6 +653,44 @@
                 font-size: 0.7rem !important;
             }
         }
+
+        /* --- ADMIN MOBILE NAV --- */
+        #admin-mobile-nav { display: none; }
+        @media (max-width: 650px) {
+            #admin-mobile-nav {
+                display: flex;
+                position: fixed;
+                bottom: 0; left: 0; width: 100%;
+                background: #fdfbf7; /* Paper color */
+                border-top: 3px solid #000;
+                padding: 8px 0;
+                z-index: 9999;
+                justify-content: space-around;
+                box-shadow: 0 -5px 15px rgba(0,0,0,0.1);
+            }
+            #admin-mobile-nav.hidden { display: none !important; }
+            
+            .admin-nav-item {
+                text-align: center; font-family: 'Patrick Hand', cursive; font-size: 0.9rem; color: #2d3436; cursor: pointer; flex: 1;
+            }
+            .admin-nav-item i { display: block; font-size: 1.3rem; margin-bottom: 2px; }
+            .admin-nav-item:active { transform: scale(0.95); color: #000; }
+        }
+
+        /* JUMPSCARE */
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
     </style>
 </head>
 <body>
@@ -672,6 +710,19 @@
         <div id="check-enrolled-btn" onclick="openClassList()" style="background: #0984e3; color: #fff; padding: 10px 15px; border: 2px solid #000; transform: rotate(-2deg); cursor: pointer; box-shadow: 3px 3px 0 rgba(0,0,0,0.2); font-size: 1.2rem; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.1) rotate(0deg)'" onmouseout="this.style.transform='scale(1) rotate(-2deg)'">
             <i class="fas fa-clipboard-list"></i> Check Enrolled/Not Enrolled
         </div>
+    </div>
+
+    <!-- ADMIN MOBILE NAVIGATION (Hidden by default) -->
+    <div id="admin-mobile-nav" class="hidden">
+        <div class="admin-nav-item" onclick="fetchStudents(); showToast('List refreshed!')"><i class="fas fa-sync-alt"></i> Refresh</div>
+        <div class="admin-nav-item" onclick="openPortalWindow()"><i class="fas fa-globe"></i> Portal</div>
+        <div class="admin-nav-item" onclick="returnToAdminChoice()"><i class="fas fa-undo"></i> Menu</div>
+        <div class="admin-nav-item" onclick="logout()" style="color: #d63031;"><i class="fas fa-sign-out-alt"></i> Exit</div>
+    </div>
+
+    <!-- JUMPSCARE OVERLAY -->
+    <div id="jumpscare-overlay" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 100000; display: flex; justify-content: center; align-items: center; pointer-events: none;">
+        <img src="pat.png" style="width: 100%; height: 100%; object-fit: contain; animation: shake 0.5s infinite;">
     </div>
 
     <div id="toast-container"></div>
