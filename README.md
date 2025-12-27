@@ -1,6 +1,6 @@
 # 📓 The Wimpy Credentials Book (Sistema ni JV)
 
-![Project Logo](logo.png)
+![Project Logo](assets/images/logo.png)
 
 ![Project Status](https://img.shields.io/badge/Status-Active-success?style=for-the-badge)
 ![Tech Stack](https://img.shields.io/badge/Stack-HTML%20%7C%20JS%20%7C%20Supabase-blue?style=for-the-badge)
@@ -62,11 +62,11 @@ Diverging from sterile, corporate interfaces, this project adopts a **hand-drawn
 
 | **Login Screen** | **Digital Binder** |
 |:---:|:---:|
-| <img src="screenshots/login.png" alt="Login" width="400"> | <img src="screenshots/dashboard.png" alt="Dashboard" width="400"> |
+| <img src="assets/screenshots/login.png" alt="Login" width="400"> | <img src="assets/screenshots/dashboard.png" alt="Dashboard" width="400"> |
 
 | **Admin Panel** | **Mobile View** |
 |:---:|:---:|
-| <img src="screenshots/admin.png" alt="Admin" width="400"> | <img src="screenshots/mobile.png" alt="Mobile" width="400"> |
+| <img src="assets/screenshots/admin.png" alt="Admin" width="400"> | <img src="assets/screenshots/mobile.png" alt="Mobile" width="400"> |
 
 ---
 
