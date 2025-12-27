@@ -159,6 +159,11 @@ function loadLandingPageContent() {
             this.innerHTML = type === 'password' ? '<i class="fas fa-eye-slash"></i>' : '<i class="fas fa-eye"></i>'; 
         });
     }
+
+    // Set initial text for toggleAuth based on isLoginMode
+    if (toggleAuth && isLoginMode) {
+        toggleAuth.innerHTML = "Magpapalista? <b>Come here mga kosa click this</b> (Register Here)";
+    }
 }
 
 if (document.readyState === 'loading') {
@@ -217,7 +222,7 @@ toggleAuth.addEventListener('click', () => {
             keepLoggedInContainer.classList.remove('hidden');
             keepLoggedInContainer.style.display = 'flex'; 
         }
-        toggleAuth.innerHTML = "Magpapalista? <b>Come here mga kosa click this</b>";
+        toggleAuth.innerHTML = "Magpapalista? <b>Come here mga kosa click this</b> (Register Here)";
     } else {
         submitBtn.innerText = 'SIGN UP';
         nameInput.classList.remove('hidden');
@@ -575,107 +580,124 @@ function openPortalWindow() {
 
 // --- OTHER FEATURES ---
 async function fetchMembers() {
-    // 1. Fetch Students
-    const { data: students, error } = await supabaseClient.from('students').select('id, name, avatar_url, sr_code, role, enrollment_status');
-    if (error) return;
+    const refreshIcon = document.getElementById('classListRefreshIcon');
+    if (refreshIcon) {
+        refreshIcon.classList.add('spin-animation');
+    }
 
-    // 2. Fetch Statuses
-    const { data: statuses } = await supabaseClient.from('user_statuses').select('user_id, status');
-    
-    // Create a lookup map for statuses
-    const statusMap = {};
-    if (statuses) statuses.forEach(s => statusMap[s.user_id] = s.status);
-
-    // --- ADMIN SECTION ---
-    const admins = students.filter(s => s.sr_code === 'ADMIN' || s.role === 'admin');
-    const adminList = document.getElementById('adminList');
-    const adminSection = document.getElementById('adminSection');
-
-    if (adminList && adminSection) {
-        adminList.innerHTML = '';
-        if (admins.length > 0) {
-            adminSection.classList.remove('hidden');
-            admins.forEach(admin => {
-                const tag = document.createElement('div');
-                tag.className = 'member-tag';
-                tag.style.cssText = 'cursor: pointer; border-color: #d63031; background: #fff0f0;';
-                tag.onclick = () => showPublicProfile(admin.name, admin.avatar_url, "System Administrator");
-                
-                const safeAvatar = admin.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(admin.name)}&background=random`;
-                
-                tag.innerHTML = `
-                    <img src="${safeAvatar}" style="width:24px; height:24px; border-radius:50%; object-fit:cover; border:1px solid #d63031; flex-shrink: 0;">
-                    <span style="font-weight:bold; color: #d63031;">${admin.name}</span>
-                `;
-                adminList.appendChild(tag);
-            });
-        } else {
-            adminSection.classList.add('hidden');
+    try {
+        // 1. Fetch Students
+        const { data: students, error } = await supabaseClient.from('students').select('id, name, avatar_url, sr_code, role, enrollment_status');
+        if (error) {
+            console.error("Error fetching students:", error);
+            return;
         }
-    }
 
-    publicMemberList.innerHTML = '';
-    
-    // Filter valid members first (Exclude Admin/Principal)
-    const validMembers = students.filter(s => s.sr_code !== 'ADMIN' && s.role !== 'admin' && s.name !== 'Principal User' && !s.name.includes('Admin'));
-    
-    // Update Badge with Animation
-    const badge = document.getElementById('memberCountBadge');
-    if(badge) {
-        badge.innerText = validMembers.length;
-        badge.classList.remove('pop');
-        void badge.offsetWidth; // Trigger reflow to restart animation
-        badge.classList.add('pop');
-    }
-
-    if (validMembers.length === 0) {
-        publicMemberList.innerHTML = '<span style="font-style:italic">No members yet...</span>';
-        return;
-    }
-    validMembers.forEach(student => {
-        const userStatus = statusMap[student.id] || 'Member';
-
-        const tag = document.createElement('div');
-        tag.className = 'member-tag';
-        // Use flex row layout for the card content
-        tag.style.cssText = 'cursor: pointer;';
-        tag.onclick = () => showPublicProfile(student.name, student.avatar_url, userStatus);
+        // 2. Fetch Statuses
+        const { data: statuses } = await supabaseClient.from('user_statuses').select('user_id, status');
         
-        const safeAvatar = student.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random`;
+        // Create a lookup map for statuses
+        const statusMap = {};
+        if (statuses) statuses.forEach(s => statusMap[s.user_id] = s.status);
+
+        // --- ADMIN SECTION ---
+        const admins = students.filter(s => s.sr_code === 'ADMIN' || s.role === 'admin');
+        const adminList = document.getElementById('adminList');
+        const adminSection = document.getElementById('adminSection');
+
+        if (adminList && adminSection) {
+            adminList.innerHTML = '';
+            if (admins.length > 0) {
+                adminSection.classList.remove('hidden');
+                admins.forEach(admin => {
+                    const tag = document.createElement('div');
+                    tag.className = 'member-tag';
+                    tag.style.cssText = 'cursor: pointer; border-color: #d63031; background: #fff0f0;';
+                    tag.onclick = () => showPublicProfile(admin.name, admin.avatar_url, "System Administrator");
+                    
+                    const safeAvatar = admin.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(admin.name)}&background=random`;
+                    
+                    tag.innerHTML = `
+                        <img src="${safeAvatar}" style="width:24px; height:24px; border-radius:50%; object-fit:cover; border:1px solid #d63031; flex-shrink: 0;">
+                        <span style="font-weight:bold; color: #d63031;">${admin.name}</span>
+                    `;
+                    adminList.appendChild(tag);
+                });
+            } else {
+                adminSection.classList.add('hidden');
+            }
+        }
+
+        const publicMemberList = document.getElementById('publicMemberList');
+        if (publicMemberList) {
+            publicMemberList.innerHTML = '';
         
-        tag.innerHTML = `
-            <img src="${safeAvatar}" style="width:24px; height:24px; border-radius:50%; object-fit:cover; border:1px solid #333; flex-shrink: 0;">
-            <span style="font-weight:bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${student.name}</span>
-        `;
-        publicMemberList.appendChild(tag);
-    });
+            // Filter valid members first (Exclude Admin/Principal)
+            const validMembers = students.filter(s => s.sr_code !== 'ADMIN' && s.role !== 'admin' && s.name !== 'Principal User' && !s.name.includes('Admin'));
+            
+            // Update Badge with Animation
+            const badge = document.getElementById('memberCountBadge');
+            if(badge) {
+                badge.innerText = validMembers.length;
+                badge.classList.remove('pop');
+                void badge.offsetWidth; // Trigger reflow to restart animation
+                badge.classList.add('pop');
+            }
 
-    // --- POPULATE ENROLLMENT BOARD (Right Side) ---
-    const enrolledList = document.getElementById('enrolled-list');
-    const notEnrolledList = document.getElementById('not-enrolled-list');
+            if (validMembers.length === 0) {
+                publicMemberList.innerHTML = '<span style="font-style:italic">No members yet...</span>';
+            } else {
+                validMembers.forEach(student => {
+                    const userStatus = statusMap[student.id] || 'Member';
 
-    if (enrolledList && notEnrolledList) {
-        const enrolled = students.filter(s => s.enrollment_status === 'Enrolled');
-        const notEnrolled = students.filter(s => s.enrollment_status !== 'Enrolled' && s.sr_code !== 'ADMIN' && s.role !== 'admin');
+                    const tag = document.createElement('div');
+                    tag.className = 'member-tag';
+                    // Use flex row layout for the card content
+                    tag.style.cssText = 'cursor: pointer;';
+                    tag.onclick = () => showPublicProfile(student.name, student.avatar_url, userStatus);
+                    
+                    const safeAvatar = student.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random`;
+                    
+                    tag.innerHTML = `
+                        <img src="${safeAvatar}" style="width:24px; height:24px; border-radius:50%; object-fit:cover; border:1px solid #333; flex-shrink: 0;">
+                        <span style="font-weight:bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${student.name}</span>
+                    `;
+                    publicMemberList.appendChild(tag);
+                });
+            }
+        }
 
-        // Update Counts
-        const countIn = document.getElementById('count-in');
-        const countOut = document.getElementById('count-out');
-        if(countIn) countIn.innerText = enrolled.length;
-        if(countOut) countOut.innerText = notEnrolled.length;
+        // --- POPULATE ENROLLMENT BOARD (Right Side) ---
+        const enrolledList = document.getElementById('enrolled-list');
+        const notEnrolledList = document.getElementById('not-enrolled-list');
 
-        const generateTag = (s) => {
-             const safeAvatar = s.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=random`;
-             return `
-                <div class="member-tag" style="cursor: default;">
-                    <img src="${safeAvatar}" style="width:24px; height:24px; border-radius:50%; object-fit:cover; border:1px solid #333; flex-shrink: 0;">
-                    <span style="font-weight:bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">${s.name}</span>
-                </div>
-             `;
-        };
+        if (enrolledList && notEnrolledList) {
+            const enrolled = students.filter(s => s.enrollment_status === 'Enrolled');
+            const notEnrolled = students.filter(s => s.enrollment_status !== 'Enrolled' && s.sr_code !== 'ADMIN' && s.role !== 'admin');
 
-        enrolledList.innerHTML = enrolled.length ? enrolled.map(generateTag).join('') : '<div style="width:100%; text-align:center; color:#666;">None yet</div>';
-        notEnrolledList.innerHTML = notEnrolled.length ? notEnrolled.map(generateTag).join('') : '<div style="width:100%; text-align:center; color:#666;">Everyone is in!</div>';
+            // Update Counts
+            const countIn = document.getElementById('count-in');
+            const countOut = document.getElementById('count-out');
+            if(countIn) countIn.innerText = enrolled.length;
+            if(countOut) countOut.innerText = notEnrolled.length;
+
+            const generateTag = (s) => {
+                 const safeAvatar = s.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=random`;
+                 return `
+                    <div class="member-tag" style="cursor: default;">
+                        <img src="${safeAvatar}" style="width:24px; height:24px; border-radius:50%; object-fit:cover; border:1px solid #333; flex-shrink: 0;">
+                        <span style="font-weight:bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">${s.name}</span>
+                    </div>
+                 `;
+            };
+
+            enrolledList.innerHTML = enrolled.length ? enrolled.map(generateTag).join('') : '<div style="width:100%; text-align:center; color:#666;">None yet</div>';
+            notEnrolledList.innerHTML = notEnrolled.length ? notEnrolled.map(generateTag).join('') : '<div style="width:100%; text-align:center; color:#666;">Everyone is in!</div>';
+        }
+    } finally {
+        if (refreshIcon) {
+            refreshIcon.classList.remove('spin-animation');
+        }
     }
 }
 
@@ -773,7 +795,7 @@ async function fetchNotes() {
     let isAdmin = false;
     if (storedUser) {
         const u = JSON.parse(storedUser);
-        if (u.sr_code === 'ADMIN') isAdmin = true;
+        if (u.sr_code === 'ADMIN' || u.role === 'admin') isAdmin = true;
     }
 
     noteLayer.innerHTML = '';
@@ -802,6 +824,7 @@ async function fetchNotes() {
             btn.className = 'delete-note-btn';
             btn.innerHTML = '<i class="fas fa-times"></i>';
             btn.title = "Delete Note";
+            btn.style.display = 'flex';
             btn.style.width = '20px'; // Override global button styles
             btn.style.padding = '0';
             btn.style.marginTop = '0';
@@ -992,6 +1015,18 @@ async function updateNotePosition(id, x, y) {
 // --- FREEDOM WALL MODAL (Landing Page) ---
 window.openFreedomWall = function() {
     document.getElementById('freedomWallModal').classList.remove('hidden');
+    
+    // Check for Admin to show controls
+    const storedUser = localStorage.getItem('wimpy_user') || sessionStorage.getItem('wimpy_user');
+    if (storedUser) {
+        const u = JSON.parse(storedUser);
+        if (u.sr_code === 'ADMIN' || u.role === 'admin') {
+            const controls = document.getElementById('fw-admin-controls');
+            if(controls) controls.classList.remove('hidden');
+        }
+    }
+
+    fetchNotes(); // Refresh notes when opening
     // Auto-focus the input for instant accessibility
     setTimeout(() => {
         const input = document.getElementById('fw-landing-input');
@@ -1123,6 +1158,8 @@ function showWelcomeNote() {
         <div style="text-align: left; background: #f9f9f9; border: 2px dashed #bbb; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
             <p style="font-weight: bold; margin: 0 0 10px 0; border-bottom: 2px solid #ddd; padding-bottom: 5px;"><i class="fas fa-edit"></i> What's New in this Update:</p>
             <ul style="padding-left: 20px; margin: 0; list-style-type: none; font-size: 1rem; line-height: 1.6;">
+                <li><i class="fas fa-paper-plane"></i> <b>Message Anyone:</b> New floating notepad button to chat with any classmate, even if they're offline!</li>
+                <li><i class="fas fa-mobile-alt"></i> <b>Mobile Optimization:</b> Reorganized header layout to prevent overlapping on phone screens.</li>
                 <li><i class="fas fa-camera-retro"></i> <b>Memories Gallery:</b> New photo gallery added to the login page!</li>
                 <li><i class="fas fa-question-circle"></i> <b>Help Guide:</b> Added a user guide tab inside the binder.</li>
                 <li><i class="fas fa-filter"></i> <b>Smart Filters:</b> Gallery photos no longer clutter your reviewer files.</li>
@@ -1256,7 +1293,13 @@ async function fetchLandingGallery() {
     let isAdmin = false;
     if (storedUser) {
         const u = JSON.parse(storedUser);
-        if (u.sr_code === 'ADMIN') isAdmin = true;
+        if (u.sr_code === 'ADMIN' || u.role === 'admin') isAdmin = true;
+    }
+
+    const trigger = document.getElementById('admin-gallery-add-trigger');
+    if (trigger) {
+        if (isAdmin) trigger.classList.remove('hidden');
+        else trigger.classList.add('hidden');
     }
 
     galleryItems = data; // Store for lightbox
@@ -1731,5 +1774,84 @@ window.toggleAdminList = function() {
     if (list) list.classList.toggle('hidden');
     if (icon) {
         icon.style.transform = list.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
+    }
+}
+
+// --- ADMIN FREEDOM WALL TOOLS ---
+window.autoArrangeNotes = async function() {
+    const { data, error } = await supabaseClient.from('notes').select('id');
+    if (error || !data) return;
+    
+    showToast("Arranging...");
+    const cols = 5;
+    const spacingX = 18;
+    const spacingY = 25;
+    
+    await Promise.all(data.map((note, i) => 
+        supabaseClient.from('notes').update({ 
+            x_pos: (i % cols) * spacingX + 5, 
+            y_pos: Math.floor(i / cols) * spacingY + 5, 
+            rotation: 0 
+        }).eq('id', note.id)
+    ));
+    
+    fetchNotes();
+    showToast("Notes aligned!");
+}
+
+window.scatterNotes = async function() {
+    const { data, error } = await supabaseClient.from('notes').select('id');
+    if (error || !data) return;
+    
+    showToast("Scattering...");
+    await Promise.all(data.map(note => 
+        supabaseClient.from('notes').update({ 
+            x_pos: Math.floor(Math.random() * 80) + 5, 
+            y_pos: Math.floor(Math.random() * 80) + 5,
+            rotation: Math.floor(Math.random() * 40) - 20
+        }).eq('id', note.id)
+    ));
+    
+    fetchNotes();
+    showToast("Notes scattered!");
+}
+
+
+// --- INSTANT GALLERY UPLOAD (ADMIN) ---
+window.handleInstantGalleryUpload = async function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const caption = prompt("Enter a caption for this photo:", "New Memory");
+    if (caption === null) return; // User cancelled
+
+    showToast("Uploading photo...");
+    
+    try {
+        const fileName = `gallery_${Date.now()}_${file.name.replace(/\s/g, '_')}`;
+        const { error: uploadError } = await supabaseClient.storage
+            .from('class-resources')
+            .upload(fileName, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabaseClient.storage
+            .from('class-resources')
+            .getPublicUrl(fileName);
+
+        const { error: dbError } = await supabaseClient.from('shared_files').insert([{
+            title: caption || 'Untitled',
+            subject: 'LandingGallery',
+            file_url: urlData.publicUrl,
+            file_type: file.type
+        }]);
+
+        if (dbError) throw dbError;
+
+        showToast('Photo added to Memories!');
+        fetchLandingGallery();
+    } catch (err) {
+        console.error(err);
+        showToast('Upload failed: ' + err.message, 'error');
     }
 }

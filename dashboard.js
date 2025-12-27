@@ -110,7 +110,7 @@ function updateEnrollmentBadge() {
     statusEl.classList.remove('rubber-stamp');
     void statusEl.offsetWidth; // Trigger reflow
 
-    statusEl.style.display = 'inline-block';
+    statusEl.style.display = 'block';
     statusEl.classList.add('rubber-stamp');
     
     // Stamp Styling (Ink Look)
@@ -1129,7 +1129,145 @@ window.submitRequest = async function() {
 // --- FREEDOM WALL LOGIC (Binder Side) ---
 window.openFreedomWallModal = function() {
     document.getElementById('freedomWallModal').classList.remove('hidden');
-    setTimeout(() => document.getElementById('fw-content').focus(), 100);
+    if (isAdmin) {
+        const controls = document.getElementById('fw-admin-controls');
+        if(controls) controls.classList.remove('hidden');
+    }
+
+    fetchNotes();
+    setTimeout(() => {
+        const input = document.getElementById('fw-content');
+        if(input) input.focus();
+    }, 100);
+}
+
+async function fetchNotes() {
+    const noteLayer = document.getElementById('freedom-wall-board');
+    if(!noteLayer) return;
+
+    const { data, error } = await db.from('notes').select('*');
+    if (error) return;
+    
+    noteLayer.innerHTML = '';
+    data.forEach(note => {
+        const div = document.createElement('div');
+        div.className = 'sticky-note';
+        div.id = `note-${note.id}`;
+        div.style.left = note.x_pos + '%';
+        div.style.top = note.y_pos + '%';
+        div.style.transform = `rotate(${note.rotation}deg)`;
+        if (note.color) div.classList.add(note.color);
+
+        const p = document.createElement('p');
+        p.innerText = note.content;
+        p.style.margin = '0';
+        p.style.pointerEvents = 'none';
+        div.appendChild(p);
+
+        if (isAdmin) {
+            const btn = document.createElement('button');
+            btn.className = 'delete-note-btn';
+            btn.innerHTML = '<i class="fas fa-times"></i>';
+            btn.onmousedown = (e) => e.stopPropagation(); 
+            btn.onclick = () => deleteNote(note.id);
+            div.appendChild(btn);
+        }
+
+        const likeBtn = document.createElement('div');
+        likeBtn.className = 'like-sticker';
+        likeBtn.innerHTML = `<i class="fas fa-heart"></i> <span class="like-count">${note.likes || 0}</span>`;
+        likeBtn.onmousedown = (e) => e.stopPropagation();
+        div.appendChild(likeBtn);
+
+        makeDraggable(div, note.id);
+        noteLayer.appendChild(div);
+    });
+}
+
+window.deleteNote = async function(id) {
+    if(!await showWimpyConfirm("Tear off this note?")) return;
+    const { error } = await db.from('notes').delete().eq('id', id);
+    if(error) showToast("Could not delete note.");
+    else {
+        showToast("Note removed.");
+        fetchNotes();
+    }
+}
+
+function makeDraggable(element, noteId) {
+    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    element.onmousedown = dragMouseDown;
+    element.ontouchstart = dragMouseDown;
+    
+    function dragMouseDown(e) { 
+        e = e || window.event; 
+        element.style.zIndex = 1000;
+        if (e.type !== 'touchstart') e.preventDefault(); 
+        pos3 = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX; 
+        pos4 = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY; 
+        document.onmouseup = closeDragElement; 
+        document.onmousemove = elementDrag; 
+        document.ontouchend = closeDragElement; 
+        document.ontouchmove = elementDrag; 
+    }
+    
+    function elementDrag(e) { 
+        e = e || window.event; 
+        let clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX; 
+        let clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY; 
+        pos1 = pos3 - clientX; pos2 = pos4 - clientY; pos3 = clientX; pos4 = clientY; 
+        element.style.top = (element.offsetTop - pos2) + "px"; 
+        element.style.left = (element.offsetLeft - pos1) + "px"; 
+    }
+    
+    function closeDragElement() { 
+        element.style.zIndex = 'auto'; 
+        document.onmouseup = null; document.onmousemove = null; 
+        document.ontouchend = null; document.ontouchmove = null; 
+        const parent = element.parentElement;
+        const xPercent = (element.offsetLeft / parent.offsetWidth) * 100; 
+        const yPercent = (element.offsetTop / parent.offsetHeight) * 100; 
+        db.from('notes').update({ x_pos: Math.max(0, Math.min(xPercent, 95)), y_pos: Math.max(0, Math.min(yPercent, 95)) }).eq('id', noteId); 
+    }
+}
+
+// --- ADMIN FREEDOM WALL TOOLS ---
+window.autoArrangeNotes = async function() {
+    const { data, error } = await db.from('notes').select('id');
+    if (error || !data) return;
+    
+    showToast("Arranging...");
+    const cols = 5;
+    const spacingX = 18;
+    const spacingY = 25;
+    
+    await Promise.all(data.map((note, i) => 
+        db.from('notes').update({ 
+            x_pos: (i % cols) * spacingX + 5, 
+            y_pos: Math.floor(i / cols) * spacingY + 5, 
+            rotation: 0 
+        }).eq('id', note.id)
+    ));
+    
+    fetchNotes();
+    showToast("Notes aligned!");
+}
+
+window.scatterNotes = async function() {
+    const { data, error } = await db.from('notes').select('id');
+    if (error || !data) return;
+    
+    showToast("Scattering...");
+    await Promise.all(data.map(note => 
+        db.from('notes').update({ 
+            x_pos: Math.floor(Math.random() * 80) + 5, 
+            y_pos: Math.floor(Math.random() * 80) + 5,
+            rotation: Math.floor(Math.random() * 40) - 20
+        }).eq('id', note.id)
+    ));
+    
+    fetchNotes();
+    showToast("Notes scattered!");
 }
 
 // --- COLOR SELECTION (Binder) ---
@@ -1140,7 +1278,7 @@ window.selectColor = function(el, color) {
 }
 
 window.postFreedomWallNote = async function() {
-    const text = document.getElementById('fw-content').value.trim();
+    const text = document.getElementById('fw-content').value;
     if (!text) return showToast('Write something first!');
 
     // Random Position & Style
@@ -1156,6 +1294,7 @@ window.postFreedomWallNote = async function() {
         showToast('Note stuck to the wall!');
         document.getElementById('freedomWallModal').classList.add('hidden');
         document.getElementById('fw-content').value = '';
+        fetchNotes();
     }
 }
 
@@ -1199,6 +1338,8 @@ window.showWelcomeNote = function() {
         <div style="text-align: left; background: #f9f9f9; border: 2px dashed #bbb; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
             <p style="font-weight: bold; margin: 0 0 10px 0; border-bottom: 2px solid #ddd; padding-bottom: 5px;"><i class="fas fa-edit"></i> What's New in this Update:</p>
             <ul style="padding-left: 20px; margin: 0; list-style-type: none; font-size: 1rem; line-height: 1.6;">
+                <li><i class="fas fa-paper-plane"></i> <b>Message Anyone:</b> New floating notepad button to chat with any classmate, even if they're offline!</li>
+                <li><i class="fas fa-mobile-alt"></i> <b>Mobile Optimization:</b> Reorganized header layout to prevent overlapping on phone screens.</li>
                 <li><i class="fas fa-camera-retro"></i> <b>Memories Gallery:</b> New photo gallery added to the login page!</li>
                 <li><i class="fas fa-question-circle"></i> <b>Help Guide:</b> Added a user guide tab inside the binder.</li>
                 <li><i class="fas fa-filter"></i> <b>Smart Filters:</b> Gallery photos no longer clutter your reviewer files.</li>
@@ -1457,6 +1598,60 @@ window.initMessaging = async function() {
         .subscribe();
         
     checkUnreadCount();
+}
+
+// --- NEW CHAT / RECIPIENT LOGIC ---
+let allClassmates = [];
+
+window.openNewChatModal = async function() {
+    const modal = document.getElementById('newChatModal');
+    if(!modal) return;
+
+    modal.classList.remove('hidden');
+    const list = document.getElementById('recipient-list');
+    list.innerHTML = '<div class="loader" style="font-size:1rem;">Finding classmates...</div>';
+
+    // Fetch all students except self
+    const { data, error } = await db
+        .from('students')
+        .select('id, name, sr_code, avatar_url')
+        .neq('id', user.id)
+        .order('name', { ascending: true });
+
+    if (error) {
+        list.innerHTML = '<p>Error loading classmates.</p>';
+        return;
+    }
+
+    allClassmates = data;
+    renderRecipientList(allClassmates);
+    setTimeout(() => document.getElementById('recipient-search').focus(), 100);
+}
+
+function renderRecipientList(students) {
+    const list = document.getElementById('recipient-list');
+    if (!students || students.length === 0) {
+        list.innerHTML = '<p style="text-align:center; margin-top:20px;">No one found.</p>';
+        return;
+    }
+
+    list.innerHTML = students.map(s => {
+        const avatar = s.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=random`;
+        return `
+            <div onclick="openChatModal('${s.id}', '${s.name}'); document.getElementById('newChatModal').classList.add('hidden');" 
+                 style="display:flex; align-items:center; gap:10px; padding:10px; background:#fff; border:2px solid #000; border-radius:10px; cursor:pointer; transition:transform 0.1s;"
+                 onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+                <img src="${avatar}" style="width:35px; height:35px; border-radius:50%; border:1px solid #000; object-fit:cover;">
+                <div style="font-weight:bold;">${s.name} <small style="color:#666; font-weight:normal;">(${s.sr_code})</small></div>
+            </div>
+        `;
+    }).join('');
+}
+
+window.filterRecipients = function() {
+    const q = document.getElementById('recipient-search').value.toLowerCase();
+    const filtered = allClassmates.filter(s => s.name.toLowerCase().includes(q) || s.sr_code.toLowerCase().includes(q));
+    renderRecipientList(filtered);
 }
 
 window.openChatModal = async function(partnerId, partnerName) {

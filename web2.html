@@ -649,6 +649,66 @@
         .chat-bubble.me { align-self: flex-end; background: #0984e3; color: #fff; border-bottom-right-radius: 2px; }
         .chat-bubble.them { align-self: flex-start; background: #dfe6e9; color: #000; border-bottom-left-radius: 2px; }
         .chat-input-area { display: flex; gap: 10px; }
+
+        /* --- FREEDOM WALL BOARD STYLES --- */
+        #freedom-wall-board {
+            position: relative;
+            width: 100%;
+            background-color: #fff;
+            background-image: radial-gradient(#bdc3c7 1px, transparent 1px);
+            background-size: 20px 20px;
+            border: 2px solid #000;
+            border-radius: 5px;
+            overflow: hidden;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
+        }
+        .sticky-note {
+            position: absolute;
+            width: 150px;
+            padding: 15px;
+            font-family: 'Patrick Hand', cursive;
+            font-size: 1.1rem;
+            background: #fff;
+            border: 2px solid #000;
+            box-shadow: 4px 4px 0 rgba(0,0,0,0.1);
+            cursor: grab;
+            word-wrap: break-word;
+        }
+        .sticky-note.lined { background-image: repeating-linear-gradient(transparent, transparent 24px, #a4b0be 25px); line-height: 25px; }
+        .sticky-note.yellow { background-color: #fff740; }
+        .sticky-note.pink { background-color: #ff7eb9; }
+        .sticky-note.blue { background-color: #7afcff; }
+        .sticky-note.green { background-color: #98ff98; }
+        .delete-note-btn {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: #d63031;
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .like-sticker {
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            font-size: 0.9rem;
+            color: #b2bec3;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            background: rgba(255,255,255,0.8);
+            padding: 1px 5px;
+            border-radius: 10px;
+        }
     </style>
     <style>
         .sticky-time {
@@ -885,26 +945,47 @@
                 </div>
             </div>
 
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap;">
-                <!-- User Info (Avatar + Welcome Message) -->
+            <!-- REORGANIZED HEADER INFO -->
+            <style>
+                .profile-header-container {
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 20px;
+                    flex-wrap: wrap;
+                    margin-bottom: 25px;
+                }
+                .profile-text-stack {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 8px;
+                    min-width: 200px;
+                }
+                @media (max-width: 768px) {
+                    .profile-header-container { gap: 15px; }
+                    .profile-text-stack { gap: 12px; } /* More gap for mobile rotations */
+                }
+            </style>
+
+            <div class="profile-header-container">
+                <!-- Avatar & Inbox Group -->
                 <div style="display: flex; align-items: center; gap: 15px;">
                     <div style="position: relative;">
-                        <img id="userAvatarDisplay" style="width: 60px; height: 60px; border-radius: 50%; border: 2px solid #000; cursor: pointer; object-fit: cover;" title="Click to change profile picture">
-                        <div onclick="document.getElementById('userAvatarDisplay').click()" style="position: absolute; bottom: -2px; right: -5px; background: #2d3436; color: #fff; border: 2px solid #fff; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; box-shadow: 2px 2px 0 rgba(0,0,0,0.2); cursor: pointer;" title="Change Photo">
-                            <i class="fas fa-camera"></i>
-                        </div>
+                        <img id="userAvatarDisplay" style="width: 65px; height: 65px; border-radius: 50%; border: 2px solid #000; cursor: pointer; object-fit: cover;" title="Click to change profile picture">
+                        <div onclick="document.getElementById('userAvatarDisplay').click()" style="position: absolute; bottom: -2px; right: -5px; background: #2d3436; color: #fff; border: 2px solid #fff; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; box-shadow: 2px 2px 0 rgba(0,0,0,0.2); cursor: pointer;"><i class="fas fa-camera"></i></div>
                     </div>
-                    <!-- INBOX BUTTON -->
-                    <div onclick="openInboxModal()" style="position: relative; cursor: pointer; font-size: 1.8rem; color: #2d3436;" title="My Messages">
+                    <div onclick="openInboxModal()" style="position: relative; cursor: pointer; font-size: 2rem; color: #2d3436;" title="My Messages">
                         <i class="fas fa-envelope"></i>
                         <span id="msg-badge" style="position: absolute; top: -5px; right: -5px; background: #d63031; color: #fff; font-size: 0.8rem; font-weight: bold; padding: 2px 6px; border-radius: 50%; display: none;">0</span>
                     </div>
-                    <div>
-                        <div id="enrollment-badge" style="display:none; font-size: 0.8rem; font-weight:bold; padding: 2px 6px; border-radius: 4px; margin-bottom: 2px;"></div>
-                        <p id="welcome-msg" style="background: yellow; display: inline-block; transform: rotate(-1deg); padding: 0 5px; margin: 0;">Loading User...</p>
-                        <div onclick="editUserStatus()" style="cursor: pointer; margin-top: 5px; transform: rotate(1deg);" title="Click to edit status">
-                            <small style="font-family: 'Patrick Hand'; color: #2f3542; border-bottom: 1px dashed #a4b0be;"><span id="user-status-text">Certified Member</span> <i class="fas fa-pencil-alt" style="font-size: 0.8rem;"></i></small>
-                        </div>
+                </div>
+
+                <!-- Text Info Stack -->
+                <div class="profile-text-stack">
+                    <div id="enrollment-badge" style="display:none; font-size: 0.85rem; font-weight:bold; padding: 4px 10px; border-radius: 4px; white-space: nowrap;"></div>
+                    <p id="welcome-msg" style="background: yellow; display: inline-block; transform: rotate(-1.5deg); padding: 2px 8px; margin: 0; font-size: 1.2rem; border: 1px solid rgba(0,0,0,0.1);">Loading User...</p>
+                    <div onclick="editUserStatus()" style="cursor: pointer; transform: rotate(1deg); padding-left: 5px;" title="Edit status">
+                        <small style="font-family: 'Patrick Hand'; color: #2f3542; border-bottom: 1px dashed #a4b0be; font-size: 1.1rem;"><span id="user-status-text">Certified Member</span> <i class="fas fa-pencil-alt" style="font-size: 0.8rem; margin-left: 5px;"></i></small>
                     </div>
                 </div>
             </div>
@@ -1209,17 +1290,25 @@
                 <div class="grid-container">
                     <div class="class-card" style="transform: rotate(1deg);">
                         <h3><i class="fas fa-book"></i> The Binder</h3>
-                        <p>Welcome to your digital binder! Use the <b>colored tabs</b> on the left to navigate between your Schedule, Homework, and Reviewers.</p>
+                        <p>Welcome to your digital binder! Use the <b>colored tabs</b> on the left (or top on mobile) to navigate between your Schedule, Homework, and Reviewers.</p>
                     </div>
                     <div class="class-card" style="transform: rotate(-1deg);">
-                        <h3><i class="fas fa-folder-open"></i> Reviewers & Files</h3>
-                        <p>Go to the <b>"Links"</b> tab to find downloadable files. You can preview them before downloading! Use the search bar to find specific subjects.</p>
+                        <h3><i class="fas fa-paper-plane"></i> Messaging</h3>
+                        <p>Use the floating <b>"MESSAGE SOMEONE"</b> button to chat with classmates. You can see who's online in the sidebar and check your inbox for new notes!</p>
+                    </div>
+                    <div class="class-card" style="transform: rotate(1.5deg);">
+                        <h3><i class="fas fa-eye"></i> File Previewer</h3>
+                        <p>No need to download everything! Click on any file in the <b>Links</b> tab to preview PDFs and images instantly before saving them.</p>
+                    </div>
+                    <div class="class-card" style="transform: rotate(-2deg);">
+                        <h3><i class="fas fa-magic"></i> Wallpaper Gen</h3>
+                        <p>Create custom schedules for your phone or desktop. Check the <b>Wallpaper</b> button in the Schedule tab for new Glassmorphism effects and custom backgrounds!</p>
                     </div>
                     <div class="class-card" style="transform: rotate(1deg);">
-                        <h3><i class="fas fa-camera-retro"></i> Memories</h3>
-                        <p>Check out the login page for our class photo gallery. If you have photos to add, send them to the Admin via the "Secret Request" box!</p>
+                        <h3><i class="fas fa-clock"></i> Live Tracker</h3>
+                        <p>The binder automatically tracks your current class. Look for the <b>"HAPPENING NOW"</b> card at the top of your schedule for quick access to links.</p>
                     </div>
-                    <div class="class-card" style="transform: rotate(-1deg);">
+                    <div class="class-card" style="transform: rotate(-1.5deg);">
                         <h3><i class="fas fa-user-secret"></i> Secret Requests</h3>
                         <p>Found a bug? Want to suggest a feature? Use the <b>"Secret Request"</b> card in the Links tab to send an anonymous note to the admin.</p>
                     </div>
@@ -1252,11 +1341,19 @@
 
     <!-- Freedom Wall Modal -->
     <div id="freedomWallModal" class="wimpy-modal-overlay hidden">
-        <div class="wimpy-modal-box">
-            <h2><i class="fas fa-pen-fancy"></i> Freedom Wall</h2>
-            <p>Write something for the landing page!</p>
-            <textarea id="fw-content" placeholder="Scribble here..." maxlength="50" style="width:100%; height:100px; font-family:'Patrick Hand'; font-size:1.5rem; padding:10px; border:2px solid #000; background: #fff;"></textarea>
-            
+        <div class="wimpy-modal-box" style="width: 95%; max-width: 1000px; height: 80vh; display: flex; flex-direction: column; padding: 20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <h2 style="margin:0;"><i class="fas fa-sticky-note"></i> Freedom Wall</h2>
+                <button onclick="document.getElementById('freedomWallModal').classList.add('hidden')" class="sketch-btn danger" style="width:auto; margin:0; padding: 5px 15px;">CLOSE</button>
+            </div>
+            <div id="freedom-wall-board" style="flex: 1; margin-bottom: 15px;">
+                <!-- Notes injected here -->
+            </div>
+            <!-- Admin Controls for Freedom Wall -->
+            <div id="fw-admin-controls" class="hidden" style="margin-bottom: 10px; display: flex; gap: 10px; justify-content: center;">
+                <button onclick="autoArrangeNotes()" class="sketch-btn" style="width: auto; background: #0984e3; color: #fff; font-size: 1rem; padding: 5px 15px;">AUTO ARRANGE</button>
+                <button onclick="scatterNotes()" class="sketch-btn" style="width: auto; background: #e67e22; color: #fff; font-size: 1rem; padding: 5px 15px;">SCATTER</button>
+            </div>
             <div style="margin-top: 10px; display:flex; gap:10px; justify-content:center; align-items:center;">
                 <div class="color-option selected" onclick="selectColor(this, 'white')" style="background:#fff;" title="Plain"></div>
                 <div class="color-option" onclick="selectColor(this, 'lined')" style="background: repeating-linear-gradient(transparent, transparent 4px, #a4b0be 5px); background-color: #fff;" title="Lined"></div>
@@ -1266,10 +1363,10 @@
                 <div class="color-option" onclick="selectColor(this, 'green')" style="background:#98ff98;" title="Green"></div>
                 <input type="hidden" id="fw-binder-color" value="white">
             </div>
-
-            <div style="margin-top:10px; display:flex; gap:10px;">
-                <button onclick="document.getElementById('freedomWallModal').classList.add('hidden')" class="sketch-btn danger">Cancel</button>
-                <button onclick="postFreedomWallNote()" class="sketch-btn" style="background:#000; color:#fff;">Stick It!</button>
+            <div style="margin-top: 15px; display: flex; gap: 10px; align-items: center; background: #f1f2f6; padding: 10px; border: 2px dashed #000; border-radius: 5px;">
+                <i class="fas fa-pencil-alt" style="font-size: 1.5rem;"></i>
+                <input type="text" id="fw-content" placeholder="Write on the wall..." maxlength="60" style="flex: 1; border: none; background: transparent; border-bottom: 2px solid #000; font-family: 'Patrick Hand'; font-size: 1.3rem; outline: none;" onkeydown="if(event.key === 'Enter') postFreedomWallNote()">
+                <button onclick="postFreedomWallNote()" class="sketch-btn" style="width: auto; margin: 0; background: #2d3436; color: #fff;">STICK IT</button>
             </div>
         </div>
     </div>
@@ -1283,6 +1380,62 @@
             </div>
             <div id="inbox-list" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
                 <!-- Conversations injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Message Button -->
+    <style>
+        .fab-message {
+            position: fixed;
+            bottom: 110px;
+            right: 30px;
+            background: #fff740;
+            border: 3px solid #000;
+            padding: 12px 20px;
+            font-family: 'Permanent Marker', cursive;
+            font-size: 1.1rem;
+            cursor: pointer;
+            z-index: 1000;
+            box-shadow: 8px 8px 0px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-radius: 5px;
+            transform: rotate(-2deg);
+            animation: buttonWiggle 3s infinite ease-in-out;
+            transition: all 0.2s ease;
+        }
+        .fab-message:hover {
+            transform: scale(1.1) rotate(0deg);
+            background: #000;
+            color: #fff;
+        }
+        @media (max-width: 768px) {
+            .fab-message {
+                bottom: 100px;
+                right: 20px;
+                padding: 10px 15px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+    <div class="fab-message" onclick="openNewChatModal()" title="Message Someone">
+        <i class="fas fa-paper-plane"></i>
+        <span>MESSAGE SOMEONE</span>
+    </div>
+
+    <!-- New Chat / Recipient Selection Modal -->
+    <div id="newChatModal" class="wimpy-modal-overlay hidden">
+        <div class="wimpy-modal-box" style="width: 95%; max-width: 400px; height: 70vh; display: flex; flex-direction: column;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom: 2px dashed #000; padding-bottom: 10px;">
+                <h2 style="margin:0;"><i class="fas fa-user-plus"></i> Send Note To...</h2>
+                <button onclick="document.getElementById('newChatModal').classList.add('hidden')" class="sketch-btn danger" style="width:auto; padding: 5px 10px;">X</button>
+            </div>
+            <input type="text" id="recipient-search" placeholder="🔍 Search classmate..." onkeyup="filterRecipients()" 
+                   style="border: 2px solid #000; border-radius: 5px; padding: 8px; margin-bottom: 15px; background: #fff;">
+            <div id="recipient-list" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
+                <!-- Classmates injected here -->
             </div>
         </div>
     </div>
@@ -1366,7 +1519,7 @@
     </div>
 
     <!-- SCRIPTS -->
-    <script src="dashboard.js?v=202405151500"></script> <!-- Update this version number on every deployment -->
+    <script src="dashboard.js?v=202405152300"></script> <!-- Update this version number on every deployment -->
 
     <!-- PREVIEWER FEATURE & FILE LOGIC (Added Inline) -->
     <script>
