@@ -1264,7 +1264,7 @@ window.showAdminTool = function(toolId, btnElement) {
     document.querySelectorAll('.filter-bar .sketch-btn').forEach(b => b.classList.remove('active-tool'));
 
     // Hide all admin forms
-    const forms = ['admin-schedule-form', 'admin-assignment-form', 'admin-event-form', 'admin-file-form', 'admin-email-form', 'admin-gallery-form', 'admin-storage-view', 'admin-promote-form', 'admin-revoke-form'];
+    const forms = ['admin-schedule-form', 'admin-assignment-form', 'admin-event-form', 'admin-file-form', 'admin-email-form', 'admin-message-manager', 'admin-gallery-form', 'admin-storage-view', 'admin-promote-form', 'admin-revoke-form'];
     let isAlreadyOpen = false;
     
     forms.forEach(id => {
@@ -1441,8 +1441,11 @@ let currentChatPartnerId = null;
 window.initMessaging = async function() {
     if (!user) return;
 
+    // Prevent duplicate subscriptions
+    if (window.msgSubscription) await db.removeChannel(window.msgSubscription);
+
     // Subscribe to incoming messages
-    db.channel('public:messages')
+    window.msgSubscription = db.channel('public:messages')
         .on('postgres_changes', { 
             event: 'INSERT', 
             schema: 'public', 
@@ -1535,11 +1538,29 @@ function handleIncomingMessage(msg) {
         container.scrollTop = container.scrollHeight;
         markMessagesAsRead(msg.sender_id);
     } else {
-        showToast(`New note received!`);
-        checkUnreadCount();
         // Play sound
         const audio = document.getElementById('notif-sound');
         if (audio) audio.play().catch(e => console.log("Audio blocked:", e));
+
+        checkUnreadCount();
+
+        // NEW: Instantly refresh inbox list if it is currently open
+        const inboxModal = document.getElementById('inboxModal');
+        if (inboxModal && !inboxModal.classList.contains('hidden')) {
+            refreshInboxList(false); // false = don't show loading spinner (seamless update)
+        }
+
+        // Interactive Toast (Click to Open Inbox)
+        const container = document.getElementById('toast-container');
+        if(container) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.style.cursor = 'pointer';
+            toast.innerHTML = `<b><i class="fas fa-envelope"></i> New Note!</b><br><span style="font-size:0.9rem">Click to read</span>`;
+            toast.onclick = () => { toast.remove(); openInboxModal(); };
+            container.appendChild(toast);
+            setTimeout(() => { if(toast.parentNode) toast.remove(); }, 5000);
+        }
     }
 }
 
@@ -1559,11 +1580,17 @@ async function markMessagesAsRead(senderId) {
 
 window.openInboxModal = async function() {
     const modal = document.getElementById('inboxModal');
-    const list = document.getElementById('inbox-list');
-    if(!modal || !list) return;
+    if(!modal) return;
 
     modal.classList.remove('hidden');
-    list.innerHTML = '<div class="loader" style="font-size:1rem;">Checking mail...</div>';
+    await refreshInboxList(true); // true = show loading spinner on first open
+}
+
+window.refreshInboxList = async function(showLoader = true) {
+    const list = document.getElementById('inbox-list');
+    if(!list) return;
+
+    if(showLoader) list.innerHTML = '<div class="loader" style="font-size:1rem;">Checking mail...</div>';
 
     if (!user) return;
 
@@ -1627,4 +1654,156 @@ window.openInboxModal = async function() {
             </div>
         `;
     }).join('');
+}
+
+// --- MESSAGE MANAGER (ADMIN) ---
+window.fetchAdminMessages = async function() {
+    const list = document.getElementById('admin-message-list');
+    if(!list) return;
+    
+    list.innerHTML = '<div class="loader" style="font-size:1rem;">Loading conversations...</div>';
+
+    // 1. Fetch Students Map
+    const { data: students, error: sError } = await db.from('students').select('id, name');
+    if(sError) { console.error(sError); return; }
+    
+    const studentMap = {};
+    students.forEach(s => studentMap[s.id] = s.name);
+
+    // 2. Fetch Messages
+    const { data: msgs, error } = await db
+        .from('messages')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(500); // Increased limit for better grouping
+
+    if (error) {
+        console.error(error);
+        list.innerHTML = '<p>Error loading messages.</p>';
+        return;
+    }
+
+    if (!msgs || msgs.length === 0) {
+        list.innerHTML = '<p style="text-align:center; color:#666;">No messages found.</p>';
+        return;
+    }
+
+    // 3. Group by Conversation
+    const conversations = {};
+    msgs.forEach(m => {
+        // Create a unique key for the pair (sorted IDs ensures A-B is same as B-A)
+        const key = [m.sender_id, m.receiver_id].sort().join('::');
+        
+        if (!conversations[key]) {
+            conversations[key] = {
+                lastMsg: m,
+                count: 0
+            };
+        }
+        conversations[key].count++;
+    });
+
+    // 4. Render List
+    list.innerHTML = Object.keys(conversations).map(key => {
+        const [u1, u2] = key.split('::');
+        const conv = conversations[key];
+        
+        const name1 = studentMap[u1] || 'Unknown';
+        const name2 = studentMap[u2] || 'Unknown';
+        const date = new Date(conv.lastMsg.created_at).toLocaleDateString();
+        const preview = conv.lastMsg.content.length > 30 ? conv.lastMsg.content.substring(0, 30) + '...' : conv.lastMsg.content;
+
+        return `
+            <div onclick="viewAdminConversation('${u1}', '${u2}')" 
+                 style="background:#fff; border:2px solid #000; padding:10px; margin-bottom:8px; border-radius:5px; cursor:pointer; transition:transform 0.1s; display:flex; justify-content:space-between; align-items:center;"
+                 onmouseover="this.style.transform='scale(1.01)'" onmouseout="this.style.transform='scale(1)'">
+                <div style="flex:1;">
+                    <div style="font-weight:bold; font-size:1.1rem;">${name1} <i class="fas fa-exchange-alt" style="font-size:0.8rem; color:#666;"></i> ${name2}</div>
+                    <div style="font-size:0.9rem; color:#555;">${preview}</div>
+                    <div style="font-size:0.8rem; color:#888;">${conv.count} messages • Last: ${date}</div>
+                </div>
+                <div style="font-size:1.2rem; color:#000;"><i class="fas fa-chevron-right"></i></div>
+            </div>
+        `;
+    }).join('');
+}
+
+window.viewAdminConversation = async function(id1, id2) {
+    const list = document.getElementById('admin-message-list');
+    list.innerHTML = '<div class="loader" style="font-size:1rem;">Loading chat history...</div>';
+
+    // Fetch names
+    const { data: students } = await db.from('students').select('id, name').in('id', [id1, id2]);
+    const nameMap = {};
+    if(students) students.forEach(s => nameMap[s.id] = s.name);
+    
+    const name1 = nameMap[id1] || 'Unknown';
+    const name2 = nameMap[id2] || 'Unknown';
+
+    // Fetch Messages
+    const { data: msgs, error } = await db
+        .from('messages')
+        .select('*')
+        .or(`and(sender_id.eq.${id1},receiver_id.eq.${id2}),and(sender_id.eq.${id2},receiver_id.eq.${id1})`)
+        .order('created_at', { ascending: true });
+
+    if (error) {
+        list.innerHTML = '<p>Error loading chat.</p><button onclick="fetchAdminMessages()" class="sketch-btn">Back</button>';
+        return;
+    }
+
+    const header = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:2px dashed #000; padding-bottom:10px;">
+            <button onclick="fetchAdminMessages()" class="sketch-btn" style="width:auto; padding:5px 10px; font-size:0.9rem;"><i class="fas fa-arrow-left"></i> Back</button>
+            <div style="font-weight:bold; font-size:1rem;">${name1} & ${name2}</div>
+            <button onclick="deleteConversation('${id1}', '${id2}')" class="sketch-btn danger" style="width:auto; padding:5px 10px; font-size:0.9rem;"><i class="fas fa-trash"></i> Delete All</button>
+        </div>
+    `;
+
+    const body = msgs.map(m => {
+        const senderName = nameMap[m.sender_id] || 'Unknown';
+        const date = new Date(m.created_at).toLocaleString();
+        return `
+            <div style="background:#f1f2f6; border:1px solid #ccc; padding:8px; margin-bottom:5px; border-radius:5px; position:relative;">
+                <div style="font-size:0.75rem; color:#666; margin-bottom:3px;"><b>${senderName}</b> • ${date}</div>
+                <div style="font-family:'Patrick Hand'; font-size:1.1rem; padding-right:25px; word-break:break-word;">${m.content}</div>
+                <button onclick="deleteMessage('${m.id}', '${id1}', '${id2}')" class="sketch-btn danger" style="position:absolute; top:5px; right:5px; padding:0 5px; width:20px; height:20px; font-size:0.8rem; line-height:1; display:flex; align-items:center; justify-content:center;">X</button>
+            </div>
+        `;
+    }).join('');
+
+    list.innerHTML = header + `<div style="max-height:350px; overflow-y:auto;">${body || '<p style="text-align:center;">No messages found.</p>'}</div>`;
+}
+
+window.deleteConversation = async function(id1, id2) {
+    if(!await showWimpyConfirm('Delete ENTIRE conversation history?')) return;
+    
+    const { error } = await db
+        .from('messages')
+        .delete()
+        .or(`and(sender_id.eq.${id1},receiver_id.eq.${id2}),and(sender_id.eq.${id2},receiver_id.eq.${id1})`);
+
+    if(error) showToast('Error: ' + error.message);
+    else {
+        showToast('Conversation deleted.');
+        fetchAdminMessages();
+    }
+}
+
+window.deleteMessage = async function(id, viewId1, viewId2) {
+    if(!await showWimpyConfirm('Delete this message?')) return;
+    const { error } = await db.from('messages').delete().eq('id', id);
+    if(error) showToast('Error: ' + error.message); 
+    else { 
+        showToast('Message deleted.'); 
+        if(viewId1 && viewId2) viewAdminConversation(viewId1, viewId2);
+        else fetchAdminMessages();
+    }
+}
+
+window.deleteOldMessages = async function() {
+    if(!await showWimpyConfirm('Delete ALL messages older than 30 days?')) return;
+    const date = new Date(); date.setDate(date.getDate() - 30);
+    const { error } = await db.from('messages').delete().lt('created_at', date.toISOString());
+    if(error) showToast('Error: ' + error.message); else { showToast('Old messages cleared.'); fetchAdminMessages(); }
 }

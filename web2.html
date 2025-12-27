@@ -940,6 +940,7 @@
                     <button class="sketch-btn" onclick="showAdminTool('admin-event-form', this)"><i class="fas fa-calendar-alt"></i> Event</button>
                     <button class="sketch-btn" onclick="showAdminTool('admin-file-form', this)"><i class="fas fa-paperclip"></i> File</button>
                     <button class="sketch-btn" onclick="showAdminTool('admin-email-form', this)"><i class="fas fa-envelope"></i> Email</button>
+                    <button class="sketch-btn" onclick="showAdminTool('admin-message-manager', this)"><i class="fas fa-comments"></i> Messages</button>
                     <button class="sketch-btn" onclick="showAdminTool('admin-gallery-form', this)"><i class="fas fa-images"></i> Gallery</button>
                     <button class="sketch-btn" onclick="showAdminTool('admin-storage-view', this)"><i class="fas fa-hdd"></i> Storage</button>
                     <button class="sketch-btn" onclick="showAdminTool('admin-promote-form', this)"><i class="fas fa-crown"></i> Privileges</button>
@@ -1038,6 +1039,22 @@
                                 <i class="fas fa-paper-plane"></i> Send Email
                             </button>
                         </form>
+                    </div>
+
+                    <!-- NEW: Message Manager -->
+                    <div class="admin-controls" id="admin-message-manager">
+                        <button onclick="showAdminTool(null)" class="sketch-btn danger" style="position: absolute; top: 10px; right: 10px; width: auto; margin: 0; padding: 5px 10px; font-size: 0.9rem;">Close</button>
+                        <h3>Admin's Note: Message Manager <i class="fas fa-comments"></i></h3>
+                        <p style="font-size: 0.9rem; margin-bottom: 10px;">(Monitor and clear chat logs)</p>
+                        
+                        <div style="display:flex; gap:10px; margin-bottom:15px;">
+                            <button onclick="fetchAdminMessages()" class="sketch-btn" style="flex:1;"><i class="fas fa-sync"></i> Refresh</button>
+                            <button onclick="deleteOldMessages()" class="sketch-btn danger" style="flex:1;"><i class="fas fa-trash-alt"></i> Clear Old (>30 days)</button>
+                        </div>
+
+                        <div id="admin-message-list" style="max-height: 300px; overflow-y: auto; border: 2px solid #000; padding: 10px; background: #f9f9f9;">
+                            <p style="text-align:center; color:#666;">Click Refresh to load messages.</p>
+                        </div>
                     </div>
 
                     <!-- NEW: Gallery Manager for Landing Page -->
