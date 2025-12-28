@@ -1,12 +1,16 @@
 // --- CONFIGURATION ---
-const SUPABASE_URL = 'https://egnyblflgppsosunnilq.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVnbnlibGZsZ3Bwc29zdW5uaWxxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY0OTYzMjksImV4cCI6MjA4MjA3MjMyOX0.HR9lt4oHuFjGcjwsF_fLoJMuG2OI8aCIoRCSyyu0zVE';
+// SUPABASE_URL and SUPABASE_KEY are loaded from common.js
 
 // FIX: We use 'db' instead of 'supabase' to avoid conflict with the library name
-window.db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); // Make 'db' a global variable
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+window.db = db;
+
+// --- UTILITIES ---
+// escapeHTML is loaded from common.js
 
 // State
 let user = null;
+window.user = null;
 let isAdmin = false;
 let currentCalDate = new Date();
 let globalEvents = [];
@@ -52,6 +56,9 @@ function checkSession() {
         return;
     }
     user = JSON.parse(storedUser);
+    window.user = user;
+    window.isAdmin = (user.sr_code === 'ADMIN' || user.role === 'admin');
+    isAdmin = window.isAdmin; // Keep local var synced
 
     // Update last login for "Recently Spotted" tracker on session restore
     db.from('students')
@@ -245,10 +252,10 @@ async function loadSchedule(dayFilter) {
             <div class="class-card" style="animation-delay: ${index * 0.1}s">
                 ${deleteBtn}
                 <div class="class-header">
-                    <span class="subject-code">${cls.subject_code}</span>
+                    <span class="subject-code">${escapeHTML(cls.subject_code)}</span>
                     <span class="time-badge">${start} - ${end}</span>
                 </div>
-                <h3>${cls.subject_name}</h3>
+                <h3>${escapeHTML(cls.subject_name)}</h3>
                 <p><b>Prof:</b> ${cls.instructor || 'TBA'} | <b>Room:</b> ${cls.room || 'TBA'}</p>
                 <div style="margin-top:10px; display:flex; gap:5px;">
                     ${cls.meet_link ? `<a href="${cls.meet_link}" target="_blank" class="sketch-btn meet"><i class="fas fa-video"></i> Meet</a>` : ''}
@@ -279,8 +286,8 @@ async function loadAssignments() {
         return `
             <div class="class-card" style="border-left: 5px solid #d32f2f; animation-delay: ${index * 0.1}s">
                 ${deleteBtn}
-                <h3>${task.title} <span style="font-size:0.8rem; background:#ddd; padding:2px 5px;">${task.subject}</span></h3>
-                <p>${task.description || ''}</p>
+                <h3>${escapeHTML(task.title)} <span style="font-size:0.8rem; background:#ddd; padding:2px 5px;">${escapeHTML(task.subject)}</span></h3>
+                <p>${escapeHTML(task.description || '')}</p>
                 <p style="color:#d32f2f; font-weight:bold;">Due: ${date}</p>
             </div>
         `;
@@ -324,10 +331,31 @@ window.renderCalendar = function () {
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         const isToday = (day === today.getDate() && month === today.getMonth() && year === today.getFullYear());
         const dayEvents = globalEvents.filter(e => e.event_date === dateStr);
-        const eventHtml = dayEvents.map(e => `<div class="cal-event-dot" title="${e.title}">${e.title}</div>`).join('');
+        const hasEvent = dayEvents.length > 0;
 
-        html += `<div class="cal-day ${isToday ? 'today' : ''}" onclick="showDayDetails('${dateStr}')">
-                    <span style="font-weight:bold; font-size:0.9rem;">${day}</span>${eventHtml}
+        let eventMarkers = '';
+        let hoverPopup = '';
+
+        if (hasEvent) {
+            // Visual Marker (e.g., Red Circle or icon)
+            eventMarkers = `<div class="cal-marker"><i class="fas fa-circle" style="color:#d63031; font-size:0.6rem;"></i> ${dayEvents.length > 1 ? '+' : ''}</div>`;
+
+            // Hover Popup (Paper style)
+            hoverPopup = `
+                <div class="cal-hover-popup">
+                    <div class="pin-tack"><i class="fas fa-thumbtack"></i></div>
+                    <h4>${monthNames[month]} ${day}</h4>
+                    <ul>
+                        ${dayEvents.map(e => `<li>${escapeHTML(e.title)}</li>`).join('')}
+                    </ul>
+                </div>
+            `;
+        }
+
+        html += `<div class="cal-day ${isToday ? 'today' : ''} ${hasEvent ? 'has-event' : ''}" onclick="showDayDetails('${dateStr}')">
+                    <span class="cal-day-num">${day}</span>
+                    ${eventMarkers}
+                    ${hoverPopup}
                  </div>`;
     }
     html += `</div></div><div id="day-details-view" style="margin-top:20px;"></div>`;
@@ -363,9 +391,9 @@ window.showDayDetails = function (dateStr) {
             return `
             <div class="class-card" style="border-left: 5px solid #1976d2; margin-bottom:10px;">
                 ${deleteBtn}
-                <h3>${evt.title}</h3>
+                <h3>${escapeHTML(evt.title)}</h3>
                 <p>${new Date(evt.event_date).toDateString()}</p>
-                <p>${evt.description || ''}</p>
+                <p>${escapeHTML(evt.description || '')}</p>
             </div>
         `;
         }).join('');
@@ -550,11 +578,11 @@ function checkLiveClass() {
             <div class="live-card">
                 <div class="live-card-details">
                     <div>
-                        <div class="subject-code" style="font-size:1.2rem; color:#2d3436;">${liveClass.subject_code}</div>
-                        <h3>${liveClass.subject_name}</h3>
+                        <div class="subject-code" style="font-size:1.2rem; color:#2d3436;">${escapeHTML(liveClass.subject_code)}</div>
+                        <h3>${escapeHTML(liveClass.subject_name)}</h3>
                         <p style="margin:0;">
                             <i class="fas fa-clock"></i> ${start} - ${end} | 
-                            <i class="fas fa-chalkboard-teacher"></i> ${liveClass.instructor || 'TBA'}
+                            <i class="fas fa-chalkboard-teacher"></i> ${escapeHTML(liveClass.instructor || 'TBA')}
                         </p>
                     </div>
                     <div>
@@ -630,7 +658,7 @@ function renderActiveUsers(presenceState) {
 
         const div = document.createElement('div');
         div.className = 'live-user-bubble';
-        div.setAttribute('data-name', isMe ? `${u.name} (You)` : u.name);
+        div.setAttribute('data-name', isMe ? `${escapeHTML(u.name)} (You)` : escapeHTML(u.name));
         div.style.cssText = borderStyle;
 
         div.innerHTML = `<img src="${u.avatar}" alt="${u.name}">`;
@@ -700,21 +728,8 @@ async function updateProfilePic(id, file) {
     showToast('Nice! New picture saved.');
 }
 
-// --- TOAST NOTIFICATION FUNCTION ---
-function showToast(message) {
-    const container = document.getElementById('toast-container');
-    if (!container) return;
-
-    const toast = document.createElement('div');
-    toast.className = 'toast';
-    toast.innerText = message;
-
-    container.appendChild(toast);
-
-    setTimeout(() => {
-        toast.remove();
-    }, 4000);
-}
+// showToast removed (in common.js)
+// showToast removed (in common.js)
 
 // --- DYNAMIC SUBJECTS LOGIC ---
 async function populateSubjectOptions() {
@@ -766,32 +781,7 @@ async function populateSubjectOptions() {
 }
 
 // --- EMAIL DROPDOWN POPULATION ---
-async function populateEmailDropdown() {
-    const dropdown = document.getElementById('email-recipient');
-    if (!dropdown) return;
-
-    // Fetch Name, SR Code, and Email of all students
-    const { data, error } = await db
-        .from('students')
-        .select('name, sr_code, email')
-        .neq('sr_code', 'ADMIN') // Don't list the admin
-        .order('name', { ascending: true });
-
-    if (error) return console.error("Error loading recipients:", error);
-
-    // Keep the "Everyone" option, remove others to avoid duplicates if reloaded
-    dropdown.innerHTML = '<option value="ALL">Send to Everyone (Blast)</option>';
-
-    data.forEach(student => {
-        // Only add if they have an email
-        if (student.email) {
-            const option = document.createElement('option');
-            option.value = student.email; // The value is the email address
-            option.innerText = `${student.name} (${student.sr_code})`;
-            dropdown.appendChild(option);
-        }
-    });
-}
+// populateEmailDropdown removed (in admin.js)
 
 // --- FILE UPLOAD & FILTERING LOGIC ---
 
@@ -859,7 +849,7 @@ async function loadFiles(subjectFilter = 'All') {
                     <div style="font-size: 2.5rem; color: #57606f; margin-top:10px;">
                         <i class="fas ${icon}"></i>
                     </div>
-                    <h3 style="font-size: 1.1rem; margin: 10px 0; word-break: break-word;">${file.title}</h3>
+                    <h3 style="font-size: 1.1rem; margin: 10px 0; word-break: break-word;">${escapeHTML(file.title)}</h3>
                     ${subjectTag}
                 </div>
                 <a href="${file.file_url}" download class="sketch-btn" style="width:80%; justify-content:center; margin-top:10px;">
@@ -870,218 +860,7 @@ async function loadFiles(subjectFilter = 'All') {
     }).join('');
 }
 
-window.uploadFile = async function (e) {
-    e.preventDefault();
-    if (!isAdmin) return;
-
-    const fileInput = document.getElementById('f-file');
-    const titleInput = document.getElementById('f-title');
-    const subjectInput = document.getElementById('f-subject'); // New input
-    const btn = document.getElementById('upload-btn');
-    const file = fileInput.files[0];
-
-    if (!file) return showToast('Please select a file.');
-    if (!subjectInput.value) return showToast('Please select a subject.');
-
-    btn.disabled = true;
-    btn.innerHTML = 'Uploading...';
-
-    try {
-        const fileName = `${Date.now()}_${file.name.replace(/\s/g, '_')}`;
-
-        // 1. Upload
-        const { error: uploadError } = await db.storage
-            .from('class-resources')
-            .upload(fileName, file);
-
-        if (uploadError) throw uploadError;
-
-        // 2. Get URL
-        const { data: urlData } = db.storage
-            .from('class-resources')
-            .getPublicUrl(fileName);
-
-        // 3. Save to DB with Subject
-        const { error: dbError } = await db.from('shared_files').insert([{
-            title: titleInput.value,
-            subject: subjectInput.value, // Saving the subject
-            file_url: urlData.publicUrl,
-            file_type: file.type
-        }]);
-
-        if (dbError) throw dbError;
-
-        showToast('File added to ' + subjectInput.value + ' folder!');
-        loadFiles(subjectInput.value); // Reload showing the category you just uploaded to
-        e.target.reset();
-
-    } catch (error) {
-        console.error(error);
-        showToast('Upload failed: ' + error.message);
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-paperclip"></i> Upload to Cabinet';
-    }
-}
-
-window.deleteFile = async function (id) {
-    if (!await showWimpyConfirm('Delete this file?')) return;
-    const { error } = await db.from('shared_files').delete().eq('id', id);
-    if (error) showToast('Error deleting file.');
-    else {
-        showToast('File removed.');
-        loadFiles(); // Refresh
-    }
-}
-
-// --- EMAIL BLAST LOGIC (EmailJS) ---
-
-window.sendEmailService = async function (e) {
-    e.preventDefault();
-
-    // 🔴 YOUR SERVICE ID (Make sure this is correct)
-    const SERVICE_ID = 'service_crvq85j';
-    const TEMPLATE_ID = 'template_jhu61sc';
-
-    if (!isAdmin) return showToast("Admins only!");
-
-    const recipientSelect = document.getElementById('email-recipient');
-    const subjectInput = document.getElementById('email-subject');
-    const bodyInput = document.getElementById('email-body');
-    const btn = e.target.querySelector('button');
-    const originalText = btn.innerHTML;
-
-    // CHECK: Who are we sending to?
-    const selectedValue = recipientSelect.value; // This is either 'ALL' or a specific email
-    const selectedName = recipientSelect.options[recipientSelect.selectedIndex].text;
-
-    btn.disabled = true;
-    btn.innerText = "Processing...";
-
-    try {
-        let emailList = "";
-
-        // SCENARIO 1: SEND TO EVERYONE
-        if (selectedValue === 'ALL') {
-            btn.innerText = "Gathering all emails...";
-            const { data, error } = await db
-                .from('students')
-                .select('email')
-                .neq('sr_code', 'ADMIN')
-                .not('email', 'is', null)
-                .neq('email', '');
-
-            if (error) throw error;
-            if (!data || data.length === 0) throw new Error("No emails found!");
-
-            // Join all emails with commas
-            emailList = data.map(s => s.email).join(',');
-        }
-        // SCENARIO 2: SEND TO SPECIFIC PERSON
-        else {
-            // The value of the option is already the email address
-            emailList = selectedValue;
-        }
-
-        console.log("Sending to:", emailList);
-
-        // Send via EmailJS
-        const templateParams = {
-            subject: subjectInput.value,
-            message: bodyInput.value,
-            bcc: emailList, // We still use BCC field (works for 1 person too)
-            from_name: user.name
-        };
-
-        await emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams);
-
-        if (selectedValue === 'ALL') {
-            showToast("Blast sent to everyone!");
-        } else {
-            showToast(`Sent to ${selectedName}!`);
-        }
-
-        e.target.reset();
-        // Reset dropdown to ALL
-        recipientSelect.value = "ALL";
-
-    } catch (err) {
-        console.error("Email Error:", err);
-        showToast(err.message || "Failed to send.");
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = originalText;
-    }
-}
-
-// --- LANDING PAGE GALLERY MANAGER (ADMIN) ---
-window.uploadGalleryItem = async function (e) {
-    e.preventDefault();
-    if (!isAdmin) return;
-
-    const fileInput = document.getElementById('g-file');
-    const captionInput = document.getElementById('g-caption');
-    const btn = document.getElementById('upload-gallery-btn');
-    const file = fileInput.files[0];
-
-    if (!file) return showToast('Please select an image.');
-
-    btn.disabled = true;
-    btn.innerHTML = 'Posting...';
-
-    try {
-        const fileName = `gallery_${Date.now()}_${file.name.replace(/\s/g, '_')}`;
-
-        // Reuse class-resources bucket
-        const { error: uploadError } = await db.storage
-            .from('class-resources')
-            .upload(fileName, file);
-
-        if (uploadError) throw uploadError;
-
-        const { data: urlData } = db.storage
-            .from('class-resources')
-            .getPublicUrl(fileName);
-
-        const { error: dbError } = await db.from('shared_files').insert([{
-            title: captionInput.value || 'Untitled',
-            subject: 'LandingGallery', // Special tag for landing page
-            file_url: urlData.publicUrl,
-            file_type: file.type
-        }]);
-
-        if (dbError) throw dbError;
-
-        showToast('Posted to Landing Page!');
-        fetchAdminGalleryList();
-        e.target.reset();
-
-    } catch (error) {
-        console.error(error);
-        showToast('Upload failed: ' + error.message);
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-camera"></i> Post to Gallery';
-    }
-}
-
-window.fetchAdminGalleryList = async function () {
-    const list = document.getElementById('admin-gallery-list');
-    if (!list) return;
-
-    const { data, error } = await db.from('shared_files').select('*').eq('subject', 'LandingGallery').order('created_at', { ascending: false });
-    if (error || !data || data.length === 0) { list.innerHTML = '<p style="font-size:0.9rem; color:#666; text-align:center;">Gallery is empty.</p>'; return; }
-
-    list.innerHTML = data.map(item => `
-        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px dashed #ccc; padding:5px 0;">
-            <div style="display:flex; align-items:center; gap:10px;">
-                <img src="${item.file_url}" style="width:30px; height:30px; object-fit:cover; border:1px solid #000;">
-                <small style="font-family:'Patrick Hand';">${item.title}</small>
-            </div>
-            <button onclick="deleteFile(${item.id}); setTimeout(fetchAdminGalleryList, 500);" class="sketch-btn danger" style="padding:2px 6px; font-size:0.8rem; width:auto; margin:0;">X</button>
-        </div>
-    `).join('');
-}
+// File & Gallery Uploads moved to admin.js
 
 // Add this function anywhere in dashboard.js
 window.searchFiles = function () {
@@ -1517,611 +1296,14 @@ window.showCongratsMessage = function (prevModal) {
     }
 }
 
-// --- ADMIN TOOL TOGGLE ---
-window.showAdminTool = function (toolId, btnElement) {
-    // 1. Reset all buttons
-    document.querySelectorAll('.filter-bar .sketch-btn').forEach(b => b.classList.remove('active-tool'));
-
-    // Hide all admin forms
-    const forms = ['admin-schedule-form', 'admin-assignment-form', 'admin-event-form', 'admin-file-form', 'admin-email-form', 'admin-message-manager', 'admin-gallery-form', 'admin-storage-view', 'admin-promote-form', 'admin-revoke-form'];
-    let isAlreadyOpen = false;
-
-    forms.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-            if (el.id === toolId && el.style.display === 'block') isAlreadyOpen = true;
-            el.style.display = 'none';
-        }
-    });
-
-    const hint = document.getElementById('admin-tool-hint');
-
-    // 2. Show selected if not already open (Toggle logic)
-    if (toolId && !isAlreadyOpen) {
-        const selected = document.getElementById(toolId);
-        if (selected) selected.style.display = 'block';
-        if (hint) hint.style.display = 'none';
-        if (btnElement) btnElement.classList.add('active-tool');
-    } else {
-        // If closing or clicking active, show hint
-        if (hint) hint.style.display = 'block';
-    }
-}
-
-// --- STORAGE MONITOR ---
-window.fetchStorageStats = async function () {
-    const display = document.getElementById('storage-stats-display');
-    if (!display) return;
-
-    display.innerHTML = '<div class="loader">Scanning crates...</div>';
-
-    const buckets = ['class-resources', 'avatars'];
-    let bucketHtml = '';
-    let grandTotalBytes = 0;
-
-    for (const bucket of buckets) {
-        // Fetch list of files (limit 1000 to get a good count)
-        const { data, error } = await db.storage.from(bucket).list('', { limit: 1000 });
-
-        if (error) {
-            bucketHtml += `<div class="class-card" style="border-left: 5px solid #d63031; margin-bottom: 10px;"><p>Error scanning <b>${bucket}</b>: ${error.message}</p></div>`;
-            continue;
-        }
-
-        const count = data.length;
-        let totalSize = 0;
-        data.forEach(f => totalSize += (f.metadata ? f.metadata.size : 0));
-        grandTotalBytes += totalSize;
-
-        const sizeMB = (totalSize / (1024 * 1024)).toFixed(2);
-
-        bucketHtml += `
-            <div class="class-card" style="margin-bottom: 10px; border-left: 5px solid #6c5ce7;">
-                <h3 style="margin-top:0;">Bucket: ${bucket}</h3>
-                <div style="display:flex; justify-content:space-between; font-size:1.1rem;">
-                    <span><b>Files:</b> ${count}</span>
-                    <span><b>Size:</b> ${sizeMB} MB</span>
-                </div>
-            </div>
-        `;
-    }
-
-    // Calculate Totals
-    const totalMB = (grandTotalBytes / (1024 * 1024)).toFixed(2);
-    const limitGB = 1; // 1GB Limit
-    const limitBytes = limitGB * 1024 * 1024 * 1024;
-    const percent = Math.min(100, ((grandTotalBytes / limitBytes) * 100)).toFixed(1);
-
-    const summaryHtml = `
-        <div class="class-card" style="margin-bottom: 20px; border: 2px solid #000; background: #fff740; transform: rotate(-1deg);">
-            <h3 style="margin-top:0; text-align:center; border-bottom: 2px dashed #000; padding-bottom: 10px;">
-                <i class="fas fa-chart-pie"></i> TOTAL CONSUMPTION
-            </h3>
-            <div style="text-align: center; margin: 15px 0;">
-                <span style="font-size: 2.5rem; font-family: 'Permanent Marker'; line-height: 1;">${totalMB} MB</span>
-                <span style="font-size: 1.2rem; color: #555;"> / ${limitGB} GB</span>
-            </div>
-            <div style="width: 100%; background: #fff; border: 2px solid #000; height: 25px; border-radius: 15px; overflow: hidden; position: relative;">
-                <div style="width: ${percent}%; background: ${percent > 80 ? '#d63031' : '#00b894'}; height: 100%; transition: width 0.5s ease;"></div>
-                <span style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 0.8rem; font-weight: bold; color: #000;">${percent}%</span>
-            </div>
-        </div>
-    `;
-
-    display.innerHTML = summaryHtml + bucketHtml;
-}
+// Admin Tool Toggle and Storage Stats moved to admin.js
 
 // --- PROMOTE USER LOGIC ---
-window.populatePromoteDropdown = async function () {
-    const dropdown = document.getElementById('promote-user-select');
-    if (!dropdown) return;
-
-    const { data, error } = await db
-        .from('students')
-        .select('id, name, sr_code')
-        .neq('sr_code', 'ADMIN')
-        .order('name', { ascending: true });
-
-    if (error) return console.error("Error loading users:", error);
-
-    dropdown.innerHTML = '<option value="" disabled selected>Select User</option>';
-    data.forEach(student => {
-        const option = document.createElement('option');
-        option.value = student.id;
-        option.innerText = `${student.name} (${student.sr_code})`;
-        dropdown.appendChild(option);
-    });
-}
-
-window.promoteUser = async function (e) {
-    e.preventDefault();
-    const userId = document.getElementById('promote-user-select').value;
-    if (!isAdmin) return showToast('Nice try, hacker.');
-    if (!userId) return showToast("Select a user first!");
-
-    const { error } = await db.from('students').update({ role: 'admin' }).eq('id', userId.trim());
-
-    if (error) {
-        console.error(error);
-        if (error.message && error.message.includes('role')) showToast("Error: DB missing 'role' column.");
-        else showToast("Error: " + error.message);
-    } else {
-        showToast("User promoted to Admin!");
-        e.target.reset();
-    }
-}
-
-// --- REVOKE ADMIN LOGIC ---
-window.populateRevokeDropdown = async function () {
-    const dropdown = document.getElementById('revoke-user-select');
-    if (!dropdown) return;
-
-    const { data, error } = await db
-        .from('students')
-        .select('id, name, sr_code')
-        .eq('role', 'admin')
-        .neq('sr_code', 'ADMIN') // Exclude Main Admin
-        .order('name', { ascending: true });
-
-    if (error) return console.error("Error loading admins:", error);
-
-    dropdown.innerHTML = '<option value="" disabled selected>Select Admin to Remove</option>';
-    if (data.length === 0) {
-        dropdown.innerHTML += '<option disabled>No other admins found.</option>';
-    }
-    data.forEach(student => {
-        const option = document.createElement('option');
-        option.value = student.id;
-        option.innerText = `${student.name} (${student.sr_code})`;
-        dropdown.appendChild(option);
-    });
-}
-
-window.revokeAdmin = async function (e) {
-    e.preventDefault();
-    const userId = document.getElementById('revoke-user-select').value;
-    if (!isAdmin) return showToast('Nice try, hacker.');
-    if (!userId) return showToast("Select a user first!");
-
-    if (!await showWimpyConfirm("Revoke admin access?")) return;
-
-    const { error } = await db.from('students').update({ role: 'student' }).eq('id', userId);
-
-    if (error) {
-        showToast("Error: " + error.message);
-    } else {
-        showToast("Access revoked.");
-        e.target.reset();
-        populateRevokeDropdown(); // Refresh list
-    }
-}
+// Promote/Revoke Admin Logic moved to admin.js
 
 // --- MESSAGING SYSTEM ---
-let currentChatPartnerId = null;
+// Moved to js/messaging.js
 
-window.initMessaging = async function () {
-    if (!user) return;
-
-    // Prevent duplicate subscriptions
-    if (window.msgSubscription) await db.removeChannel(window.msgSubscription);
-
-    // Subscribe to incoming messages
-    window.msgSubscription = db.channel('public:messages')
-        .on('postgres_changes', {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'messages',
-            filter: `receiver_id=eq.${user.id}`
-        }, payload => {
-            handleIncomingMessage(payload.new);
-        })
-        .subscribe();
-
-    checkUnreadCount();
-}
-
-// --- NEW CHAT / RECIPIENT LOGIC ---
-let allClassmates = [];
-
-window.openNewChatModal = async function () {
-    const modal = document.getElementById('newChatModal');
-    if (!modal) return;
-
-    modal.classList.remove('hidden');
-    const list = document.getElementById('recipient-list');
-    list.innerHTML = '<div class="loader" style="font-size:1rem;">Finding classmates...</div>';
-
-    // Fetch all students except self
-    const { data, error } = await db
-        .from('students')
-        .select('id, name, sr_code, avatar_url')
-        .neq('id', user.id)
-        .order('name', { ascending: true });
-
-    if (error) {
-        list.innerHTML = '<p>Error loading classmates.</p>';
-        return;
-    }
-
-    allClassmates = data;
-    renderRecipientList(allClassmates);
-    setTimeout(() => document.getElementById('recipient-search').focus(), 100);
-}
-
-function renderRecipientList(students) {
-    const list = document.getElementById('recipient-list');
-    if (!students || students.length === 0) {
-        list.innerHTML = '<p style="text-align:center; margin-top:20px;">No one found.</p>';
-        return;
-    }
-
-    list.innerHTML = students.map(s => {
-        const avatar = s.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=random`;
-        return `
-            <div onclick="openChatModal('${s.id}', '${s.name}'); document.getElementById('newChatModal').classList.add('hidden');" 
-                 style="display:flex; align-items:center; gap:10px; padding:10px; background:#fff; border:2px solid #000; border-radius:10px; cursor:pointer; transition:transform 0.1s;"
-                 onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
-                <img src="${avatar}" style="width:35px; height:35px; border-radius:50%; border:1px solid #000; object-fit:cover;">
-                <div style="font-weight:bold;">${s.name} <small style="color:#666; font-weight:normal;">(${s.sr_code})</small></div>
-            </div>
-        `;
-    }).join('');
-}
-
-window.filterRecipients = function () {
-    const q = document.getElementById('recipient-search').value.toLowerCase();
-    const filtered = allClassmates.filter(s => s.name.toLowerCase().includes(q) || s.sr_code.toLowerCase().includes(q));
-    renderRecipientList(filtered);
-}
-
-window.openChatModal = async function (partnerId, partnerName) {
-    if (!user) return;
-    if (partnerId === user.id) return showToast("Talking to yourself?");
-
-    currentChatPartnerId = partnerId;
-    document.getElementById('chat-with-name').innerHTML = `<i class="fas fa-comments"></i> Chat with ${partnerName}`;
-    document.getElementById('chat-target-id').value = partnerId;
-    document.getElementById('chatModal').classList.remove('hidden');
-
-    await loadChatHistory(partnerId);
-    markMessagesAsRead(partnerId);
-}
-
-window.closeChatModal = function () {
-    document.getElementById('chatModal').classList.add('hidden');
-    currentChatPartnerId = null;
-}
-
-async function loadChatHistory(partnerId) {
-    const container = document.getElementById('chat-history');
-    container.innerHTML = '<div class="loader" style="font-size:1rem;">Loading notes...</div>';
-
-    const { data, error } = await db
-        .from('messages')
-        .select('*')
-        .or(`and(sender_id.eq.${user.id},receiver_id.eq.${partnerId}),and(sender_id.eq.${partnerId},receiver_id.eq.${user.id})`)
-        .order('created_at', { ascending: true });
-
-    if (error) {
-        console.error(error);
-        container.innerHTML = '<p>Error loading messages.</p>';
-        return;
-    }
-    renderMessages(data);
-}
-
-function renderMessages(messages) {
-    const container = document.getElementById('chat-history');
-    if (!messages || messages.length === 0) {
-        container.innerHTML = '<p style="text-align:center; color:#888; margin-top:20px;">No notes yet. Say hi!</p>';
-        return;
-    }
-    container.innerHTML = messages.map(msg => {
-        const isMe = msg.sender_id === user.id;
-        return `<div class="chat-bubble ${isMe ? 'me' : 'them'}">${msg.content}</div>`;
-    }).join('');
-    container.scrollTop = container.scrollHeight;
-}
-
-window.sendChatMessage = async function (e) {
-    e.preventDefault();
-    const input = document.getElementById('chat-input');
-    const content = input.value.trim();
-    const targetId = document.getElementById('chat-target-id').value;
-
-    if (!content || !targetId) return;
-
-    // Optimistic UI
-    const container = document.getElementById('chat-history');
-    const tempDiv = document.createElement('div');
-    tempDiv.className = 'chat-bubble me';
-    tempDiv.innerText = content;
-    container.appendChild(tempDiv);
-    container.scrollTop = container.scrollHeight;
-    input.value = '';
-
-    await db.from('messages').insert([{ sender_id: user.id, receiver_id: targetId, content: content }]);
-}
-
-function handleIncomingMessage(msg) {
-    if (currentChatPartnerId === msg.sender_id) {
-        const container = document.getElementById('chat-history');
-        const div = document.createElement('div');
-        div.className = 'chat-bubble them';
-        div.innerText = msg.content;
-        container.appendChild(div);
-        container.scrollTop = container.scrollHeight;
-        markMessagesAsRead(msg.sender_id);
-    } else {
-        // Play sound
-        const audio = document.getElementById('notif-sound');
-        if (audio) audio.play().catch(e => console.log("Audio blocked:", e));
-
-        checkUnreadCount();
-
-        // NEW: Instantly refresh inbox list if it is currently open
-        const inboxModal = document.getElementById('inboxModal');
-        if (inboxModal && !inboxModal.classList.contains('hidden')) {
-            refreshInboxList(false); // false = don't show loading spinner (seamless update)
-        }
-
-        // Interactive Toast (Click to Open Inbox)
-        const container = document.getElementById('toast-container');
-        if (container) {
-            const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.style.cursor = 'pointer';
-            toast.innerHTML = `<b><i class="fas fa-envelope"></i> New Note!</b><br><span style="font-size:0.9rem">Click to read</span>`;
-            toast.onclick = () => { toast.remove(); openInboxModal(); };
-            container.appendChild(toast);
-            setTimeout(() => { if (toast.parentNode) toast.remove(); }, 5000);
-        }
-    }
-}
-
-async function checkUnreadCount() {
-    const { count } = await db.from('messages').select('*', { count: 'exact', head: true }).eq('receiver_id', user.id).eq('is_read', false);
-    const badge = document.getElementById('msg-badge');
-    if (badge) {
-        badge.innerText = count;
-        badge.style.display = count > 0 ? 'block' : 'none';
-    }
-}
-
-async function markMessagesAsRead(senderId) {
-    await db.from('messages').update({ is_read: true }).eq('sender_id', senderId).eq('receiver_id', user.id);
-    checkUnreadCount();
-}
-
-window.openInboxModal = async function () {
-    const modal = document.getElementById('inboxModal');
-    if (!modal) return;
-
-    modal.classList.remove('hidden');
-    await refreshInboxList(true); // true = show loading spinner on first open
-}
-
-window.refreshInboxList = async function (showLoader = true) {
-    const list = document.getElementById('inbox-list');
-    if (!list) return;
-
-    if (showLoader) list.innerHTML = '<div class="loader" style="font-size:1rem;">Checking mail...</div>';
-
-    if (!user) return;
-
-    // 1. Fetch all messages involving user
-    const { data: msgs, error } = await db
-        .from('messages')
-        .select('*')
-        .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
-        .order('created_at', { ascending: false });
-
-    if (error) {
-        console.error(error);
-        list.innerHTML = '<p>Error loading inbox.</p>';
-        return;
-    }
-
-    if (!msgs || msgs.length === 0) {
-        list.innerHTML = '<p style="text-align:center; margin-top:20px; color:#666;">No messages yet.</p>';
-        return;
-    }
-
-    // 2. Group by conversation partner
-    const conversations = {};
-    msgs.forEach(m => {
-        const isMe = m.sender_id === user.id;
-        const partnerId = isMe ? m.receiver_id : m.sender_id;
-
-        if (!conversations[partnerId]) {
-            conversations[partnerId] = { partnerId, lastMessage: m, unreadCount: 0 };
-        }
-        if (!isMe && !m.is_read) conversations[partnerId].unreadCount++;
-    });
-
-    const partnerIds = Object.keys(conversations);
-
-    // 3. Fetch partner details
-    const { data: students } = await db.from('students').select('id, name, avatar_url').in('id', partnerIds);
-
-    if (!students) { list.innerHTML = '<p>Error loading users.</p>'; return; }
-
-    // 4. Render list
-    list.innerHTML = students.map(s => {
-        const conv = conversations[s.id];
-        const isUnread = conv.unreadCount > 0;
-        const bgStyle = isUnread ? 'background:#fff740;' : 'background:#fff;';
-        const avatar = s.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=random`;
-        const date = new Date(conv.lastMessage.created_at).toLocaleDateString();
-        const prefix = conv.lastMessage.sender_id === user.id ? 'You: ' : '';
-        const preview = conv.lastMessage.content.length > 25 ? conv.lastMessage.content.substring(0, 25) + '...' : conv.lastMessage.content;
-
-        return `
-            <div onclick="openChatModal('${s.id}', '${s.name}'); document.getElementById('inboxModal').classList.add('hidden');" 
-                 style="display:flex; align-items:center; gap:10px; padding:10px; ${bgStyle} border:2px solid #000; border-radius:10px; cursor:pointer; transition:transform 0.2s;"
-                 onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
-                <img src="${avatar}" style="width:40px; height:40px; border-radius:50%; border:1px solid #000; object-fit:cover;">
-                <div style="flex:1; overflow:hidden;">
-                    <div style="display:flex; justify-content:space-between;"><strong style="font-size:1.1rem;">${s.name}</strong><small style="font-size:0.8rem; color:#666;">${date}</small></div>
-                    <div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#555; font-size:0.9rem;">${prefix}${preview}</div>
-                </div>
-                ${isUnread ? `<div style="background:#d63031; color:#fff; font-weight:bold; padding:2px 8px; border-radius:50%; font-size:0.8rem;">${conv.unreadCount}</div>` : ''}
-            </div>
-        `;
-    }).join('');
-}
-
-// --- MESSAGE MANAGER (ADMIN) ---
-window.fetchAdminMessages = async function () {
-    const list = document.getElementById('admin-message-list');
-    if (!list) return;
-
-    list.innerHTML = '<div class="loader" style="font-size:1rem;">Loading conversations...</div>';
-
-    // 1. Fetch Students Map
-    const { data: students, error: sError } = await db.from('students').select('id, name');
-    if (sError) { console.error(sError); return; }
-
-    const studentMap = {};
-    students.forEach(s => studentMap[s.id] = s.name);
-
-    // 2. Fetch Messages
-    const { data: msgs, error } = await db
-        .from('messages')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(500); // Increased limit for better grouping
-
-    if (error) {
-        console.error(error);
-        list.innerHTML = '<p>Error loading messages.</p>';
-        return;
-    }
-
-    if (!msgs || msgs.length === 0) {
-        list.innerHTML = '<p style="text-align:center; color:#666;">No messages found.</p>';
-        return;
-    }
-
-    // 3. Group by Conversation
-    const conversations = {};
-    msgs.forEach(m => {
-        // Create a unique key for the pair (sorted IDs ensures A-B is same as B-A)
-        const key = [m.sender_id, m.receiver_id].sort().join('::');
-
-        if (!conversations[key]) {
-            conversations[key] = {
-                lastMsg: m,
-                count: 0
-            };
-        }
-        conversations[key].count++;
-    });
-
-    // 4. Render List
-    list.innerHTML = Object.keys(conversations).map(key => {
-        const [u1, u2] = key.split('::');
-        const conv = conversations[key];
-
-        const name1 = studentMap[u1] || 'Unknown';
-        const name2 = studentMap[u2] || 'Unknown';
-        const date = new Date(conv.lastMsg.created_at).toLocaleDateString();
-        const preview = conv.lastMsg.content.length > 30 ? conv.lastMsg.content.substring(0, 30) + '...' : conv.lastMsg.content;
-
-        return `
-            <div onclick="viewAdminConversation('${u1}', '${u2}')" 
-                 style="background:#fff; border:2px solid #000; padding:10px; margin-bottom:8px; border-radius:5px; cursor:pointer; transition:transform 0.1s; display:flex; justify-content:space-between; align-items:center;"
-                 onmouseover="this.style.transform='scale(1.01)'" onmouseout="this.style.transform='scale(1)'">
-                <div style="flex:1;">
-                    <div style="font-weight:bold; font-size:1.1rem;">${name1} <i class="fas fa-exchange-alt" style="font-size:0.8rem; color:#666;"></i> ${name2}</div>
-                    <div style="font-size:0.9rem; color:#555;">${preview}</div>
-                    <div style="font-size:0.8rem; color:#888;">${conv.count} messages • Last: ${date}</div>
-                </div>
-                <div style="font-size:1.2rem; color:#000;"><i class="fas fa-chevron-right"></i></div>
-            </div>
-        `;
-    }).join('');
-}
-
-window.viewAdminConversation = async function (id1, id2) {
-    const list = document.getElementById('admin-message-list');
-    list.innerHTML = '<div class="loader" style="font-size:1rem;">Loading chat history...</div>';
-
-    // Fetch names
-    const { data: students } = await db.from('students').select('id, name').in('id', [id1, id2]);
-    const nameMap = {};
-    if (students) students.forEach(s => nameMap[s.id] = s.name);
-
-    const name1 = nameMap[id1] || 'Unknown';
-    const name2 = nameMap[id2] || 'Unknown';
-
-    // Fetch Messages
-    const { data: msgs, error } = await db
-        .from('messages')
-        .select('*')
-        .or(`and(sender_id.eq.${id1},receiver_id.eq.${id2}),and(sender_id.eq.${id2},receiver_id.eq.${id1})`)
-        .order('created_at', { ascending: true });
-
-    if (error) {
-        list.innerHTML = '<p>Error loading chat.</p><button onclick="fetchAdminMessages()" class="sketch-btn">Back</button>';
-        return;
-    }
-
-    const header = `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:2px dashed #000; padding-bottom:10px;">
-            <button onclick="fetchAdminMessages()" class="sketch-btn" style="width:auto; padding:5px 10px; font-size:0.9rem;"><i class="fas fa-arrow-left"></i> Back</button>
-            <div style="font-weight:bold; font-size:1rem;">${name1} & ${name2}</div>
-            <button onclick="deleteConversation('${id1}', '${id2}')" class="sketch-btn danger" style="width:auto; padding:5px 10px; font-size:0.9rem;"><i class="fas fa-trash"></i> Delete All</button>
-        </div>
-    `;
-
-    const body = msgs.map(m => {
-        const senderName = nameMap[m.sender_id] || 'Unknown';
-        const date = new Date(m.created_at).toLocaleString();
-        return `
-            <div style="background:#f1f2f6; border:1px solid #ccc; padding:8px; margin-bottom:5px; border-radius:5px; position:relative;">
-                <div style="font-size:0.75rem; color:#666; margin-bottom:3px;"><b>${senderName}</b> • ${date}</div>
-                <div style="font-family:'Patrick Hand'; font-size:1.1rem; padding-right:25px; word-break:break-word;">${m.content}</div>
-                <button onclick="deleteMessage('${m.id}', '${id1}', '${id2}')" class="sketch-btn danger" style="position:absolute; top:5px; right:5px; padding:0 5px; width:20px; height:20px; font-size:0.8rem; line-height:1; display:flex; align-items:center; justify-content:center;">X</button>
-            </div>
-        `;
-    }).join('');
-
-    list.innerHTML = header + `<div style="max-height:350px; overflow-y:auto;">${body || '<p style="text-align:center;">No messages found.</p>'}</div>`;
-}
-
-window.deleteConversation = async function (id1, id2) {
-    if (!await showWimpyConfirm('Delete ENTIRE conversation history?')) return;
-
-    const { error } = await db
-        .from('messages')
-        .delete()
-        .or(`and(sender_id.eq.${id1},receiver_id.eq.${id2}),and(sender_id.eq.${id2},receiver_id.eq.${id1})`);
-
-    if (error) showToast('Error: ' + error.message);
-    else {
-        showToast('Conversation deleted.');
-        fetchAdminMessages();
-    }
-}
-
-window.deleteMessage = async function (id, viewId1, viewId2) {
-    if (!await showWimpyConfirm('Delete this message?')) return;
-    const { error } = await db.from('messages').delete().eq('id', id);
-    if (error) showToast('Error: ' + error.message);
-    else {
-        showToast('Message deleted.');
-        if (viewId1 && viewId2) viewAdminConversation(viewId1, viewId2);
-        else fetchAdminMessages();
-    }
-}
-
-window.deleteOldMessages = async function () {
-    if (!await showWimpyConfirm('Delete ALL messages older than 30 days?')) return;
-    const date = new Date(); date.setDate(date.getDate() - 30);
-    const { error } = await db.from('messages').delete().lt('created_at', date.toISOString());
-    if (error) showToast('Error: ' + error.message); else { showToast('Old messages cleared.'); fetchAdminMessages(); }
-}
 
 // --- GLOBAL PASTE LISTENER (Binder Uploads) ---
 document.addEventListener('paste', function (e) {

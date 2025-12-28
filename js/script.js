@@ -1,8 +1,8 @@
 // script.js (Self-Healing Admin Menu Version + Email Auto-Fix)
 
 // --- CONFIGURATION ---
-const SUPABASE_URL = 'https://egnyblflgppsosunnilq.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVnbnlibGZsZ3Bwc29zdW5uaWxxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY0OTYzMjksImV4cCI6MjA4MjA3MjMyOX0.HR9lt4oHuFjGcjwsF_fLoJMuG2OI8aCIoRCSyyu0zVE';
+// --- CONFIGURATION ---
+// SUPABASE_URL and SUPABASE_KEY are loaded from common.js
 
 if (typeof window.supabase === 'undefined') console.error('Error: Supabase not loaded. Check internet.');
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -44,37 +44,7 @@ let isLoginMode = true;
 let allStudents = [];
 
 // --- UTILITIES ---
-
-function showToast(message, type = 'info') {
-    const toast = document.createElement('div');
-    toast.className = 'toast';
-    toast.innerText = message;
-    if (type === 'error') {
-        toast.style.background = '#ffadad';
-        toast.style.border = '1px solid #d15656';
-    }
-    toastContainer.appendChild(toast);
-    setTimeout(() => {
-        toast.style.animation = 'toastOut 0.5s forwards';
-        setTimeout(() => toast.remove(), 500);
-    }, 3000);
-}
-
-function debounce(func, wait) {
-    let timeout;
-    return function (...args) {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func.apply(this, args), wait);
-    };
-}
-
-function copyToClipboard(text) {
-    navigator.clipboard.writeText(text).then(() => {
-        showToast('Copied: ' + text, 'success');
-    }).catch(err => {
-        showToast('Failed to copy', 'error');
-    });
-}
+// escapeHTML, showToast, debounce, copyToClipboard are loaded from common.js
 
 // --- INITIAL LOAD ---
 const initApp = async () => {
@@ -403,7 +373,20 @@ window.chooseAdminPath = function (path) {
     }
 }
 
-function showAdminPanel(name) {
+async function showAdminPanel(name) {
+    // SECURITY: Double check against DB before showing sensitive panel
+    const storedUser = localStorage.getItem('wimpy_user') || sessionStorage.getItem('wimpy_user');
+    if (!storedUser) return;
+    const u = JSON.parse(storedUser);
+
+    // Verify against DB (Client-side barrier)
+    const { data } = await supabaseClient.from('students').select('role, sr_code').eq('id', u.id).single();
+    if (!data || (data.sr_code !== 'ADMIN' && data.role !== 'admin')) {
+        showToast("Nice try. Access Denied.", "error");
+        setTimeout(() => window.location.reload(), 1000);
+        return;
+    }
+
     authSection.classList.add('hidden');
     studentDashboard.classList.add('hidden');
     adminDashboard.classList.remove('hidden');
@@ -487,7 +470,7 @@ function displayStudents(students) {
 
             chip.innerHTML = `
                 <img src="${avatar}" style="width:24px; height:24px; border-radius:50%; object-fit:cover; border:1px solid ${color};">
-                <span style="font-weight:bold; white-space: nowrap; max-width: 150px; overflow: hidden; text-overflow: ellipsis;">${student.name}</span>
+                <span style="font-weight:bold; white-space: nowrap; max-width: 150px; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(student.name)}</span>
             `;
             grid.appendChild(chip);
         });
@@ -572,8 +555,8 @@ window.openStudentDetails = function (id) {
 
     content.innerHTML = `
         <img src="${avatar}" style="width:100px; height:100px; border-radius:50%; border:3px solid #000; margin-bottom:15px; object-fit:cover;">
-        <h2 style="margin:0;">${student.name}</h2>
-        <p style="color:#666; margin-top:5px;">${student.email || 'No Email'}</p>
+        <h2 style="margin:0;">${escapeHTML(student.name)}</h2>
+        <p style="color:#666; margin-top:5px;">${escapeHTML(student.email) || 'No Email'}</p>
         
         <div style="background:#f1f2f6; padding:15px; border-radius:10px; border:2px dashed #ccc; margin:15px 0; text-align:left;">
             <div style="margin-bottom:10px;">
@@ -818,7 +801,7 @@ async function fetchMembers() {
 
                     tag.innerHTML = `
                         <img src="${safeAvatar}" style="width:24px; height:24px; border-radius:50%; object-fit:cover; border:1px solid #333; flex-shrink: 0;">
-                        <span style="font-weight:bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${student.name}</span>
+                        <span style="font-weight:bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(student.name)}</span>
                     `;
                     publicMemberList.appendChild(tag);
                 });
@@ -844,13 +827,19 @@ async function fetchMembers() {
                 const hasReceipt = s.enrollment_receipt_url;
                 const safeName = s.name.replace(/'/g, "\\'");
                 const cursorStyle = hasReceipt ? 'cursor: pointer;' : 'cursor: default;';
+
+                // Hover Events for Preview
+                const hoverEvents = hasReceipt
+                    ? `onmouseenter="showReceiptHover(event, '${s.enrollment_receipt_url}')" onmousemove="moveReceiptHover(event)" onmouseleave="hideReceiptHover()"`
+                    : '';
+
                 const tagAction = hasReceipt ? `onclick="openReceiptPreview('${safeName}', '${s.enrollment_receipt_url}')" title="View Receipt"` : '';
                 const icon = hasReceipt ? `<i class="fas fa-receipt" style="font-size:0.8rem; color:#0984e3; margin-left:5px;"></i>` : '';
 
                 return `
-                    <div class="member-tag" style="${cursorStyle}" ${tagAction}>
+                    <div class="member-tag" style="${cursorStyle}" ${tagAction} ${hoverEvents}>
                         <img src="${safeAvatar}" style="width:24px; height:24px; border-radius:50%; object-fit:cover; border:1px solid #333; flex-shrink: 0;">
-                        <span style="font-weight:bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">${s.name}</span>
+                        <span style="font-weight:bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">${escapeHTML(s.name)}</span>
                         ${icon}
                     </div>
                  `;
@@ -903,11 +892,11 @@ function showPublicProfile(name, avatarUrl, status) {
     const safeAvatar = avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
     modal.innerHTML = `
         <div class="sketch-box" style="width:90%; max-width:300px; margin:0; text-align:center; animation: slideUp 0.3s ease-out;">
-            <h2 style="margin-bottom:15px;">${name}</h2>
+            <h2 style="margin-bottom:15px;">${escapeHTML(name)}</h2>
             <div style="padding:10px; border:2px dashed #ccc; display:inline-block; border-radius:50%;">
                 <img src="${safeAvatar}" style="width:120px; height:120px; border-radius:50%; object-fit:cover; border:2px solid #000;">
             </div>
-            <p style="margin-top:15px; font-style:italic;">"${status || 'Member'}"</p>
+            <p style="margin-top:15px; font-style:italic;">"${escapeHTML(status) || 'Member'}"</p>
             ${contactBtn}
             <button onclick="document.getElementById('publicProfileModal').style.display='none'">CLOSE</button>
         </div>
@@ -929,7 +918,7 @@ async function fetchRecentLogins() {
         row.innerHTML = `
             <div style="display:flex; align-items:center; gap:8px;">
                 <img src="${safeAvatar}" style="width:25px; height:25px; border-radius:50%; object-fit:cover; border:1px solid #333;">
-                <span>${student.name}</span>
+                <span>${escapeHTML(student.name)}</span>
             </div>
             <small style="color:#666; font-family:sans-serif; font-size:0.8rem;">${timeAgo(student.last_login)}</small>
         `;
@@ -2157,6 +2146,52 @@ window.handleInstantGalleryUpload = async function (e) {
         console.error(err);
         showToast('Upload failed: ' + err.message, 'error');
     }
+}
+
+// --- HOVER PREVIEW FOR RECEIPT ---
+window.showReceiptHover = function (e, url) {
+    let tooltip = document.getElementById('receipt-hover-preview');
+    if (!tooltip) {
+        tooltip = document.createElement('div');
+        tooltip.id = 'receipt-hover-preview';
+        tooltip.style.cssText = 'position: fixed; z-index: 10000; background: #fff; padding: 5px; border: 2px solid #000; box-shadow: 5px 5px 0 rgba(0,0,0,0.2); pointer-events: none; transform: rotate(-2deg); animation: fadeIn 0.2s;';
+        // Added position:relative container for the overlay
+        tooltip.innerHTML = `
+            <div style="position: relative;">
+                <img src="" style="display: block; max-width: 200px; max-height: 200px; object-fit: contain;">
+                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); color: #fff; padding: 5px 8px; border-radius: 4px; font-size: 0.8rem; text-align: center; border: 1px solid #fff; white-space: nowrap;">
+                    Click to view receipt
+                </div>
+            </div>
+        `;
+        document.body.appendChild(tooltip);
+    }
+    const img = tooltip.querySelector('img');
+    if (img.src !== url) img.src = url;
+
+    // Initial position
+    updateHoverPosition(e);
+}
+
+window.moveReceiptHover = function (e) {
+    updateHoverPosition(e);
+}
+
+window.hideReceiptHover = function () {
+    const tooltip = document.getElementById('receipt-hover-preview');
+    if (tooltip) tooltip.remove();
+}
+
+function updateHoverPosition(e) {
+    const tooltip = document.getElementById('receipt-hover-preview');
+    if (!tooltip) return;
+
+    // Offset from cursor to avoid covering it
+    const x = e.clientX + 15;
+    const y = e.clientY + 15;
+
+    tooltip.style.left = x + 'px';
+    tooltip.style.top = y + 'px';
 }
 
 // --- DEDICATED RECEIPT PREVIEW MODAL ---
