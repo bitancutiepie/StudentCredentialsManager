@@ -33,6 +33,8 @@ Diverging from sterile, corporate interfaces, this project adopts a **hand-drawn
 *   **Interactive Calendar:** Monthly view of events; Admins can click days to add events instantly.
 *   **Digital Backpack:** Centralized access to homework assignments and deadlines.
 *   **Resource Cabinet:** Organized file repository with **Smart Filters** (separating gallery photos from study materials) and **File Previews**.
+*   **Freedom Wall:** A real-time, interactive board for sharing notes and doodles.
+*   **Messaging System:** Integrated chat for peer-to-peer communication.
 *   **Help Guide:** A dedicated tab explaining how to navigate the system.
 *   **Real-time Clock:** A retro Casio-style watch displaying the current time.
 
@@ -44,9 +46,10 @@ Diverging from sterile, corporate interfaces, this project adopts a **hand-drawn
 *   **System Update Log:** A visual changelog modal to keep users informed of new features.
 
 ### 🛠️ Administrator Controls
-*   **Admin Tool Menu:** A centralized navigation bar for managing classes, homework, events, files, and emails.
+*   **Admin Tool Menu:** A centralized navigation bar within the binder for managing classes, homework, events, files, and emails.
+*   **Black List Management:** A dedicated dashboard for managing registered students, viewing credentials, and handling enrollment receipts.
 *   **Storage Monitor:** Real-time visualization of Supabase storage usage (MB/GB) with breakdown by bucket.
-*   **User Management:** A "Black List" view to manage registered students, view credentials (for recovery), and delete accounts.
+*   **Role Management:** Capability to promote users to Admin or revoke access.
 *   **Impersonation Mode:** Admins can "Login as User" to view the dashboard from a specific student's perspective.
 *   **Portal Gateway:** A calculated pop-up window to access the official university portal (`dione`) side-by-side.
 
@@ -60,13 +63,25 @@ Diverging from sterile, corporate interfaces, this project adopts a **hand-drawn
 
 ## 📸 Gallery
 
-| **Login Screen** | **Digital Binder** |
+| **Login Screen** | **Admin Choice** |
 |:---:|:---:|
-| <img src="assets/screenshots/login.png" alt="Login" width="400"> | <img src="assets/screenshots/dashboard.png" alt="Dashboard" width="400"> |
+| <img src="assets/screenshots/login.png" alt="Login" width="400"> | <img src="assets/screenshots/admin_choice.png" alt="Admin Choice" width="400"> |
 
-| **Admin Panel** | **Mobile View** |
+| **Management Dashboard** | **Digital Binder** |
 |:---:|:---:|
-| <img src="assets/screenshots/admin.png" alt="Admin" width="400"> | <img src="assets/screenshots/mobile.png" alt="Mobile" width="400"> |
+| <img src="assets/screenshots/admin.png" alt="Admin Management" width="400"> | <img src="assets/screenshots/dashboard.png" alt="Student Binder" width="400"> |
+
+| **Freedom Wall** | **Admin Tools (Binder)** |
+|:---:|:---:|
+| <img src="assets/screenshots/freedom_wall.png" alt="Freedom Wall" width="400"> | <img src="assets/screenshots/admin_tools.png" alt="Admin Tools" width="400"> |
+
+| **Homework Tracker** | **Calendar Events** |
+|:---:|:---:|
+| <img src="assets/screenshots/assignments.png" alt="Homework" width="400"> | <img src="assets/screenshots/calendar.png" alt="Calendar" width="400"> |
+
+| **Resource Cabinet** | **Mobile Experience** |
+|:---:|:---:|
+| <img src="assets/screenshots/resources.png" alt="Files" width="400"> | <img src="assets/screenshots/mobile.png" alt="Mobile" width="400"> |
 
 ---
 
