@@ -41,6 +41,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadAssignments();
     await loadEvents();
     await loadFiles();
+    await loadTodos();
 
     // ADD THIS LINE HERE:
     await initLiveClassChecker();
@@ -1440,5 +1441,126 @@ function handleImagePaste(e, inputElement) {
             e.preventDefault();
             return;
         }
+    }
+}
+
+// --- GLOBAL TO-DO LOGIC ---
+window.loadTodos = async function () {
+    const list = document.getElementById('todo-list');
+    if (!list) return;
+
+    list.innerHTML = '<div class="loader">Unrolling tasks...</div>';
+
+    // 1. Fetch Todos
+    const { data: todos, error: todoErr } = await db.from('global_todos').select('*').order('created_at', { ascending: false });
+    if (todoErr) {
+        list.innerHTML = '<p>Error loading tasks.</p>';
+        return;
+    }
+
+    if (!todos || todos.length === 0) {
+        list.innerHTML = '<p style="text-align:center; font-style:italic;">No global tasks yet. Check back later!</p>';
+        return;
+    }
+
+    // 2. Fetch Completions
+    const { data: completions, error: compErr } = await db.from('todo_completions').select('todo_id, user_id, students(name, avatar_url)');
+    if (compErr) console.error("Error fetching completions:", compErr);
+
+    // 3. Render
+    list.innerHTML = todos.map(todo => {
+        const itemCompletions = (completions || []).filter(c => c.todo_id === todo.id);
+        const isDoneByMe = itemCompletions.some(c => c.user_id === user.id);
+
+        const deleteBtn = isAdmin ? `<button onclick="deleteGlobalTodo(${todo.id})" class="sketch-btn danger" style="padding:2px 8px; font-size:0.8rem; height:auto; width:auto; margin:0;"><i class="fas fa-trash"></i></button>` : '';
+
+        // Generate avatars for completed users
+        const completionAvatars = itemCompletions.slice(0, 10).map(c => {
+            const student = c.students;
+            if (!student) return '';
+            const avatar = student.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random`;
+            return `<img src="${avatar}" class="completion-avatar" title="${escapeHTML(student.name)} done this!">`;
+        }).join('');
+
+        const othersCount = itemCompletions.length > 10 ? `<small style="font-size:0.7rem; color:#666;">+${itemCompletions.length - 10} more</small>` : '';
+
+        return `
+            <div class="todo-item">
+                <div class="todo-main">
+                    <div class="todo-checkbox ${isDoneByMe ? 'checked' : ''}" onclick="toggleTodoCompletion(${todo.id}, ${isDoneByMe})">
+                        <div class="charcoal-x">
+                            <svg viewBox="0 0 100 100" style="width:100%; height:100%;">
+                                <path d="M 20,20 L 80,80" fill="none" stroke="#000" stroke-width="12" stroke-linecap="round" />
+                                <path d="M 80,20 L 20,80" fill="none" stroke="#000" stroke-width="12" stroke-linecap="round" />
+                            </svg>
+                        </div>
+                    </div>
+                    <span class="todo-task-text">${escapeHTML(todo.task_name)}</span>
+                    ${deleteBtn}
+                </div>
+                <div class="completions-area">
+                    <span class="completions-label">${itemCompletions.length} Finished:</span>
+                    <div class="completion-avatars">
+                        ${completionAvatars}
+                        ${othersCount}
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+window.toggleTodoCompletion = async function (todoId, currentlyDone) {
+    if (!user) return;
+
+    try {
+        if (currentlyDone) {
+            // Unmark
+            await db.from('todo_completions').delete().eq('todo_id', todoId).eq('user_id', user.id);
+            showToast("Marked as Not Done.");
+        } else {
+            // Mark as done
+            await db.from('todo_completions').insert([{ todo_id: todoId, user_id: user.id }]);
+            // Play sound
+            const snd = document.getElementById('notif-sound');
+            if (snd) { snd.currentTime = 0; snd.play().catch(() => { }); }
+            showToast("Task Finished! Charcoal 'X' added.");
+        }
+        loadTodos(); // Refresh list
+    } catch (err) {
+        showToast("Error updating task: " + err.message, "error");
+    }
+}
+
+// Admin Tools: Add Todo
+window.addGlobalTodo = async function (e) {
+    e.preventDefault();
+    if (!isAdmin) return;
+
+    const task = document.getElementById('todo-task').value.trim();
+    if (!task) return;
+
+    const { error } = await db.from('global_todos').insert([{ task_name: task, created_by: user.id }]);
+
+    if (error) {
+        showToast("Failed to post task: " + error.message, "error");
+    } else {
+        showToast("Global Task Posted!");
+        document.getElementById('todo-task').value = '';
+        loadTodos();
+        showAdminTool(null); // Close tool
+    }
+}
+
+window.deleteGlobalTodo = async function (id) {
+    if (!isAdmin) return;
+    if (!await showWimpyConfirm("Delete this global task? All completions will be lost!")) return;
+
+    const { error } = await db.from('global_todos').delete().eq('id', id);
+    if (error) {
+        showToast("Error deleting task: " + error.message, "error");
+    } else {
+        showToast("Task deleted.");
+        loadTodos();
     }
 }

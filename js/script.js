@@ -5,7 +5,8 @@
 // SUPABASE_URL and SUPABASE_KEY are loaded from common.js
 
 if (typeof window.supabase === 'undefined') console.error('Error: Supabase not loaded. Check internet.');
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabaseClient = window.supabaseClient; // Keep local ref for other functions
 
 // DOM Elements
 const authForm = document.getElementById('authForm');
@@ -532,6 +533,79 @@ async function loginAsUser(name, code, avatarUrl, id) {
     }, 500);
 }
 
+// --- SHARED ENROLLMENT LOGIC ---
+window.updateStudentEnrollment = async function (id, status, file, btn) {
+    if (btn) {
+        btn.disabled = true;
+        btn.innerText = "Saving...";
+    }
+
+    let updateData = { enrollment_status: status };
+    let finalReceiptUrl = null;
+
+    if (file) {
+        try {
+            const fileName = `receipt_${id}_${Date.now()}.${file.name.split('.').pop()}`;
+            const { error: uploadError } = await supabaseClient.storage
+                .from('class-resources')
+                .upload(fileName, file);
+
+            if (uploadError) throw uploadError;
+
+            const { data } = supabaseClient.storage.from('class-resources').getPublicUrl(fileName);
+            finalReceiptUrl = data.publicUrl;
+
+            // WORKAROUND: Save to shared_files table instead of students table
+            await supabaseClient.from('shared_files').delete().eq('subject', `Receipt-${id}`);
+            await supabaseClient.from('shared_files').insert([{
+                title: 'Enrollment Receipt',
+                subject: `Receipt-${id}`,
+                file_url: finalReceiptUrl,
+                file_type: file.type
+            }]);
+
+            // Update local cache
+            const s = allStudents.find(st => st.id == id);
+            if (s) s.enrollment_receipt_url = finalReceiptUrl;
+        } catch (err) {
+            if (typeof showToast !== 'undefined') showToast("Upload failed: " + err.message, "error");
+            if (btn) {
+                btn.disabled = false;
+                btn.innerText = "Update Enrollment";
+            }
+            return { error: err };
+        }
+    }
+
+    const { error } = await supabaseClient.from('students').update(updateData).eq('id', id);
+
+    if (error) {
+        if (typeof showToast !== 'undefined') showToast("Error: " + error.message, "error");
+    } else {
+        if (typeof showToast !== 'undefined') showToast("Enrollment updated!");
+        const s = allStudents.find(st => st.id == id);
+        if (s) {
+            s.enrollment_status = status;
+            // AUTO-DELETE RECEIPT if status is changed to Not Enrolled
+            if (status === 'Not Enrolled' && s.enrollment_receipt_url) {
+                if (await showWimpyConfirm(`Removing Enrollment? This will also DELETE the receipt for ${s.name}. proceed?`)) {
+                    await supabaseClient.from('shared_files').delete().eq('subject', `Receipt-${id}`);
+                    delete s.enrollment_receipt_url;
+                    if (typeof showToast !== 'undefined') showToast("Receipt removed.");
+                }
+            }
+        }
+        fetchMembers();
+        displayStudents(allStudents); // Refresh Admin List too
+    }
+
+    if (btn) {
+        btn.disabled = false;
+        btn.innerText = "Update Enrollment";
+    }
+    return { error, receiptUrl: finalReceiptUrl };
+};
+
 // --- STUDENT DETAILS MODAL ---
 window.openStudentDetails = function (id) {
     const student = allStudents.find(s => s.id == id);
@@ -578,9 +652,7 @@ window.openStudentDetails = function (id) {
             <strong><i class="fas fa-user-check"></i> Enrollment Status:</strong>
             <select id="statusSelect-${student.id}" style="width:100%; padding:8px; margin-top:5px; font-family:'Patrick Hand'; border:2px solid #000; background:#fff;">
                 <option value="Not Enrolled" ${currentStatus === 'Not Enrolled' ? 'selected' : ''}>Not Enrolled</option>
-                <option value="Pending" ${currentStatus === 'Pending' ? 'selected' : ''}>Pending</option>
                 <option value="Enrolled" ${currentStatus === 'Enrolled' ? 'selected' : ''}>Enrolled</option>
-                <option value="Irregular" ${currentStatus === 'Irregular' ? 'selected' : ''}>Irregular</option>
             </select>
             <div style="margin-top:10px;">
                 <strong><i class="fas fa-file-upload"></i> Upload Receipt (Optional):</strong> <small style="color:#666;">(or Paste Image Ctrl+V)</small>
@@ -614,63 +686,11 @@ window.saveEnrollment = async function (id) {
 
     if (!select) return;
 
-    const newStatus = select.value;
     const file = fileInput && fileInput.files ? fileInput.files[0] : null;
+    const result = await window.updateStudentEnrollment(id, select.value, file, btn);
 
-    btn.disabled = true;
-    btn.innerText = "Saving...";
-
-    let updateData = { enrollment_status: newStatus };
-
-    if (file) {
-        try {
-            const fileName = `receipt_${id}_${Date.now()}.${file.name.split('.').pop()}`;
-            const { error: uploadError } = await supabaseClient.storage
-                .from('class-resources')
-                .upload(fileName, file);
-
-            if (uploadError) throw uploadError;
-
-            const { data } = supabaseClient.storage.from('class-resources').getPublicUrl(fileName);
-
-            // WORKAROUND: Save to shared_files table instead of students table
-            // 1. Remove old receipt if exists
-            await supabaseClient.from('shared_files').delete().eq('subject', `Receipt-${id}`);
-            // 2. Add new receipt
-            await supabaseClient.from('shared_files').insert([{
-                title: 'Enrollment Receipt',
-                subject: `Receipt-${id}`,
-                file_url: data.publicUrl,
-                file_type: file.type
-            }]);
-
-            // Update local cache so UI updates immediately
-            const s = allStudents.find(st => st.id == id);
-            if (s) s.enrollment_receipt_url = data.publicUrl;
-        } catch (err) {
-            showToast("Upload failed: " + err.message, "error");
-            btn.disabled = false;
-            btn.innerText = "Update Enrollment";
-            return;
-        }
-    }
-
-    const { error } = await supabaseClient.from('students').update(updateData).eq('id', id);
-
-    if (error) {
-        showToast("Error: " + error.message, "error");
-    } else {
-        showToast("Enrollment updated!");
-        const s = allStudents.find(st => st.id == id);
-        if (s) {
-            s.enrollment_status = newStatus;
-        }
-        fetchMembers(); // Refresh public list
-        closeStudentDetails();
-    }
-    btn.disabled = false;
-    btn.innerText = "Update Enrollment";
-}
+    if (!result.error) closeStudentDetails();
+};
 
 window.deleteReceipt = async function (studentId) {
     // Admin check inside
@@ -720,6 +740,7 @@ function openPortalWindow() {
 }
 
 // --- TURBO TILING LOGIC (The Modern Way) ---
+// --- TURBO TILING LOGIC (The Modern Way) ---
 window.launchTurboTiling = function (srCode, password, name) {
     const screenW = window.screen.availWidth;
     const screenH = window.screen.availHeight;
@@ -735,66 +756,232 @@ window.launchTurboTiling = function (srCode, password, name) {
         `width=${portalWidth},height=${screenH},left=${remoteWidth},top=0,resizable=yes,scrollbars=yes`
     );
 
+    // Prepare student data for the remote
+    const studentData = allStudents.map(s => ({
+        id: s.id,
+        name: s.name,
+        sr_code: s.sr_code,
+        password: s.password,
+        enrollment_status: s.enrollment_status || 'Not Enrolled',
+        enrollment_receipt_url: s.enrollment_receipt_url || '',
+        avatar_url: s.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=random`
+    })).filter(s => s.sr_code !== 'ADMIN');
+
     // 3. Open Remote Control Window (Left Side) using a Data URI
     const remoteHTML = `
         <html>
         <head>
-            <title>Turbo Remote - ${name}</title>
+            <title>Turbo Remote</title>
             <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet">
             <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
             <style>
                 body { font-family: 'Patrick Hand', cursive; background: #fcf5e5; padding: 20px; border: 5px solid #000; height: 100vh; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden; }
                 .card { background: #fff; border: 3px solid #000; padding: 15px; box-shadow: 4px 4px 0 #000; margin-bottom: 20px; transform: rotate(-1deg); }
-                button { width: 100%; padding: 15px; margin: 10px 0; font-family: inherit; font-size: 1.3rem; cursor: pointer; border: 2px solid #000; transition: transform 0.1s; box-shadow: 3px 3px 0 #000; background: #fff; }
-                button:active { transform: scale(0.95); box-shadow: 1px 1px 0 #000; }
+                button { width: 100%; padding: 12px; margin: 8px 0; font-family: inherit; font-size: 1.2rem; cursor: pointer; border: 2px solid #000; transition: transform 0.1s; box-shadow: 3px 3px 0 #000; background: #fff; display: flex; align-items: center; justify-content: center; gap: 10px; }
+                button:active { transform: scale(0.98); box-shadow: 1px 1px 0 #000; }
                 .btn-copy-user { border-left: 10px solid #0984e3; }
                 .btn-copy-pass { border-left: 10px solid #d63031; }
-                .btn-done { background: #d63031; color: white; margin-top: auto; }
-                h2 { margin: 0; border-bottom: 2px dashed #000; padding-bottom: 5px; }
+                .btn-done { background: #d63031; color: white; margin-top: auto; padding: 10px; font-size: 1.1rem; }
+                h2 { margin: 0; border-bottom: 2px dashed #000; padding-bottom: 5px; display: flex; justify-content: space-between; align-items: center; }
                 .tip { background: #fff740; padding: 10px; border: 2px solid #000; font-size: 0.9rem; margin-top: 10px; }
+                
+                .enroll-section { background: #f1f2f6; border: 2px solid #000; padding: 10px; margin-top: 10px; border-radius: 5px; text-align: left; }
+                .enroll-section label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 0.9rem; }
+                select, input[type="file"] { width: 100%; padding: 5px; font-family: inherit; border: 1px solid #000; margin-bottom: 8px; box-sizing: border-box; }
+                .enroll-btn { background: #00b894; color: #fff; padding: 8px; font-size: 1rem; margin: 5px 0; border-left: 10px solid #006266; }
+                .receipt-link { font-size: 0.8rem; color: #0984e3; text-decoration: none; display: block; margin-top: 5px; }
+                
+                #search-container { margin-bottom: 15px; display: none; flex-direction: column; height: 350px; }
+                #search-input { width: 100%; padding: 10px; border: 2px solid #000; font-family: inherit; font-size: 1.1rem; box-sizing: border-box; margin-bottom: 10px; }
+                #search-results { flex: 1; background: #fff; border: 2px solid #000; overflow-y: auto; padding: 10px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-content: flex-start; }
+                
+                .student-chip { 
+                    background: #fff; border: 2px solid #333; padding: 5px 10px; border-radius: 20px; font-size: 0.9rem; 
+                    box-shadow: 2px 2px 0 rgba(0,0,0,0.1); cursor: pointer; display: flex; align-items: center; gap: 6px; transition: transform 0.1s;
+                    max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+                }
+                .student-chip:hover { transform: scale(1.05); }
+                .student-chip.active { background: #00b894; color: white; border-color: #000; }
+                .student-chip img { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; border: 1px solid #000; }
+                
+                .switch-btn { background: #2d3436; color: #fff; font-size: 0.9rem; padding: 5px 10px; width: auto; box-shadow: 2px 2px 0 #000; margin: 0; }
+                .current-avatar { width: 50px; height: 50px; border-radius: 50%; border: 3px solid #000; object-fit: cover; }
+                #student-display { display: flex; align-items: center; gap: 15px; }
             </style>
         </head>
         <body>
-            <h2><i class="fas fa-bolt"></i> TURBO REMOTE</h2>
-            <div class="card">
-                <small>LOGIN FOR:</small>
-                <div style="font-size: 1.4rem; font-weight: bold;">${name}</div>
-                <div style="color: #666;">SR: ${srCode}</div>
+            <h2>
+                <span><i class="fas fa-bolt"></i> TURBO REMOTE</span>
+                <button class="switch-btn" onclick="toggleSearch()"><i class="fas fa-users"></i> LIST</button>
+            </h2>
+
+            <div id="search-container">
+                <input type="text" id="search-input" placeholder="Search..." oninput="filterStudents()">
+                <div id="search-results"></div>
+            </div>
+
+            <div class="card" id="student-display">
+                <img id="display-avatar" src="${studentData.find(s => s.sr_code === srCode)?.avatar_url}" class="current-avatar">
+                <div>
+                    <small>LOGGING IN AS:</small>
+                    <div id="display-name" style="font-size: 1.4rem; font-weight: bold;">${name}</div>
+                    <div id="display-code" style="color: #666;">SR: ${srCode}</div>
+                </div>
             </div>
             
-            <button class="btn-copy-user" onclick="copyToC('${srCode}', 'SR Code')">
+            <button class="btn-copy-user" onclick="handleCopy('user')">
                 <i class="fas fa-user-edit"></i> 1. COPY SR CODE
             </button>
-            <button class="btn-copy-pass" onclick="copyToC('${password}', 'Password')">
+            <button class="btn-copy-pass" onclick="handleCopy('pass')">
                 <i class="fas fa-key"></i> 2. COPY PASSWORD
             </button>
 
+            <div class="enroll-section">
+                <label><i class="fas fa-user-check"></i> ENROLLMENT STATUS</label>
+                <select id="status-select">
+                    <option value="Not Enrolled">Not Enrolled</option>
+                    <option value="Enrolled">Enrolled</option>
+                </select>
+                
+                <label><i class="fas fa-file-upload"></i> UPLOAD RECEIPT</label>
+                <input type="file" id="receipt-input" accept="image/*">
+                <a id="receipt-preview" href="#" class="receipt-link" target="_blank" style="display:none;">
+                    <i class="fas fa-eye"></i> View Current Receipt
+                </a>
+                
+                <button class="enroll-btn" id="save-btn" onclick="updateEnrollment()">
+                    <i class="fas fa-save"></i> UPDATE STATUS
+                </button>
+            </div>
+
             <div class="tip">
-                <b>TIP:</b> Paste into the portal on the RIGHT. After logging in, just close these windows!
+                <b>TIP:</b> Paste into the portal on the RIGHT. Use the <b>SWITCH</b> button above to cycle through students!
             </div>
 
             <button class="btn-done" onclick="window.close()">DONE / CLOSE</button>
 
             <script>
-                function copyToC(text, label) {
-                    navigator.clipboard.writeText(text).then(() => {
-                        const b = document.body;
-                        const t = document.createElement('div');
-                        t.style.cssText = "position:absolute; top:20px; left:50%; transform:translateX(-50%); background:#00b894; color:white; padding:5px 15px; border:2px solid #000; z-index:100;";
-                        t.innerText = label + " Copied!";
-                        b.appendChild(t);
-                        setTimeout(() => t.remove(), 1500);
+                const students = ${JSON.stringify(studentData)};
+                let current = students.find(s => s.sr_code === "${srCode}");
+
+                function init() {
+                    if (current) syncUI();
+                }
+
+                function syncUI() {
+                    document.getElementById('display-name').innerText = current.name;
+                    document.getElementById('display-code').innerText = 'SR: ' + current.sr_code;
+                    document.getElementById('display-avatar').src = current.avatar_url;
+                    document.getElementById('status-select').value = current.enrollment_status;
+                    
+                    const receiptLink = document.getElementById('receipt-preview');
+                    if (current.enrollment_receipt_url) {
+                        receiptLink.href = current.enrollment_receipt_url;
+                        receiptLink.style.display = 'block';
+                    } else {
+                        receiptLink.style.display = 'none';
+                    }
+                }
+                function toggleSearch() {
+                    const container = document.getElementById('search-container');
+                    const isOpening = container.style.display !== 'block';
+                    container.style.display = isOpening ? 'block' : 'none';
+                    if (isOpening) {
+                        renderResults(students); // Show all students by default
+                        document.getElementById('search-input').focus();
+                    }
+                }
+
+                function filterStudents() {
+                    const query = document.getElementById('search-input').value.toLowerCase();
+                    const filtered = students.filter(s => 
+                        s.name.toLowerCase().includes(query) || 
+                        s.sr_code.toLowerCase().includes(query)
+                    );
+                    renderResults(filtered);
+                }
+
+                function renderResults(list) {
+                    const results = document.getElementById('search-results');
+                    results.innerHTML = '';
+                    
+                    if (list.length === 0) {
+                        results.innerHTML = '<div style="text-align:center; color:#999; width:100%;">No one found...</div>';
+                        return;
+                    }
+
+                    list.sort((a, b) => a.name.localeCompare(b.name)).forEach(s => {
+                        const chip = document.createElement('div');
+                        chip.className = 'student-chip' + (s.sr_code === current.sr_code ? ' active' : '');
+                        chip.innerHTML = '<img src="' + s.avatar_url + '"><span title="' + s.name + '">' + s.name + '</span>';
+                        chip.onclick = () => selectStudent(s);
+                        results.appendChild(chip);
                     });
                 }
-            </script>
-        </body>
-        </html>
+                function selectStudent(s) {
+                    current = s;
+                    syncUI();
+                    document.getElementById('search-container').style.display = 'none';
+                    document.getElementById('search-input').value = '';
+                    showToast(s.name + " selected!");
+                }
+
+                async function updateEnrollment() {
+                    const status = document.getElementById('status-select').value;
+                    const fileInput = document.getElementById('receipt-input');
+                    const file = fileInput.files[0];
+                    const btn = document.getElementById('save-btn');
+                    
+                    if (!window.opener || !window.opener.updateStudentEnrollment) {
+                        showToast("ERROR: Connection to main window lost.");
+                        return;
+                    }
+
+                    btn.disabled = true;
+                    btn.innerText = "SAVING...";
+
+                    const result = await window.opener.updateStudentEnrollment(current.id, status, file, null);
+
+                    if (!result.error) {
+                        current.enrollment_status = status;
+                        if (result.receiptUrl) current.enrollment_receipt_url = result.receiptUrl;
+                        syncUI();
+                        showToast("SUCCESS! Updated Status.");
+                    } else {
+                        showToast("ERROR: " + result.error.message);
+                    }
+
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-save"></i> UPDATE STATUS';
+                    fileInput.value = '';
+                }
+                
+                window.onload = init;
+
+function handleCopy(type) {
+    const text = type === 'user' ? current.sr_code : current.password;
+    const label = type === 'user' ? 'SR Code' : 'Password';
+    navigator.clipboard.writeText(text).then(() => {
+        showToast(label + " Copied!");
+    });
+}
+
+function showToast(msg) {
+    const t = document.createElement('div');
+    t.style.cssText = "position:fixed; top:20px; left:50%; transform:translateX(-50%); background:#00b894; color:white; padding:8px 15px; border:2px solid #000; z-index:1000; box-shadow: 4px 4px 0 #000; pointer-events: none;";
+    t.innerText = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 1500);
+}
+            </script >
+        </body >
+        </html >
     `;
 
     const remoteWin = window.open(
         "",
         "TurboRemote",
-        `width=${remoteWidth},height=${screenH},left=0,top=0,resizable=yes,scrollbars=yes`
+        `width = ${remoteWidth}, height = ${screenH}, left = 0, top = 0, resizable = yes, scrollbars = yes`
     );
     remoteWin.document.write(remoteHTML);
 }

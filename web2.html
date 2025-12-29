@@ -65,7 +65,8 @@
         <!-- The Tabs -->
         <div class="nav-tabs">
             <button class="tab-btn active" onclick="switchTab('schedule', event)">Schedule</button>
-            <button class="tab-btn" onclick="switchTab('assignments', event)">Homework</button>
+            <button class="tab-btn" onclick="switchTab('assignments', event)"
+                style="background: #fab1a0;">Planner</button>
             <button class="tab-btn" onclick="switchTab('calendar', event)">Events</button>
             <button class="tab-btn" onclick="switchTab('links', event)">Links</button>
             <button class="tab-btn" onclick="switchTab('help', event)">Help Guide</button>
@@ -162,6 +163,8 @@
                             class="fas fa-calendar-alt"></i> Event</button>
                     <button class="sketch-btn" onclick="showAdminTool('admin-file-form', this)"><i
                             class="fas fa-paperclip"></i> File</button>
+                    <button class="sketch-btn" onclick="showAdminTool('admin-todo-form', this)"><i
+                            class="fas fa-check-double"></i> To-Do</button>
                     <button class="sketch-btn" onclick="showAdminTool('admin-email-form', this)"><i
                             class="fas fa-envelope"></i> Email</button>
                     <button class="sketch-btn" onclick="showAdminTool('admin-message-manager', this)"><i
@@ -256,6 +259,20 @@
                             <button type="submit" class="sketch-btn" id="upload-btn"
                                 style="background: #000; color: #fff;">
                                 <i class="fas fa-paperclip"></i> Upload to Cabinet
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="admin-controls" id="admin-todo-form">
+                        <button onclick="showAdminTool(null)" class="sketch-btn danger"
+                            style="position: absolute; top: 10px; right: 10px; width: auto; margin: 0; padding: 5px 10px; font-size: 0.9rem;">Close</button>
+                        <h3>Admin's Note: Global To-Do <i class="fas fa-check-double"></i></h3>
+                        <p style="font-size: 0.9rem; margin-bottom: 10px;">(Post a task for everyone to complete)</p>
+                        <form onsubmit="addGlobalTodo(event)" autocomplete="off">
+                            <input type="text" id="todo-task" placeholder="Task description (e.g. Pass Receipt...)"
+                                required>
+                            <button type="submit" class="sketch-btn" style="background: #000; color: #fff;">
+                                <i class="fas fa-plus"></i> Post Task
                             </button>
                         </form>
                     </div>
@@ -406,11 +423,26 @@
                 </div>
             </div>
 
-            <!-- ================= ASSIGNMENTS TAB ================= -->
+            <!-- ================= PLANNER (ASSIGNMENTS & TO-DO) TAB ================= -->
             <div id="assignments" class="tab-content hidden">
-                <h2><i class="fas fa-thumbtack"></i> Assignments</h2>
+                <h2><i class="fas fa-tasks"></i> Planner & Tasks</h2>
+
+                <!-- Homework Section -->
+                <h3 style="margin-top:20px; border-bottom: 2px dashed #000; padding-bottom:5px;"><i
+                        class="fas fa-thumbtack"></i> Homework Assignments</h3>
                 <div id="assignment-list" class="grid-container">
                     <div class="loader">Checking backpack...</div>
+                </div>
+
+                <!-- Global To-Do Section -->
+                <h3 style="margin-top:40px; border-bottom: 2px dashed #000; padding-bottom:5px;"><i
+                        class="fas fa-check-double"></i> Class To-Do List</h3>
+                <div
+                    style="background: #fff740; padding: 10px; border: 2px dashed #000; margin-bottom: 20px; transform: rotate(-0.5deg); font-size: 0.9rem;">
+                    <b>NOTE:</b> Mark the task when done! Your classmates will see you finished it. Stay motivated!
+                </div>
+                <div id="todo-list" style="display: flex; flex-direction: column; gap: 15px;">
+                    <div class="loader">Sharpening pencils...</div>
                 </div>
             </div>
 
