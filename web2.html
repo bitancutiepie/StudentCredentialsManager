@@ -22,6 +22,11 @@
     </script>
     <!-- html2canvas for Wallpaper Generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- PDF.js for Schedule Scanning -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Permanent+Marker&display=swap"
         rel="stylesheet">
@@ -385,6 +390,9 @@
                     <button class="sketch-btn wallpaper-btn" onclick="openWallpaperModal()">
                         <i class="fas fa-camera-retro"></i> Wallpaper
                     </button>
+                    <button class="sketch-btn pdf-scanner-btn" onclick="openPdfScanner()">
+                        <i class="fas fa-paste"></i> Paste Schedule
+                    </button>
                 </div>
 
                 <h3 id="current-day-label" style="text-align: center; font-size: 1.5rem; color: #57606f;">Weekly View
@@ -500,6 +508,90 @@
 
         </div> <!-- End Paper Content -->
     </div> <!-- End Binder -->
+
+    <!-- PDF/Paste Scanner Modal -->
+    <div id="pdfScannerModal" class="wimpy-modal-overlay hidden">
+        <div class="wimpy-modal-box"
+            style="width: 95%; max-width: 800px; height: 80vh; display: flex; flex-direction: column;">
+            <div
+                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom: 2px dashed #000; padding-bottom: 10px;">
+                <h2 style="margin:0;"><i class="fas fa-paste"></i> Paste Schedule Scanner</h2>
+                <button onclick="document.getElementById('pdfScannerModal').classList.add('hidden')"
+                    class="sketch-btn danger" style="width:auto; padding: 5px 10px;">X</button>
+            </div>
+
+            <div id="pdf-upload-zone" style="flex: 1; display: flex; flex-direction: column; gap: 10px;">
+                <p style="font-family: 'Patrick Hand'; font-size: 1.2rem; color: #555; margin: 0;">Paste your schedule
+                    text from the portal below:</p>
+                <textarea id="pdf-paste-input" placeholder="Paste Code, Description, Section, etc. here..."
+                    style="flex: 1; border: 2px solid #000; border-radius: 5px; padding: 15px; font-family: 'Patrick Hand'; font-size: 1.1rem; resize: none; background: #fffdf0;"></textarea>
+                <button onclick="handlePasteParse()" class="sketch-btn"
+                    style="width: 100%; background: #000; color: #fff; margin-top: 5px; font-size: 1.2rem;">
+                    <i class="fas fa-magic"></i> EXTRACT CLASSES
+                </button>
+            </div>
+
+            <div id="pdf-parsing-loader" class="hidden"
+                style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <i class="fas fa-spinner fa-spin" style="font-size: 3rem; color: #0984e3;"></i>
+                <p style="font-family: 'Patrick Hand'; font-size: 1.5rem; margin-top: 15px;">Reading your schedule...
+                </p>
+            </div>
+
+            <div id="pdf-review-zone" class="hidden"
+                style="flex: 1; overflow-y: auto; text-align: left; padding: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h3 style="margin: 0; color: #2d3436;">Review Extracted Classes:</h3>
+                    <button onclick="resetPdfScanner()" class="sketch-btn"
+                        style="width: auto; padding: 5px 10px; font-size: 0.9rem;">Back</button>
+                </div>
+                <div id="extracted-classes-list" style="display: flex; flex-direction: column; gap: 10px;">
+                    <!-- Classes will be listed here -->
+                </div>
+            </div>
+
+            <div id="pdf-scanner-footer" class="hidden"
+                style="margin-top: 15px; border-top: 2px dashed #000; padding-top: 15px; display: flex; gap: 10px; justify-content: flex-end;">
+                <button onclick="saveExtractedClasses()" id="btn-save-extracted" class="sketch-btn"
+                    style="width: auto; background: #00b894; color: #fff; font-size: 1.1rem; padding: 10px 25px;">
+                    <i class="fas fa-save"></i> Save All to Schedule
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Class Links Modal -->
+    <div id="editLinksModal" class="wimpy-modal-overlay hidden">
+        <div class="wimpy-modal-box" style="text-align: left; max-width: 450px;">
+            <div
+                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom: 2px solid #000; padding-bottom:10px;">
+                <h2 style="margin:0; font-size: 1.5rem;"><i class="fas fa-link"></i> Update Links</h2>
+                <button onclick="document.getElementById('editLinksModal').classList.add('hidden')"
+                    class="sketch-btn danger" style="width:auto; padding: 5px 10px;">X</button>
+            </div>
+
+            <input type="hidden" id="edit-link-class-id">
+
+            <div style="margin-bottom: 15px;">
+                <label style="display:block; font-family:'Patrick Hand'; font-size: 1.2rem; margin-bottom:5px;">Google
+                    Meet Link:</label>
+                <input type="text" id="edit-link-meet" placeholder="https://meet.google.com/..."
+                    style="width:100%; padding:10px; border:3px solid #000; border-radius: 5px; font-family:'Patrick Hand'; font-size: 1.1rem;">
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display:block; font-family:'Patrick Hand'; font-size: 1.2rem; margin-bottom:5px;">Google
+                    Classroom Link:</label>
+                <input type="text" id="edit-link-classroom" placeholder="https://classroom.google.com/..."
+                    style="width:100%; padding:10px; border:3px solid #000; border-radius: 5px; font-family:'Patrick Hand'; font-size: 1.1rem;">
+            </div>
+
+            <button onclick="saveClassLinks()" class="sketch-btn"
+                style="width:100%; background:#000; color:#fff; font-size: 1.3rem; padding: 12px;">
+                <i class="fas fa-check-circle"></i> UPDATE NOW
+            </button>
+        </div>
+    </div>
 
     <!-- Hand-drawn Up Arrow -->
     <div class="floating-action" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
@@ -714,6 +806,7 @@
     <script src="js/dashboard.js?v=202405152300"></script> <!-- Update this version number on every deployment -->
     <script src="js/messaging.js"></script>
     <script src="js/admin.js"></script>
+    <script src="js/pdf-scanner.js"></script>
 
     <!-- PREVIEWER FEATURE & FILE LOGIC (Added Inline) -->
     <script>
@@ -760,8 +853,8 @@
 
             const modalHtml = `
                 
-                <div id="filePreviewModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; display:flex; justify-content:center; align-items:center;">
-                    <div class="sketch-box" style="width:90%; max-width:900px; height:85%; display:flex; flex-direction:column; padding:15px; background:#fff; position:relative; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+                <div id="filePreviewModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; display:grid; place-items:center;">
+                    <div class="sketch-box" style="width:90%; max-width:900px; height:85%; display:flex; flex-direction:column; padding:15px; background:#fff; position:relative; transform-origin: center center; animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; margin: 0; will-change: transform, opacity;">
                         <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px dashed #000; padding-bottom:10px; margin-bottom:10px;">
                             <h3 style="margin:0; font-size:1.5rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:60%;"><i class="fas fa-eye"></i> ${title}</h3>
                             <div style="display:flex; gap:5px;">

@@ -6,7 +6,18 @@ const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 window.db = db;
 
 // --- UTILITIES ---
-// escapeHTML is loaded from common.js
+function formatTime12h(time24) {
+    if (!time24) return 'TBA';
+    // Handle HH:MM:SS or HH:MM
+    const [hStr, mStr] = time24.split(':');
+    let h = parseInt(hStr, 10);
+    const m = mStr;
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12;
+    h = h ? h : 12; // the hour '0' should be '12'
+    return `${String(h).padStart(2, '0')}:${m} ${ampm}`;
+}
+window.formatTime12h = formatTime12h;
 
 // State
 let user = null;
@@ -235,32 +246,38 @@ async function loadSchedule(dayFilter) {
     }
 
     list.innerHTML = data.map((cls, index) => {
-        const start = cls.start_time.substring(0, 5);
-        const end = cls.end_time.substring(0, 5);
 
-        const deleteBtn = isAdmin ? `<button onclick="deleteClass(${cls.id})" class="sketch-btn danger" style="float:right;">X</button>` : '';
+        const start12h = formatTime12h(cls.start_time);
+        const end12h = formatTime12h(cls.end_time);
+
+        const deleteBtn = isAdmin ? `<button onclick="event.stopPropagation(); deleteClass(${cls.id})" class="sketch-btn danger" style="float:right; padding: 5px 10px; font-size:0.9rem;">X</button>` : '';
 
         // Copy button for Meet link
         const copyBtn = cls.meet_link ?
-            `<button onclick="navigator.clipboard.writeText('${cls.meet_link}').then(()=>showToast('Link Copied!'))" 
+            `<button onclick="event.stopPropagation(); navigator.clipboard.writeText('${cls.meet_link}').then(()=>showToast('Link Copied!'))" 
              class="sketch-btn" style="border-color:#555; color:#555; padding: 8px 12px;" title="Copy Link">
              <i class="fas fa-copy"></i>
              </button>`
             : '';
 
         return `
-            <div class="class-card" style="animation-delay: ${index * 0.1}s">
+            <div class="class-card" style="animation-delay: ${index * 0.1}s; ${isAdmin ? 'border-style: solid; border-width: 2px;' : ''}">
                 ${deleteBtn}
                 <div class="class-header">
                     <span class="subject-code">${escapeHTML(cls.subject_code)}</span>
-                    <span class="time-badge">${start} - ${end}</span>
+                    <span class="time-badge">${start12h} - ${end12h}</span>
                 </div>
                 <h3>${escapeHTML(cls.subject_name)}</h3>
-                <p><b>Prof:</b> ${cls.instructor || 'TBA'} | <b>Room:</b> ${cls.room || 'TBA'}</p>
-                <div style="margin-top:10px; display:flex; gap:5px;">
+                <p><b>Teacher:</b> ${escapeHTML(cls.instructor || 'TBA')} | <b>Room:</b> ${escapeHTML(cls.room || 'TBA')}</p>
+                <div style="margin-top:10px; display:flex; flex-wrap:wrap; gap:8px;">
                     ${cls.meet_link ? `<a href="${cls.meet_link}" target="_blank" class="sketch-btn meet"><i class="fas fa-video"></i> Meet</a>` : ''}
                     ${cls.classroom_link ? `<a href="${cls.classroom_link}" target="_blank" class="sketch-btn classroom"><i class="fas fa-chalkboard"></i> Class</a>` : ''}
                     ${copyBtn}
+                    ${isAdmin ? `
+                        <button onclick="openEditLinksModal(${cls.id})" class="sketch-btn" style="background:#0984e3; color:#fff; border-color:#0984e3;">
+                            <i class="fas fa-plus-circle"></i> ${cls.meet_link || cls.classroom_link ? 'Edit' : 'Add'} Links
+                        </button>
+                    ` : ''}
                 </div>
                 <small style="display:block; margin-top:5px; color:#666;">${cls.day_of_week}</small>
             </div>
@@ -482,6 +499,57 @@ window.deleteEvent = async function (id) {
     loadEvents();
 }
 
+window.deleteClass = async function (id) {
+    if (!isAdmin) return showToast('Nice try, hacker.');
+    if (!await showWimpyConfirm('Delete this class?')) return;
+    const { error } = await db.from('schedule').delete().eq('id', id);
+    if (error) {
+        showToast("Error deleting class: " + error.message, "error");
+    } else {
+        showToast("Class deleted.");
+        loadSchedule('All');
+    }
+}
+
+window.openEditLinksModal = async function (id) {
+    if (!isAdmin) return;
+
+    // Show modal immediately with loader or placeholder if you like, but let's just fetch
+    const { data: cls, error } = await db.from('schedule').select('*').eq('id', id).single();
+    if (error || !cls) return showToast("Error loading class data", "error");
+
+    document.getElementById('edit-link-class-id').value = id;
+    document.getElementById('edit-link-meet').value = cls.meet_link || '';
+    document.getElementById('edit-link-classroom').value = cls.classroom_link || '';
+
+    const modal = document.getElementById('editLinksModal');
+    if (modal) modal.classList.remove('hidden');
+}
+
+window.saveClassLinks = async function () {
+    const id = document.getElementById('edit-link-class-id').value;
+    const meet = document.getElementById('edit-link-meet').value.trim();
+    const classroom = document.getElementById('edit-link-classroom').value.trim();
+
+    if (!id) return;
+
+    const { error } = await db.from('schedule')
+        .update({ meet_link: meet, classroom_link: classroom })
+        .eq('id', id);
+
+    if (error) {
+        showToast("Update failed: " + error.message, "error");
+    } else {
+        showToast("Links updated successfully!");
+        const modal = document.getElementById('editLinksModal');
+        if (modal) modal.classList.add('hidden');
+        // Refresh schedule
+        const labelEl = document.getElementById('current-day-label');
+        const day = labelEl ? labelEl.innerText.replace(' Classes', '').replace('Weekly Schedule', 'All') : 'All';
+        loadSchedule(day);
+    }
+}
+
 // --- CALENDAR ADD EVENT MODAL ---
 window.openAddEventModal = function (dateStr) {
     const modal = document.getElementById('addEventModal');
@@ -558,7 +626,7 @@ function checkLiveClass() {
 
     const now = new Date();
     // Convert current time to "HH:MM" format (e.g., "14:30") for comparison
-    const currentTimeStr = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+    const currentTimeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
 
     // Find a class that is happening RIGHT NOW
     const liveClass = todaysClasses.find(cls => {
@@ -570,9 +638,9 @@ function checkLiveClass() {
     });
 
     if (liveClass) {
-        // Render the Live Card
-        const start = liveClass.start_time.substring(0, 5);
-        const end = liveClass.end_time.substring(0, 5);
+        // Use 12h for display
+        const startDisp = formatTime12h(liveClass.start_time);
+        const endDisp = formatTime12h(liveClass.end_time);
 
         container.innerHTML = `
             <div class="live-card">
@@ -581,7 +649,7 @@ function checkLiveClass() {
                         <div class="subject-code" style="font-size:1.2rem; color:#2d3436;">${escapeHTML(liveClass.subject_code)}</div>
                         <h3>${escapeHTML(liveClass.subject_name)}</h3>
                         <p style="margin:0;">
-                            <i class="fas fa-clock"></i> ${start} - ${end} | 
+                            <i class="fas fa-clock"></i> ${startDisp} - ${endDisp} | 
                             <i class="fas fa-chalkboard-teacher"></i> ${escapeHTML(liveClass.instructor || 'TBA')}
                         </p>
                     </div>
