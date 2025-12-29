@@ -708,6 +708,20 @@ input[type="checkbox"] {
     backdrop-filter: blur(3px);
 }
 
+.wimpy-modal-overlay:not(.hidden) {
+    animation: overlayFadeIn 0.25s ease-out forwards;
+}
+
+@keyframes overlayFadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
 .wimpy-modal-box {
     background: #fff;
     border: 3px solid #000;
@@ -719,20 +733,22 @@ input[type="checkbox"] {
     box-shadow: 4px 4px 0 #000, 8px 8px 0 rgba(0, 0, 0, 0.15);
     transform: rotate(-1deg);
     transform-origin: center center;
-    animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-    backface-visibility: hidden;
-    margin: 0;
-    will-change: transform, opacity;
+    visibility: hidden;
+    opacity: 0;
 }
 
-@keyframes popIn {
-    0% {
-        transform: scale(0.5) rotate(-5deg);
+.wimpy-modal-overlay:not(.hidden) .wimpy-modal-box {
+    animation: modalAppear 0.25s ease-out 0.05s forwards;
+}
+
+@keyframes modalAppear {
+    from {
+        visibility: hidden;
         opacity: 0;
     }
 
-    100% {
-        transform: scale(1) rotate(-1deg);
+    to {
+        visibility: visible;
         opacity: 1;
     }
 }

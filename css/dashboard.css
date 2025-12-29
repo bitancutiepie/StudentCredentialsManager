@@ -846,6 +846,20 @@ textarea:focus {
     backdrop-filter: blur(3px);
 }
 
+.wimpy-modal-overlay:not(.hidden) {
+    animation: overlayFadeIn 0.25s ease-out forwards;
+}
+
+@keyframes overlayFadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
 .wimpy-modal-box {
     background: #fff;
     border: 3px solid #000;
@@ -856,17 +870,22 @@ textarea:focus {
     text-align: center;
     box-shadow: 10px 10px 0 rgba(0, 0, 0, 0.2);
     transform: rotate(-1deg);
-    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    visibility: hidden;
+    opacity: 0;
 }
 
-@keyframes popIn {
+.wimpy-modal-overlay:not(.hidden) .wimpy-modal-box {
+    animation: modalAppear 0.25s ease-out 0.05s forwards;
+}
+
+@keyframes modalAppear {
     from {
-        transform: scale(0.8) rotate(-5deg);
+        visibility: hidden;
         opacity: 0;
     }
 
     to {
-        transform: scale(1) rotate(-1deg);
+        visibility: visible;
         opacity: 1;
     }
 }
