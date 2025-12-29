@@ -1,0 +1,109 @@
+/* Additional Black List Enhancements */
+
+/* Section Headers with Tape Effect */
+#adminDashboard h3,
+#adminDashboard h4 {
+    position: relative;
+    display: inline-block;
+    padding: 8px 15px;
+    background: #fff;
+    border: 2px solid #000;
+    box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.1);
+    transform: rotate(-1deg);
+    margin-bottom: 15px;
+}
+
+#adminDashboard h3::before,
+#adminDashboard h4::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 20px;
+    background: rgba(255, 255, 255, 0.4);
+    border-left: 1px dashed rgba(0, 0, 0, 0.1);
+    border-right: 1px dashed rgba(0, 0, 0, 0.1);
+}
+
+/* Enhanced Student List Sections */
+#studentListContainer>div {
+    animation: fadeInUp 0.4s ease-out forwards;
+    opacity: 0;
+}
+
+#studentListContainer>div:nth-child(1) {
+    animation-delay: 0.1s;
+}
+
+#studentListContainer>div:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Improved Section Dividers */
+#adminDashboard>div[style*="border-bottom"] {
+    position: relative;
+    padding-bottom: 25px;
+    margin-bottom: 30px;
+}
+
+#adminDashboard>div[style*="border-bottom"]::after {
+    content: '✂';
+    position: absolute;
+    bottom: -12px;
+    right: 20px;
+    font-size: 1.5rem;
+    color: #999;
+    transform: rotate(-45deg);
+}
+
+/* Enhanced Form Sections */
+#adminDashboard form {
+    background: #f9f9f9;
+    padding: 15px;
+    border: 2px dashed #ccc;
+    border-radius: 10px;
+    transition: all 0.3s;
+}
+
+#adminDashboard form:hover {
+    background: #fff;
+    border-color: #000;
+    box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+/* Loading State for Student List */
+#studentListContainer:empty::before {
+    content: 'Loading students...';
+    display: block;
+    text-align: center;
+    padding: 40px;
+    color: #999;
+    font-size: 1.2rem;
+    font-style: italic;
+}
+
+/* Responsive Enhancements */
+@media (max-width: 768px) {
+    #adminDashboard h2 {
+        font-size: 2rem !important;
+    }
+
+    #adminDashboard .sketch-btn {
+        font-size: 0.85rem !important;
+        padding: 5px 10px !important;
+    }
+}

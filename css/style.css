@@ -753,11 +753,68 @@ input[type="checkbox"] {
     }
 }
 
-/* --- NEW BLACK LIST CARD STYLES --- */
+/* --- UPGRADED BLACK LIST STYLES --- */
+
+/* Enhanced Member Tag Cards */
+.member-tag {
+    background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+    border: 2px solid #333;
+    padding: 8px 14px;
+    border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+    font-size: 1rem;
+    box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.15);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.member-tag::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.3) 50%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+}
+
+.member-tag:hover::before {
+    opacity: 1;
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        transform: translateX(-100%);
+    }
+
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+.member-tag:hover {
+    transform: translateY(-3px) rotate(-2deg) scale(1.05);
+    box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.2), 0 8px 15px rgba(0, 0, 0, 0.1);
+    z-index: 10;
+}
+
+.member-tag:active {
+    transform: translateY(-1px) scale(1.02);
+    box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.2);
+}
+
+/* Student Strip Cards (for requests/files) */
 .student-strip {
     background: #fff;
     border: 2px solid #000;
-    /* Sketchy border radius */
     border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
     padding: 15px 20px;
     display: flex;
@@ -774,61 +831,17 @@ input[type="checkbox"] {
     box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.15);
 }
 
-.student-info {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    flex: 1.5;
-    text-align: left;
-}
-
-.student-avatar {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 2px solid #000;
-    flex-shrink: 0;
-}
-
-.student-creds {
-    flex: 1;
-    background: #f1f2f6;
-    padding: 8px 15px;
-    border-radius: 5px;
-    border: 1px dashed #999;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-family: monospace;
-    font-size: 1.1rem;
-}
-
-.student-actions {
-    display: flex;
-    gap: 10px;
-}
-
 @media (max-width: 700px) {
+    .member-tag {
+        padding: 6px 12px;
+        font-size: 0.9rem;
+    }
+
     .student-strip {
         flex-direction: column;
         align-items: stretch;
         text-align: center;
         gap: 15px;
-    }
-
-    .student-info {
-        flex-direction: column;
-        text-align: center;
-    }
-
-    .student-creds {
-        justify-content: center;
-        gap: 10px;
-    }
-
-    .student-actions {
-        justify-content: center;
     }
 }
 
