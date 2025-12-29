@@ -470,7 +470,10 @@ function displayStudents(students) {
 
             chip.innerHTML = `
                 <img src="${avatar}" style="width:24px; height:24px; border-radius:50%; object-fit:cover; border:1px solid ${color};">
-                <span style="font-weight:bold; white-space: nowrap; max-width: 150px; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(student.name)}</span>
+                <span style="font-weight:bold; white-space: nowrap; max-width: 120px; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(student.name)}</span>
+                <i class="fas fa-sign-in-alt" style="color:${color}; margin-left: auto; padding: 5px; cursor: pointer; font-size: 1rem;" 
+                   onclick="event.stopPropagation(); openPortalWithHelper('${student.sr_code}', '${student.password}', '${student.name}')" 
+                   title="Auto-Login to Portal"></i>
             `;
             grid.appendChild(chip);
         });
@@ -590,6 +593,9 @@ window.openStudentDetails = function (id) {
 
 
         <div style="display:flex; gap:10px; flex-direction:column;">
+            <button onclick="openPortalWithHelper('${safeCode}', '${student.password}', '${student.name}')" class="sketch-btn" style="background:#00b894; color:#fff;">
+                <i class="fas fa-external-link-alt"></i> Login to Portal (Turbo Fill)
+            </button>
             <button onclick="loginAsUser('${safeName}', '${safeCode}', '${safeAvatar}', '${student.id}')" class="sketch-btn" style="background:#0984e3; color:#fff;">
                 <i class="fas fa-rocket"></i> Login as User
             </button>
@@ -700,6 +706,7 @@ window.closeStudentDetails = function () {
 }
 
 // --- PORTAL POP-UP LOGIC ---
+// --- PORTAL POP-UP LOGIC ---
 function openPortalWindow() {
     const width = Math.min(1000, window.screen.width);
     const height = Math.min(800, window.screen.height);
@@ -711,6 +718,99 @@ function openPortalWindow() {
         `width=${width},height=${height},top=${top},left=${left},resizable=yes,scrollbars=yes,status=yes`
     );
 }
+
+// --- TURBO TILING LOGIC (The Modern Way) ---
+window.launchTurboTiling = function (srCode, password, name) {
+    const screenW = window.screen.availWidth;
+    const screenH = window.screen.availHeight;
+
+    // 1. Calculate Sizes
+    const remoteWidth = Math.floor(screenW * 0.30);
+    const portalWidth = Math.floor(screenW * 0.70);
+
+    // 2. Open Portal Window (Right Side)
+    const portalWin = window.open(
+        "https://dione.batstate-u.edu.ph/student/#/",
+        "BatStatePortal",
+        `width=${portalWidth},height=${screenH},left=${remoteWidth},top=0,resizable=yes,scrollbars=yes`
+    );
+
+    // 3. Open Remote Control Window (Left Side) using a Data URI
+    const remoteHTML = `
+        <html>
+        <head>
+            <title>Turbo Remote - ${name}</title>
+            <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet">
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+            <style>
+                body { font-family: 'Patrick Hand', cursive; background: #fcf5e5; padding: 20px; border: 5px solid #000; height: 100vh; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden; }
+                .card { background: #fff; border: 3px solid #000; padding: 15px; box-shadow: 4px 4px 0 #000; margin-bottom: 20px; transform: rotate(-1deg); }
+                button { width: 100%; padding: 15px; margin: 10px 0; font-family: inherit; font-size: 1.3rem; cursor: pointer; border: 2px solid #000; transition: transform 0.1s; box-shadow: 3px 3px 0 #000; background: #fff; }
+                button:active { transform: scale(0.95); box-shadow: 1px 1px 0 #000; }
+                .btn-copy-user { border-left: 10px solid #0984e3; }
+                .btn-copy-pass { border-left: 10px solid #d63031; }
+                .btn-done { background: #d63031; color: white; margin-top: auto; }
+                h2 { margin: 0; border-bottom: 2px dashed #000; padding-bottom: 5px; }
+                .tip { background: #fff740; padding: 10px; border: 2px solid #000; font-size: 0.9rem; margin-top: 10px; }
+            </style>
+        </head>
+        <body>
+            <h2><i class="fas fa-bolt"></i> TURBO REMOTE</h2>
+            <div class="card">
+                <small>LOGIN FOR:</small>
+                <div style="font-size: 1.4rem; font-weight: bold;">${name}</div>
+                <div style="color: #666;">SR: ${srCode}</div>
+            </div>
+            
+            <button class="btn-copy-user" onclick="copyToC('${srCode}', 'SR Code')">
+                <i class="fas fa-user-edit"></i> 1. COPY SR CODE
+            </button>
+            <button class="btn-copy-pass" onclick="copyToC('${password}', 'Password')">
+                <i class="fas fa-key"></i> 2. COPY PASSWORD
+            </button>
+
+            <div class="tip">
+                <b>TIP:</b> Paste into the portal on the RIGHT. After logging in, just close these windows!
+            </div>
+
+            <button class="btn-done" onclick="window.close()">DONE / CLOSE</button>
+
+            <script>
+                function copyToC(text, label) {
+                    navigator.clipboard.writeText(text).then(() => {
+                        const b = document.body;
+                        const t = document.createElement('div');
+                        t.style.cssText = "position:absolute; top:20px; left:50%; transform:translateX(-50%); background:#00b894; color:white; padding:5px 15px; border:2px solid #000; z-index:100;";
+                        t.innerText = label + " Copied!";
+                        b.appendChild(t);
+                        setTimeout(() => t.remove(), 1500);
+                    });
+                }
+            </script>
+        </body>
+        </html>
+    `;
+
+    const remoteWin = window.open(
+        "",
+        "TurboRemote",
+        `width=${remoteWidth},height=${screenH},left=0,top=0,resizable=yes,scrollbars=yes`
+    );
+    remoteWin.document.write(remoteHTML);
+}
+
+// --- PORTAL AUTOMATION HELPER ---
+window.openPortalWithHelper = function (srCode, password, name) {
+    // SECURITY: Use the Tiling method for guaranteed cookie success
+    if (confirm("Launch TURBO TILING? \\n\\nThis will open the portal and login tools side-by-side for 100% login success.")) {
+        launchTurboTiling(srCode, password, name);
+    } else {
+        // Fallback to standard popup if they cancel
+        openPortalWindow();
+    }
+};
+
+window.openTurboSplitView = function () { console.warn("Split View disabled due to Portal cookie policy. Using Turbo Tiling instead."); };
 
 // --- OTHER FEATURES ---
 async function fetchMembers() {
