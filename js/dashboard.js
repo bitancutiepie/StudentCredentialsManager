@@ -511,6 +511,24 @@ window.deleteClass = async function (id) {
     }
 }
 
+window.deleteAllSchedules = async function () {
+    if (!isAdmin) return showToast('Nice try, hacker.');
+    if (!await showWimpyConfirm('⚠️ DELETE ALL SCHEDULES? This cannot be undone!')) return;
+
+    // Double confirmation for safety
+    if (!await showWimpyConfirm('Are you ABSOLUTELY sure? All classes will be permanently deleted!')) return;
+
+    const { error } = await db.from('schedule').delete().neq('id', 0); // Delete all rows
+    if (error) {
+        showToast("Error deleting schedules: " + error.message, "error");
+    } else {
+        showToast("All schedules deleted.");
+        loadSchedule('All');
+        populateSubjectOptions(); // Refresh subject dropdowns since all subjects are gone
+    }
+}
+
+
 window.openEditLinksModal = async function (id) {
     if (!isAdmin) return;
 
