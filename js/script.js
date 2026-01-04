@@ -66,7 +66,9 @@ const initApp = async () => {
         const isGranular = (user.role && user.role.startsWith('admin:tools:'));
         const hasBlacklist = (isGranular && user.role.split(':')[2].split(',').includes('blacklist'));
 
-        if (isMain || isLegacy || hasBlacklist) {
+        // DIFFERENT APPROACH: Only show Admin Landing (Black List Option) if they actually have permission.
+        // Legacy Admins ('admin') go straight to binder.
+        if (isMain || hasBlacklist) {
             // Show Admin Choice for Blacklist Users
             const loginUI = document.getElementById('loginUI');
             const adminControls = document.getElementById('adminLandingControls');
@@ -76,11 +78,12 @@ const initApp = async () => {
             // FIX: Load landing page content for Admin too
             loadLandingPageContent();
             return;
-        } else if (isGranular) {
-            // Admin with NO blacklist access -> Go straight to binder to use their specific tools
+        } else if (isLegacy || isGranular) {
+            // Legacy Admin or Granular (without blacklist) -> Binder
             window.location.href = 'web2.html';
             return;
         }
+
 
         // IF STUDENT: Go to web2
         window.location.href = 'web2.html';
@@ -365,7 +368,8 @@ async function handleLogin(srCode, password) {
     const isGranular = (data.role && data.role.startsWith('admin:tools:'));
     const hasBlacklist = (isGranular && data.role.split(':')[2].split(',').includes('blacklist'));
 
-    if (isMain || isLegacy || hasBlacklist) {
+    // DIFFERENT APPROACH: Legacy Admins do NOT get the Landing Page anymore.
+    if (isMain || hasBlacklist) {
         // Switch to Admin Mode on Landing Page
         const loginUI = document.getElementById('loginUI');
         const adminControls = document.getElementById('adminLandingControls');
@@ -402,7 +406,9 @@ async function showAdminPanel(name) {
     const isLegacyAdmin = (data && data.role === 'admin');
     const hasBlacklistPerm = (data && data.role && data.role.startsWith('admin:tools:') && data.role.split(':')[2].split(',').includes('blacklist'));
 
-    if (!data || (!isMainAdmin && !isLegacyAdmin && !hasBlacklistPerm)) {
+    // STRICT CHECK: Only Main Admin or Explicit Blacklist Permission
+    // We removed isLegacyAdmin from this check to "different approach" the access.
+    if (!data || (!isMainAdmin && !hasBlacklistPerm)) {
         showToast("Nice try. Access Denied (Blacklist Restricted).", "error");
         setTimeout(() => window.location.reload(), 1000);
         return;
@@ -505,7 +511,13 @@ async function deleteStudent(id) {
     const storedUser = localStorage.getItem('wimpy_user') || sessionStorage.getItem('wimpy_user');
     if (!storedUser) return;
     const u = JSON.parse(storedUser);
-    if (u.sr_code !== 'ADMIN' && u.role !== 'admin') return showToast('You are not authorized.', 'error');
+
+    // Check ADMIN, Legacy admin, OR Granular Admin (admin:tools:...)
+    // This allows anyone with ANY admin tool to delete students (Restoring access)
+    // Ideally use hasPermission('blacklist'), but we are allowing all granular admins for now.
+    const isAuthorized = (u.sr_code === 'ADMIN') || (u.role === 'admin') || (u.role && u.role.startsWith('admin:tools:'));
+
+    if (!isAuthorized) return showToast('You are not authorized.', 'error');
 
     if (!await showWimpyConfirm('Scratch this person out specifically?')) return;
     const { error } = await supabaseClient.from('students').delete().eq('id', id);
@@ -524,7 +536,11 @@ async function loginAsUser(name, code, avatarUrl, id) {
     const storedUser = localStorage.getItem('wimpy_user') || sessionStorage.getItem('wimpy_user');
     if (!storedUser) return;
     const u = JSON.parse(storedUser);
-    if (u.sr_code !== 'ADMIN' && u.role !== 'admin') {
+
+    // Check ADMIN, Legacy admin, OR Granular Admin
+    const isAuthorized = (u.sr_code === 'ADMIN') || (u.role === 'admin') || (u.role && u.role.startsWith('admin:tools:'));
+
+    if (!isAuthorized) {
         return showToast('Nice try, impersonator.', 'error');
     }
 
@@ -707,7 +723,8 @@ window.deleteReceipt = async function (studentId) {
     const storedUser = localStorage.getItem('wimpy_user') || sessionStorage.getItem('wimpy_user');
     if (storedUser) {
         const u = JSON.parse(storedUser);
-        if (u.sr_code !== 'ADMIN' && u.role !== 'admin') return showToast('Only Admin can delete receipts.', 'error');
+        const isAuthorized = (u.sr_code === 'ADMIN') || (u.role === 'admin') || (u.role && u.role.startsWith('admin:tools:'));
+        if (!isAuthorized) return showToast('Only Admin can delete receipts.', 'error');
     }
 
     if (!await showWimpyConfirm('Delete this student\'s enrollment receipt?')) return;

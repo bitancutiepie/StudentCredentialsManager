@@ -376,20 +376,138 @@
                             <label style="font-weight: bold; display: block; margin-bottom: 10px;">Select Accessible
                                 Tools:</label>
                             <div
-                                style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-family: 'Patrick Hand';">
-                                <label><input type="checkbox" class="tool-perm" value="schedule" checked> Class
-                                    Sched</label>
-                                <label><input type="checkbox" class="tool-perm" value="homework" checked>
-                                    Homework</label>
-                                <label><input type="checkbox" class="tool-perm" value="event" checked> Events</label>
-                                <label><input type="checkbox" class="tool-perm" value="file" checked> Files</label>
-                                <label><input type="checkbox" class="tool-perm" value="todo" checked> To-Do</label>
-                                <label><input type="checkbox" class="tool-perm" value="email" checked> Email</label>
-                                <label><input type="checkbox" class="tool-perm" value="messages" checked>
-                                    Messages</label>
-                                <label><input type="checkbox" class="tool-perm" value="gallery" checked> Gallery</label>
-                                <label><input type="checkbox" class="tool-perm" value="storage" checked> Storage</label>
-                                <label><input type="checkbox" class="tool-perm" value="blacklist"> Black List</label>
+                                style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-family: 'Patrick Hand';">
+                                <!-- Helper to generating these easier -->
+                                <label class="custom-checkbox-container">
+                                    <input type="checkbox" class="tool-perm" value="schedule" checked>
+                                    <div class="todo-checkbox small">
+                                        <div class="charcoal-x"><svg viewBox="0 0 100 100"
+                                                style="width:100%; height:100%;">
+                                                <path d="M 20,20 L 80,80" fill="none" stroke="#000" stroke-width="12"
+                                                    stroke-linecap="round" />
+                                                <path d="M 80,20 L 20,80" fill="none" stroke="#000" stroke-width="12"
+                                                    stroke-linecap="round" />
+                                            </svg></div>
+                                    </div>
+                                    <span>Class Sched</span>
+                                </label>
+                                <label class="custom-checkbox-container">
+                                    <input type="checkbox" class="tool-perm" value="homework" checked>
+                                    <div class="todo-checkbox small">
+                                        <div class="charcoal-x"><svg viewBox="0 0 100 100"
+                                                style="width:100%; height:100%;">
+                                                <path d="M 20,20 L 80,80" fill="none" stroke="#000" stroke-width="12"
+                                                    stroke-linecap="round" />
+                                                <path d="M 80,20 L 20,80" fill="none" stroke="#000" stroke-width="12"
+                                                    stroke-linecap="round" />
+                                            </svg></div>
+                                    </div>
+                                    <span>Homework</span>
+                                </label>
+                                <label class="custom-checkbox-container">
+                                    <input type="checkbox" class="tool-perm" value="event" checked>
+                                    <div class="todo-checkbox small">
+                                        <div class="charcoal-x"><svg viewBox="0 0 100 100"
+                                                style="width:100%; height:100%;">
+                                                <path d="M 20,20 L 80,80" fill="none" stroke="#000" stroke-width="12"
+                                                    stroke-linecap="round" />
+                                                <path d="M 80,20 L 20,80" fill="none" stroke="#000" stroke-width="12"
+                                                    stroke-linecap="round" />
+                                            </svg></div>
+                                    </div>
+                                    <span>Events</span>
+                                </label>
+                                <label class="custom-checkbox-container">
+                                    <input type="checkbox" class="tool-perm" value="file" checked>
+                                    <div class="todo-checkbox small">
+                                        <div class="charcoal-x"><svg viewBox="0 0 100 100"
+                                                style="width:100%; height:100%;">
+                                                <path d="M 20,20 L 80,80" fill="none" stroke="#000" stroke-width="12"
+                                                    stroke-linecap="round" />
+                                                <path d="M 80,20 L 20,80" fill="none" stroke="#000" stroke-width="12"
+                                                    stroke-linecap="round" />
+                                            </svg></div>
+                                    </div>
+                                    <span>Files</span>
+                                </label>
+                                <label class="custom-checkbox-container">
+                                    <input type="checkbox" class="tool-perm" value="todo" checked>
+                                    <div class="todo-checkbox small">
+                                        <div class="charcoal-x"><svg viewBox="0 0 100 100"
+                                                style="width:100%; height:100%;">
+                                                <path d="M 20,20 L 80,80" fill="none" stroke="#000" stroke-width="12"
+                                                    stroke-linecap="round" />
+                                                <path d="M 80,20 L 20,80" fill="none" stroke="#000" stroke-width="12"
+                                                    stroke-linecap="round" />
+                                            </svg></div>
+                                    </div>
+                                    <span>To-Do</span>
+                                </label>
+                                <label class="custom-checkbox-container">
+                                    <input type="checkbox" class="tool-perm" value="email" checked>
+                                    <div class="todo-checkbox small">
+                                        <div class="charcoal-x"><svg viewBox="0 0 100 100"
+                                                style="width:100%; height:100%;">
+                                                <path d="M 20,20 L 80,80" fill="none" stroke="#000" stroke-width="12"
+                                                    stroke-linecap="round" />
+                                                <path d="M 80,20 L 20,80" fill="none" stroke="#000" stroke-width="12"
+                                                    stroke-linecap="round" />
+                                            </svg></div>
+                                    </div>
+                                    <span>Email</span>
+                                </label>
+                                <label class="custom-checkbox-container">
+                                    <input type="checkbox" class="tool-perm" value="messages" checked>
+                                    <div class="todo-checkbox small">
+                                        <div class="charcoal-x"><svg viewBox="0 0 100 100"
+                                                style="width:100%; height:100%;">
+                                                <path d="M 20,20 L 80,80" fill="none" stroke="#000" stroke-width="12"
+                                                    stroke-linecap="round" />
+                                                <path d="M 80,20 L 20,80" fill="none" stroke="#000" stroke-width="12"
+                                                    stroke-linecap="round" />
+                                            </svg></div>
+                                    </div>
+                                    <span>Messages</span>
+                                </label>
+                                <label class="custom-checkbox-container">
+                                    <input type="checkbox" class="tool-perm" value="gallery" checked>
+                                    <div class="todo-checkbox small">
+                                        <div class="charcoal-x"><svg viewBox="0 0 100 100"
+                                                style="width:100%; height:100%;">
+                                                <path d="M 20,20 L 80,80" fill="none" stroke="#000" stroke-width="12"
+                                                    stroke-linecap="round" />
+                                                <path d="M 80,20 L 20,80" fill="none" stroke="#000" stroke-width="12"
+                                                    stroke-linecap="round" />
+                                            </svg></div>
+                                    </div>
+                                    <span>Gallery</span>
+                                </label>
+                                <label class="custom-checkbox-container">
+                                    <input type="checkbox" class="tool-perm" value="storage" checked>
+                                    <div class="todo-checkbox small">
+                                        <div class="charcoal-x"><svg viewBox="0 0 100 100"
+                                                style="width:100%; height:100%;">
+                                                <path d="M 20,20 L 80,80" fill="none" stroke="#000" stroke-width="12"
+                                                    stroke-linecap="round" />
+                                                <path d="M 80,20 L 20,80" fill="none" stroke="#000" stroke-width="12"
+                                                    stroke-linecap="round" />
+                                            </svg></div>
+                                    </div>
+                                    <span>Storage</span>
+                                </label>
+                                <label class="custom-checkbox-container">
+                                    <input type="checkbox" class="tool-perm" value="blacklist">
+                                    <div class="todo-checkbox small">
+                                        <div class="charcoal-x"><svg viewBox="0 0 100 100"
+                                                style="width:100%; height:100%;">
+                                                <path d="M 20,20 L 80,80" fill="none" stroke="#000" stroke-width="12"
+                                                    stroke-linecap="round" />
+                                                <path d="M 80,20 L 20,80" fill="none" stroke="#000" stroke-width="12"
+                                                    stroke-linecap="round" />
+                                            </svg></div>
+                                    </div>
+                                    <span>Black List</span>
+                                </label>
                             </div>
                         </div>
 

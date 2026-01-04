@@ -1517,3 +1517,37 @@ h2:hover {
     border: 1.5px solid #000;
     box-shadow: 2px 2px 0 #000;
 }
+/* --- CUSTOM FORM CHECKBOXES (Charcoal Style) --- */
+.custom-checkbox-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    margin-bottom: 5px;
+}
+
+.custom-checkbox-container input[type='checkbox'] {
+    display: none; /* Hide default checkbox */
+}
+
+/* Reuse todo-checkbox styles but smaller */
+.todo-checkbox.small {
+    width: 25px;
+    height: 25px;
+    border-width: 2px;
+}
+
+/* Handle Checked State via CSS (no JS needed) */
+.custom-checkbox-container input:checked + .todo-checkbox .charcoal-x {
+    opacity: 1;
+}
+
+.custom-checkbox-container input:checked + .todo-checkbox .charcoal-x svg path {
+    animation: drawX 0.4s ease-out forwards;
+}
+
+.custom-checkbox-container span {
+    font-size: 1.1rem;
+    font-family: 'Patrick Hand', cursive;
+}
+
