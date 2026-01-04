@@ -1,9 +1,7 @@
 // --- CONFIGURATION ---
 // SUPABASE_URL and SUPABASE_KEY are loaded from common.js
-
-// FIX: We use 'db' instead of 'supabase' to avoid conflict with the library name
-const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-window.db = db;
+// window.db is initialized in common.js
+const db = window.db;
 
 // --- UTILITIES ---
 function formatTime12h(time24) {
@@ -69,7 +67,7 @@ function checkSession() {
     }
     user = JSON.parse(storedUser);
     window.user = user;
-    window.isAdmin = (user.sr_code === 'ADMIN' || user.role === 'admin');
+    window.isAdmin = (user.sr_code === 'ADMIN' || (user.role && (user.role === 'admin' || user.role.startsWith('admin:'))));
     isAdmin = window.isAdmin; // Keep local var synced
 
     // Update last login for "Recently Spotted" tracker on session restore
@@ -89,7 +87,7 @@ function checkSession() {
     updateEnrollmentBadge();
 
     // Check if Admin
-    if (user.sr_code === 'ADMIN' || user.role === 'admin') {
+    if (user.sr_code === 'ADMIN' || (user.role && (user.role === 'admin' || user.role.startsWith('admin:')))) {
         isAdmin = true;
         // document.querySelectorAll('.admin-controls').forEach(el => el.style.display = 'block'); // Removed to allow menu toggling
         document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
@@ -117,28 +115,58 @@ async function refreshUserProfile() {
         user.role = data.role;
         user.avatar_url = data.avatar_url;
 
-        // --- SECURITY: VALIDATE ADMIN CLAIM ---
-        if (isAdmin && user.role !== 'admin' && user.sr_code !== 'ADMIN') {
-            const confirmedUser = user.name;
-            isAdmin = false;
-            // Purge local storage claim
-            const key = localStorage.getItem('wimpy_user') ? 'wimpy_user' : null;
-            if (key) localStorage.setItem('wimpy_user', JSON.stringify(user));
-            else sessionStorage.setItem('wimpy_user', JSON.stringify(user));
-
-            showToast(`Security Check: ${confirmedUser} is NOT an Admin.`);
-            setTimeout(() => {
-                alert("Nice try modifying local storage. Reloading as Student.");
-                window.location.reload();
-            }, 1000);
-            return;
-        }
-        // --------------------------------------
+        // Update Local variable and Window global
+        isAdmin = (user.sr_code === 'ADMIN' || (user.role && (user.role === 'admin' || user.role.startsWith('admin:'))));
+        window.isAdmin = isAdmin;
 
         // Update Storage
-        const key = localStorage.getItem('wimpy_user') ? 'wimpy_user' : null;
-        if (key) localStorage.setItem('wimpy_user', JSON.stringify(user));
-        else sessionStorage.setItem('wimpy_user', JSON.stringify(user));
+        localStorage.setItem('wimpy_user', JSON.stringify(user));
+
+        // --- UI ADJUSTMENTS BASED ON ROLE ---
+        if (isAdmin) {
+            document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+
+            // Granular Tool Visibility (In Admin Tools Tab)
+            const toolButtons = document.querySelectorAll('#admin-tools .filter-bar .sketch-btn');
+            const toolMap = {
+                'Class': 'schedule',
+                'Homework': 'homework',
+                'Event': 'event',
+                'File': 'file',
+                'To-Do': 'todo',
+                'Email': 'email',
+                'Messages': 'messages',
+                'Gallery': 'gallery',
+                'Storage': 'storage'
+            };
+
+            if (toolButtons.length > 0) {
+                toolButtons.forEach(btn => {
+                    const btnText = btn.innerText.trim();
+                    const permKey = toolMap[btnText];
+                    if (permKey && !hasPermission(permKey)) {
+                        btn.style.display = 'none';
+                    } else {
+                        btn.style.display = 'inline-flex'; // Ensure shown if has permission
+                    }
+                });
+            }
+
+            // Revoke button is only for Main Admin
+            const revokeBtn = document.getElementById('btn-revoke-admin');
+            if (revokeBtn) {
+                if (user.sr_code === 'ADMIN') revokeBtn.classList.remove('hidden');
+                else revokeBtn.classList.add('hidden');
+            }
+
+            // Specific tool exclusions outside admin tab
+            if (!hasPermission('schedule')) {
+                document.querySelectorAll('.pdf-scanner-btn, .sketch-btn.danger.admin-only').forEach(el => el.classList.add('hidden'));
+            } else {
+                document.querySelectorAll('.pdf-scanner-btn, .sketch-btn.danger.admin-only').forEach(el => el.classList.remove('hidden'));
+            }
+        }
+        // ------------------------------------
 
         updateEnrollmentBadge(); // Re-render badge with fresh data
     }
@@ -156,7 +184,7 @@ function updateEnrollmentBadge() {
     statusEl.classList.add('rubber-stamp');
 
     // Stamp Styling (Ink Look)
-    if (user.sr_code === 'ADMIN' || user.role === 'admin') {
+    if (user.sr_code === 'ADMIN' || (user.role && (user.role === 'admin' || user.role.startsWith('admin:')))) {
         statusEl.style.color = '#2d3436';
         statusEl.style.borderColor = '#2d3436';
         statusEl.innerHTML = 'SYSTEM ADMIN';
@@ -175,14 +203,7 @@ function updateEnrollmentBadge() {
     }
 }
 
-// FIX: Explicitly attach logout to window
-window.logout = async function () {
-    if (!await showWimpyConfirm("Pack up and leave?")) return;
-    localStorage.removeItem('wimpy_user');
-    // Clear BOTH to be safe
-    sessionStorage.removeItem('wimpy_user');
-    window.location.href = 'index.html';
-}
+// logout removed (in common.js)
 
 window.toggleWideMode = function () {
     const binder = document.querySelector('.binder');
@@ -971,37 +992,7 @@ window.searchFiles = function () {
 }
 
 // --- CUSTOM WIMPY POP-UP ---
-function showWimpyConfirm(message) {
-    return new Promise((resolve) => {
-        const overlay = document.createElement('div');
-        overlay.className = 'wimpy-modal-overlay';
-
-        const box = document.createElement('div');
-        box.className = 'wimpy-modal-box';
-
-        box.innerHTML = `
-            <h2 style="margin:0 0 10px 0; font-size:2rem;">WAIT!</h2>
-            <p style="font-size:1.3rem; margin-bottom:20px;">${message}</p>
-            <div style="display:flex; gap:10px; justify-content:center;">
-                <button id="wimpy-no" class="sketch-btn" style="flex:1;">NAH</button>
-                <button id="wimpy-yes" class="sketch-btn danger" style="flex:1; background:#000; color:#fff;">YEAH</button>
-            </div>
-        `;
-
-        overlay.appendChild(box);
-        document.body.appendChild(overlay);
-
-        document.getElementById('wimpy-no').onclick = () => {
-            overlay.remove();
-            resolve(false);
-        };
-
-        document.getElementById('wimpy-yes').onclick = () => {
-            overlay.remove();
-            resolve(true);
-        };
-    });
-}
+// showWimpyConfirm removed (in common.js)
 
 // --- REQUEST / SECRET BOX LOGIC ---
 window.openRequestModal = function () {

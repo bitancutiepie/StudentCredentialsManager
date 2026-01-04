@@ -1,0 +1,236 @@
+/* common.css - Shared Wimpy Aesthetics */
+
+:root {
+    --paper-color: #fdfbf7;
+    --line-color: #a4b0be;
+    --ink-color: #2f3542;
+    --red-ink: #ff4757;
+    --highlight: #ffee58;
+    --tape-color: rgba(255, 255, 255, 0.4);
+}
+
+/* --- ANIMATIONS --- */
+@keyframes nervousWrite {
+    0% {
+        transform: scale(1);
+    }
+
+    25% {
+        transform: scale(1.01) rotate(0.5deg);
+    }
+
+    50% {
+        transform: scale(1.01) rotate(-0.5deg);
+    }
+
+    75% {
+        transform: scale(1.01) rotate(0.5deg);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(50px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes toastIn {
+    from {
+        transform: translateX(100%) rotate(0deg);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0) rotate(-2deg);
+        opacity: 1;
+    }
+}
+
+@keyframes toastOut {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* --- SHARED UTILS --- */
+.hidden {
+    display: none !important;
+}
+
+.spin-animation {
+    animation: spin 1s infinite linear;
+}
+
+/* --- BUTTONS --- */
+.sketch-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 8px 15px;
+    background: transparent;
+    color: var(--ink-color, #000);
+    border: 2px solid var(--ink-color, #000);
+    border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+    font-family: 'Patrick Hand', cursive;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    box-shadow: 2px 2px 0 #000;
+}
+
+.sketch-btn:hover {
+    background: var(--ink-color, #000);
+    color: #fff;
+    transform: rotate(-2deg) scale(1.05);
+    box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.2);
+}
+
+.sketch-btn.danger {
+    background: #d63031 !important;
+    border-color: #d63031 !important;
+    color: #fff !important;
+}
+
+.sketch-btn.meet {
+    border-color: #0984e3;
+    color: #0984e3;
+}
+
+.sketch-btn.meet:hover {
+    background: #0984e3;
+    color: white;
+}
+
+.sketch-btn.classroom {
+    border-color: #00b894;
+    color: #00b894;
+}
+
+.sketch-btn.classroom:hover {
+    background: #00b894;
+    color: white;
+}
+
+/* Active State for Admin Menu */
+.sketch-btn.active-tool {
+    background: var(--ink-color, #000);
+    color: white;
+    transform: rotate(-2deg);
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+/* Full Width Sketch Button (usually used in forms) */
+.sketch-btn-block {
+    display: flex;
+    width: 100% !important;
+    padding: 12px;
+    font-size: 1.5rem;
+    margin-top: 15px;
+    box-sizing: border-box;
+}
+
+/* --- INPUTS --- */
+input,
+textarea,
+select {
+    width: 100%;
+    /* Restored full width */
+    margin-bottom: 10px;
+    /* Restored spacing */
+    font-family: 'Patrick Hand', cursive;
+    font-size: 1.2rem;
+    padding: 10px;
+    border: none;
+    border-bottom: 2px solid var(--ink-color, #333);
+    background: transparent;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-bottom 0.2s;
+}
+
+input:focus,
+textarea:focus {
+    border-bottom: 3px solid #000;
+    animation: nervousWrite 0.3s ease-in-out;
+}
+
+/* --- MODALS --- */
+.wimpy-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 10000;
+    display: grid;
+    place-items: center;
+    backdrop-filter: blur(3px);
+}
+
+.wimpy-modal-box {
+    background: #fff;
+    border: 3px solid #000;
+    border-radius: 2% 6% 5% 4% / 1% 1% 2% 4%;
+    padding: 30px;
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+    box-shadow: 4px 4px 0 #000, 8px 8px 0 rgba(0, 0, 0, 0.15);
+    transform: rotate(-1deg);
+}
+
+/* --- TOASTS --- */
+#toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 20000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.toast {
+    background: #fff740;
+    color: #2d3436;
+    padding: 15px 25px;
+    padding-bottom: 25px;
+    font-family: 'Patrick Hand', cursive;
+    font-size: 1.3rem;
+    transform: rotate(-2deg);
+    clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 95% 95%, 90% 100%, 85% 95%, 80% 100%, 75% 95%, 70% 100%, 65% 95%, 60% 100%, 55% 95%, 50% 100%, 45% 95%, 40% 100%, 35% 95%, 30% 100%, 25% 95%, 20% 100%, 15% 95%, 10% 100%, 5% 95%, 0% 100%);
+    filter: drop-shadow(3px 3px 0 rgba(0, 0, 0, 0.15));
+    animation: toastIn 0.5s forwards;
+}
+
+.toast.error {
+    background: #ffadad;
+}

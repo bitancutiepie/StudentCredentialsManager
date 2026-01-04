@@ -3,11 +3,42 @@
 
 // --- ADMIN TOOL TOGGLE ---
 window.showAdminTool = function (toolId, btnElement) {
+    // 0. Permission Check
+    if (toolId) {
+        const toolIdToPerm = {
+            'admin-schedule-form': 'schedule',
+            'admin-assignment-form': 'homework',
+            'admin-event-form': 'event',
+            'admin-file-form': 'file',
+            'admin-todo-form': 'todo',
+            'admin-email-form': 'email',
+            'admin-message-manager': 'messages',
+            'admin-gallery-form': 'gallery',
+            'admin-storage-view': 'storage',
+            'admin-promote-form': 'promote',
+            'admin-revoke-form': 'revoke'
+        };
+
+        const permKey = toolIdToPerm[toolId];
+        if (permKey) {
+            // "promote" and "revoke" are strictly for MAIN ADMIN
+            if (permKey === 'promote' || permKey === 'revoke') {
+                if (window.user.sr_code !== 'ADMIN') {
+                    showToast("Only the BOSS can manage admins!", "error");
+                    return;
+                }
+            } else if (!hasPermission(permKey)) {
+                showToast("You don't have access to this tool.", "error");
+                return;
+            }
+        }
+    }
+
     // 1. Reset all buttons
     document.querySelectorAll('.filter-bar .sketch-btn').forEach(b => b.classList.remove('active-tool'));
 
     // Hide all admin forms
-    const forms = ['admin-schedule-form', 'admin-assignment-form', 'admin-event-form', 'admin-file-form', 'admin-email-form', 'admin-message-manager', 'admin-gallery-form', 'admin-storage-view', 'admin-promote-form', 'admin-revoke-form'];
+    const forms = ['admin-schedule-form', 'admin-assignment-form', 'admin-event-form', 'admin-file-form', 'admin-email-form', 'admin-message-manager', 'admin-gallery-form', 'admin-storage-view', 'admin-promote-form', 'admin-revoke-form', 'admin-todo-form'];
     let isAlreadyOpen = false;
 
     forms.forEach(id => {
@@ -32,6 +63,8 @@ window.showAdminTool = function (toolId, btnElement) {
         if (toolId === 'admin-storage-view') window.fetchStorageStats();
         if (toolId === 'admin-gallery-form') window.fetchAdminGalleryList();
         if (toolId === 'admin-email-form' && window.populateEmailDropdown) window.populateEmailDropdown();
+        if (toolId === 'admin-promote-form') window.populatePromoteDropdown();
+        if (toolId === 'admin-revoke-form') window.populateRevokeDropdown();
     } else {
         // If closing or clicking active, show hint
         if (hint) hint.style.display = 'block';
@@ -330,15 +363,22 @@ window.populatePromoteDropdown = async function () {
 window.promoteUser = async function (e) {
     e.preventDefault();
     const userId = document.getElementById('promote-user-select').value;
-    if (!window.isAdmin) return showToast('Admins only.');
+    if (window.user.sr_code !== 'ADMIN') return showToast('Only the MAIN ADMIN can promote users.', 'error');
     if (!userId) return showToast('Select a user.');
 
-    // Server check recommended here but we rely on RLS/Security definers in backend ideally.
-    // Logic:
-    const { error } = await window.db.from('students').update({ role: 'admin' }).eq('id', userId);
-    if (error) showToast('Error: ' + error.message);
+    // Gather permissions
+    const checkboxes = document.querySelectorAll('.tool-perm:checked');
+    const perms = Array.from(checkboxes).map(cb => cb.value);
+
+    let newRole = 'admin';
+    if (perms.length > 0) {
+        newRole = `admin:tools:${perms.join(',')}`;
+    }
+
+    const { error } = await window.db.from('students').update({ role: newRole }).eq('id', userId);
+    if (error) showToast('Error: ' + error.message, 'error');
     else {
-        showToast('User promoted to Admin!');
+        showToast('User promoted to Admin with specific tools!');
         e.target.reset();
         populatePromoteDropdown();
         populateRevokeDropdown();

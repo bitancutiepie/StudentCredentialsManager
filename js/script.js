@@ -1,12 +1,9 @@
 // script.js (Self-Healing Admin Menu Version + Email Auto-Fix)
 
 // --- CONFIGURATION ---
-// --- CONFIGURATION ---
 // SUPABASE_URL and SUPABASE_KEY are loaded from common.js
-
-if (typeof window.supabase === 'undefined') console.error('Error: Supabase not loaded. Check internet.');
-window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-const supabaseClient = window.supabaseClient; // Keep local ref for other functions
+// window.db is initialized in common.js
+const supabaseClient = window.db;
 
 // DOM Elements
 const authForm = document.getElementById('authForm');
@@ -406,17 +403,7 @@ async function showAdminPanel(name) {
 // --- ADMIN FEATURES (Black List) ---
 
 async function fetchStudents() {
-    const { data, error } = await supabaseClient
-        .from('students')
-        .select('id, name, sr_code, password, avatar_url, enrollment_status');
-    if (error) return console.error(error);
-
-    // Fetch receipts from shared_files instead of students table
-    const { data: receipts } = await supabaseClient.from('shared_files').select('file_url, subject').like('subject', 'Receipt-%');
-    const receiptMap = {};
-    if (receipts) receipts.forEach(r => receiptMap[r.subject] = r.file_url);
-
-    allStudents = data.map(s => ({ ...s, enrollment_receipt_url: receiptMap[`Receipt-${s.id}`] }));
+    allStudents = await getStudentsWithDetails();
     displayStudents(allStudents);
 }
 
@@ -1007,22 +994,12 @@ async function fetchMembers() {
     }
 
     try {
-        // 1. Fetch Students
-        const { data: rawStudents, error } = await supabaseClient.from('students').select('id, name, avatar_url, sr_code, role, enrollment_status');
-        if (error) {
-            console.error("Error fetching students:", error);
-            return;
-        }
-
-        // 1.5 Fetch Receipts (Workaround)
-        const { data: receipts } = await supabaseClient.from('shared_files').select('file_url, subject').like('subject', 'Receipt-%');
-        const receiptMap = {};
-        if (receipts) receipts.forEach(r => receiptMap[r.subject] = r.file_url);
-
-        const students = rawStudents.map(s => ({ ...s, enrollment_receipt_url: receiptMap[`Receipt-${s.id}`] }));
+        // 1. Fetch Students and Receipts using CENTRALIZED HELPER
+        const students = await getStudentsWithDetails();
+        if (students.length === 0) return; // Error handled inside or list is empty
 
         // 2. Fetch Statuses
-        const { data: statuses } = await supabaseClient.from('user_statuses').select('user_id, status');
+        const { data: statuses } = await window.db.from('user_statuses').select('user_id, status');
 
         // Create a lookup map for statuses
         const statusMap = {};
@@ -1592,34 +1569,7 @@ window.postLandingNote = async function () {
     else { showToast('Note posted!'); input.value = ''; fetchNotes(); }
 }
 
-// LOGOUT
-async function logout() {
-    if (!await showWimpyConfirm("Pack up and leave?")) return;
-    currentStudentId = null;
-    localStorage.removeItem('wimpy_user');
-    sessionStorage.removeItem('wimpy_user');
-    authSection.classList.remove('hidden');
-    adminDashboard.classList.add('hidden');
-    studentDashboard.classList.add('hidden');
-
-    // Reset UI
-    const loginUI = document.getElementById('loginUI');
-    const adminControls = document.getElementById('adminLandingControls');
-    if (loginUI) loginUI.classList.remove('hidden');
-    if (adminControls) adminControls.classList.add('hidden');
-
-    // Reset Mobile Navs
-    const fixedNav = document.getElementById('fixed-action-buttons');
-    const adminNav = document.getElementById('admin-mobile-nav');
-    if (fixedNav) fixedNav.classList.remove('hidden');
-    if (adminNav) adminNav.classList.add('hidden');
-
-    if (adminChoiceModal) adminChoiceModal.classList.add('hidden');
-    srCodeInput.value = '';
-    passwordInput.value = '';
-    searchInput.value = '';
-    fetchMembers(); fetchNotes(); fetchRecentLogins(); fetchNewUploads(); fetchLandingGallery();
-}
+// logout removed (in common.js)
 
 // Function to return to the admin choice modal from the admin dashboard
 function returnToAdminChoice() {
@@ -1800,6 +1750,8 @@ async function fetchNewUploads() {
         .from('shared_files')
         .select('id, title, subject, created_at, file_url, file_type')
         .neq('subject', 'LandingGallery')
+        .neq('subject', 'General')
+        .neq('subject', 'PENDING_MEMORY')
         .not('subject', 'like', 'Receipt-%')
         .gte('created_at', dateLimit.toISOString())
         .order('created_at', { ascending: false })
@@ -1939,37 +1891,7 @@ window.openGalleryLightbox = function (startIndex) {
 }
 
 // --- CUSTOM WIMPY POP-UP ---
-function showWimpyConfirm(message) {
-    return new Promise((resolve) => {
-        const overlay = document.createElement('div');
-        overlay.className = 'wimpy-modal-overlay';
-
-        const box = document.createElement('div');
-        box.className = 'wimpy-modal-box';
-
-        box.innerHTML = `
-            <h2 style="margin:0 0 10px 0; font-size:2rem;">WAIT!</h2>
-            <p style="font-size:1.3rem; margin-bottom:20px;">${message}</p>
-            <div style="display:flex; gap:10px; justify-content:center;">
-                <button id="wimpy-no" style="flex:1; background:#fff; color:#000;">NAH</button>
-                <button id="wimpy-yes" style="flex:1; background:#000; color:#fff;">YEAH</button>
-            </div>
-        `;
-
-        overlay.appendChild(box);
-        document.body.appendChild(overlay);
-
-        document.getElementById('wimpy-no').onclick = () => {
-            overlay.remove();
-            resolve(false);
-        };
-
-        document.getElementById('wimpy-yes').onclick = () => {
-            overlay.remove();
-            resolve(true);
-        };
-    });
-}
+// showWimpyConfirm removed (in common.js)
 
 // --- WIDE MODE TOGGLE ---
 function toggleWideMode() {
@@ -2150,7 +2072,7 @@ window.generateFileCard = function (file, isNew = false) {
     const safeUrl = (file.file_url || '').replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;");
     const safeTitle = (file.title || 'File').replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;");
     const subject = file.subject || 'General';
-    const badgeHtml = isNew ? `<div style="font-size: 0.8rem; background: #d63031; color: white; padding: 2px 6px; border-radius: 4px; transform: rotate(5deg);">NEW!</div>` : '';
+    const badgeHtml = (isNew && subject !== 'General') ? `<div style="font-size: 0.8rem; background: #d63031; color: white; padding: 2px 6px; border-radius: 4px; transform: rotate(5deg);">NEW!</div>` : '';
 
     // Icon Logic
     let icon = 'fa-file-alt';

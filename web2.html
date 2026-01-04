@@ -34,6 +34,7 @@
 
 
 
+    <link rel="stylesheet" href="css/common.css">
     <link rel="stylesheet" href="css/dashboard.css">
 </head>
 
@@ -367,10 +368,31 @@
 
                     <form onsubmit="promoteUser(event)" autocomplete="off">
                         <select id="promote-user-select"
-                            style="width: 100%; padding: 10px; margin-bottom: 10px; border: none; border-bottom: 2px solid #333; font-family: 'Patrick Hand'; font-size: 1.2rem; background: transparent;">
+                            style="width: 100%; padding: 10px; margin-bottom: 20px; border: none; border-bottom: 2px solid #333; font-family: 'Patrick Hand'; font-size: 1.2rem; background: transparent;">
                             <option value="" disabled selected>Loading users...</option>
                         </select>
-                        <button type="submit" class="sketch-btn" style="background: #000; color: #fff;"><i
+
+                        <div style="text-align: left; margin-bottom: 20px;">
+                            <label style="font-weight: bold; display: block; margin-bottom: 10px;">Select Accessible
+                                Tools:</label>
+                            <div
+                                style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-family: 'Patrick Hand';">
+                                <label><input type="checkbox" class="tool-perm" value="schedule" checked> Class
+                                    Sched</label>
+                                <label><input type="checkbox" class="tool-perm" value="homework" checked>
+                                    Homework</label>
+                                <label><input type="checkbox" class="tool-perm" value="event" checked> Events</label>
+                                <label><input type="checkbox" class="tool-perm" value="file" checked> Files</label>
+                                <label><input type="checkbox" class="tool-perm" value="todo" checked> To-Do</label>
+                                <label><input type="checkbox" class="tool-perm" value="email" checked> Email</label>
+                                <label><input type="checkbox" class="tool-perm" value="messages" checked>
+                                    Messages</label>
+                                <label><input type="checkbox" class="tool-perm" value="gallery" checked> Gallery</label>
+                                <label><input type="checkbox" class="tool-perm" value="storage" checked> Storage</label>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="sketch-btn" style="background: #000; color: #fff; width: 100%;"><i
                                 class="fas fa-check-circle"></i> Make Admin</button>
                     </form>
                 </div>
@@ -929,6 +951,9 @@
             const currentUser = window.user || JSON.parse(localStorage.getItem('wimpy_user') || 'null');
             const isAdmin = currentUser && currentUser.sr_code === 'ADMIN';
 
+            const dateLimit = new Date();
+            dateLimit.setDate(dateLimit.getDate() - 3);
+
             list.innerHTML = files.map(file => {
                 const safeUrl = (file.file_url || '').replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;");
                 const safeTitle = (file.title || 'File').replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;");
@@ -936,6 +961,10 @@
                 const displayTitle = typeof escapeHTML === 'function' ? escapeHTML(file.title) : safeTitle;
                 const subject = file.subject || 'General';
                 const deleteBtn = isAdmin ? `<button onclick="event.stopPropagation(); deleteFile(${file.id})" class="sketch-btn danger" style="position:absolute; top:10px; right:10px; padding: 5px 10px; font-size: 0.9rem; z-index: 50; border-radius: 5px;">X</button>` : '';
+
+                const createdAt = new Date(file.created_at);
+                const isNew = createdAt > dateLimit && subject !== 'General';
+                const badgeHtml = isNew ? `<div style="font-size: 0.8rem; background: #d63031; color: white; padding: 2px 6px; border-radius: 4px; transform: rotate(5deg); margin-left: 10px; font-family: 'Permanent Marker', cursive;">NEW!</div>` : '';
 
                 return `
                 <div style="width: 100%; background: #fff; border: 2px solid #000; border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; padding: 10px; display: flex; align-items: center; gap: 10px; box-shadow: 3px 3px 0 rgba(0,0,0,0.1); transition: transform 0.2s; cursor: pointer; margin-bottom: 15px; position: relative;" 
@@ -949,6 +978,7 @@
                         <div style="font-size: 1.1rem; line-height: 1.1; font-weight: bold;">${displayTitle}</div>
                         <div style="font-size: 0.8rem; color: #2980b9; margin-top: 2px;"><i class="fas fa-eye"></i> Click to Preview</div>
                     </div>
+                    ${badgeHtml}
                 </div>`;
             }).join('');
         }
