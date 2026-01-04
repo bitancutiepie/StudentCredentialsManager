@@ -16,7 +16,8 @@ window.showAdminTool = function (toolId, btnElement) {
             'admin-gallery-form': 'gallery',
             'admin-storage-view': 'storage',
             'admin-promote-form': 'promote',
-            'admin-revoke-form': 'revoke'
+            'admin-revoke-form': 'revoke',
+            'admin-blacklist-view': 'blacklist' // <--- Added mapping
         };
 
         const permKey = toolIdToPerm[toolId];
@@ -353,9 +354,10 @@ window.populatePromoteDropdown = async function () {
     const dropdown = document.getElementById('promote-user-select');
     if (!dropdown) return;
 
-    const { data } = await window.db.from('students').select('id, name, sr_code').neq('role', 'admin').neq('sr_code', 'ADMIN').order('name');
+    // Fetch ALL users except the Main Admin (allows updating permissions for existing admins)
+    const { data } = await window.db.from('students').select('id, name, sr_code').neq('sr_code', 'ADMIN').order('name');
     if (data) {
-        dropdown.innerHTML = '<option value="" disabled selected>Select User</option>' +
+        dropdown.innerHTML = '<option value="" disabled selected>Select User to Promote/Update</option>' +
             data.map(s => `<option value="${s.id}">${escapeHTML(s.name)}</option>`).join('');
     }
 }
@@ -378,7 +380,7 @@ window.promoteUser = async function (e) {
     const { error } = await window.db.from('students').update({ role: newRole }).eq('id', userId);
     if (error) showToast('Error: ' + error.message, 'error');
     else {
-        showToast('User promoted to Admin with specific tools!');
+        showToast('User privileges updated!');
         e.target.reset();
         populatePromoteDropdown();
         populateRevokeDropdown();
@@ -389,8 +391,13 @@ window.populateRevokeDropdown = async function () {
     const dropdown = document.getElementById('revoke-user-select');
     if (!dropdown) return;
 
-    // Only fetch admins who are NOT the main ADMIN
-    const { data } = await window.db.from('students').select('id, name, sr_code').eq('role', 'admin').neq('sr_code', 'ADMIN').order('name');
+    // Fetch ANY admin (legacy or granular) except Main Admin
+    const { data } = await window.db.from('students')
+        .select('id, name, sr_code')
+        .ilike('role', 'admin%') // Matches 'admin' and 'admin:tools:...'
+        .neq('sr_code', 'ADMIN')
+        .order('name');
+
     if (data) {
         dropdown.innerHTML = '<option value="" disabled selected>Select Admin</option>' +
             data.map(s => `<option value="${s.id}">${escapeHTML(s.name)}</option>`).join('');

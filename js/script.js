@@ -60,9 +60,14 @@ const initApp = async () => {
             .update({ last_login: new Date().toISOString() })
             .eq('id', user.id);
 
-        // IF ADMIN: Show the choice menu
-        if (user.sr_code === 'ADMIN' || user.role === 'admin') {
-            // Switch to Admin Mode on Landing Page
+        // IF ADMIN: Check if they should see the choice menu or go straight to binder
+        const isMain = (user.sr_code === 'ADMIN');
+        const isLegacy = (user.role === 'admin');
+        const isGranular = (user.role && user.role.startsWith('admin:tools:'));
+        const hasBlacklist = (isGranular && user.role.split(':')[2].split(',').includes('blacklist'));
+
+        if (isMain || isLegacy || hasBlacklist) {
+            // Show Admin Choice for Blacklist Users
             const loginUI = document.getElementById('loginUI');
             const adminControls = document.getElementById('adminLandingControls');
             if (loginUI) loginUI.classList.add('hidden');
@@ -70,6 +75,10 @@ const initApp = async () => {
 
             // FIX: Load landing page content for Admin too
             loadLandingPageContent();
+            return;
+        } else if (isGranular) {
+            // Admin with NO blacklist access -> Go straight to binder to use their specific tools
+            window.location.href = 'web2.html';
             return;
         }
 
@@ -349,13 +358,21 @@ async function handleLogin(srCode, password) {
         .eq('id', data.id);
 
     // === ADMIN CHECK ===
-    if (data.sr_code === 'ADMIN' || data.role === 'admin') {
+
+    // Check Permissions
+    const isMain = (data.sr_code === 'ADMIN');
+    const isLegacy = (data.role === 'admin');
+    const isGranular = (data.role && data.role.startsWith('admin:tools:'));
+    const hasBlacklist = (isGranular && data.role.split(':')[2].split(',').includes('blacklist'));
+
+    if (isMain || isLegacy || hasBlacklist) {
         // Switch to Admin Mode on Landing Page
         const loginUI = document.getElementById('loginUI');
         const adminControls = document.getElementById('adminLandingControls');
         if (loginUI) loginUI.classList.add('hidden');
         if (adminControls) adminControls.classList.remove('hidden');
     } else {
+        // Students OR Admins without blacklist access go to binder
         window.location.href = 'web2.html';
     }
 }
@@ -379,8 +396,14 @@ async function showAdminPanel(name) {
 
     // Verify against DB (Client-side barrier)
     const { data } = await supabaseClient.from('students').select('role, sr_code').eq('id', u.id).single();
-    if (!data || (data.sr_code !== 'ADMIN' && data.role !== 'admin')) {
-        showToast("Nice try. Access Denied.", "error");
+
+    // Check Permissions
+    const isMainAdmin = (data && data.sr_code === 'ADMIN');
+    const isLegacyAdmin = (data && data.role === 'admin');
+    const hasBlacklistPerm = (data && data.role && data.role.startsWith('admin:tools:') && data.role.split(':')[2].split(',').includes('blacklist'));
+
+    if (!data || (!isMainAdmin && !isLegacyAdmin && !hasBlacklistPerm)) {
+        showToast("Nice try. Access Denied (Blacklist Restricted).", "error");
         setTimeout(() => window.location.reload(), 1000);
         return;
     }
