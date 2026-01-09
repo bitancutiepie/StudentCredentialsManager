@@ -438,12 +438,89 @@ async function fetchStudents() {
 
 searchInput.addEventListener('input', debounce((e) => {
     const searchTerm = e.target.value.toLowerCase();
+    const autocompleteDropdown = document.getElementById('autocompleteDropdown');
+
+    // Filter students
     const filtered = allStudents.filter(student =>
         student.name.toLowerCase().includes(searchTerm) ||
         student.sr_code.toLowerCase().includes(searchTerm)
     );
+
+    // Update the main list
     displayStudents(filtered);
+
+    // Show autocomplete dropdown if there's a search term
+    if (searchTerm.length > 0) {
+        showAutocomplete(filtered, searchTerm);
+    } else {
+        hideAutocomplete();
+    }
 }, 300));
+
+// Hide autocomplete when clicking outside
+document.addEventListener('click', (e) => {
+    const autocompleteDropdown = document.getElementById('autocompleteDropdown');
+    const searchInput = document.getElementById('searchInput');
+    if (autocompleteDropdown && searchInput &&
+        !autocompleteDropdown.contains(e.target) &&
+        e.target !== searchInput) {
+        hideAutocomplete();
+    }
+});
+
+function showAutocomplete(students, searchTerm) {
+    const dropdown = document.getElementById('autocompleteDropdown');
+    if (!dropdown) return;
+
+    dropdown.innerHTML = '';
+
+    if (students.length === 0) {
+        dropdown.innerHTML = '<div class="autocomplete-no-results">No students found</div>';
+        dropdown.style.display = 'block';
+        return;
+    }
+
+    // Limit to top 5 results for autocomplete
+    const topResults = students.slice(0, 5);
+
+    topResults.forEach(student => {
+        const avatar = student.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random`;
+
+        const item = document.createElement('div');
+        item.className = 'autocomplete-item';
+        item.innerHTML = `
+            <img src="${avatar}" alt="${escapeHTML(student.name)}">
+            <div class="student-info">
+                <div class="student-name">${highlightMatch(escapeHTML(student.name), searchTerm)}</div>
+                <div class="student-code">${highlightMatch(student.sr_code, searchTerm)}</div>
+            </div>
+        `;
+
+        item.onclick = () => {
+            searchInput.value = student.name;
+            displayStudents([student]);
+            hideAutocomplete();
+        };
+
+        dropdown.appendChild(item);
+    });
+
+    dropdown.style.display = 'block';
+}
+
+function hideAutocomplete() {
+    const dropdown = document.getElementById('autocompleteDropdown');
+    if (dropdown) {
+        dropdown.style.display = 'none';
+    }
+}
+
+function highlightMatch(text, search) {
+    if (!search) return text;
+    const regex = new RegExp(`(${search})`, 'gi');
+    return text.replace(regex, '<strong style="background: #fff740; padding: 0 2px;">$1</strong>');
+}
+
 
 function displayStudents(students) {
     if (!studentListContainer) return;
@@ -456,9 +533,13 @@ function displayStudents(students) {
         return;
     }
 
-    // Filter groups
-    const notEnrolled = validStudents.filter(s => !s.enrollment_status || s.enrollment_status === 'Not Enrolled');
-    const enrolled = validStudents.filter(s => s.enrollment_status === 'Enrolled');
+    // Filter groups and sort alphabetically by name
+    const notEnrolled = validStudents
+        .filter(s => !s.enrollment_status || s.enrollment_status === 'Not Enrolled')
+        .sort((a, b) => a.name.localeCompare(b.name));
+    const enrolled = validStudents
+        .filter(s => s.enrollment_status === 'Enrolled')
+        .sort((a, b) => a.name.localeCompare(b.name));
 
     // Helper function to render a section
     const renderSection = (title, list, color) => {
@@ -1076,6 +1157,7 @@ async function fetchMembers() {
         const publicMemberList = document.getElementById('publicMemberList');
         if (publicMemberList) {
             publicMemberList.innerHTML = '';
+            publicMemberList.className = 'compact-member-grid hidden'; // Helper class + Default hidden state
 
             // Filter valid members first (Exclude Admin/Principal)
             const validMembers = students.filter(s => s.sr_code !== 'ADMIN' && s.role !== 'admin' && s.name !== 'Principal User' && !s.name.includes('Admin'));
@@ -1090,22 +1172,27 @@ async function fetchMembers() {
             }
 
             if (validMembers.length === 0) {
-                publicMemberList.innerHTML = '<span style="font-style:italic">No members yet...</span>';
+                publicMemberList.innerHTML = '<span style="font-style:italic; width:100%; text-align:center;">No members yet...</span>';
             } else {
                 validMembers.forEach(student => {
                     const userStatus = statusMap[student.id] || 'Member';
 
                     const tag = document.createElement('div');
-                    tag.className = 'member-tag';
-                    // Use flex row layout for the card content
-                    tag.style.cssText = 'cursor: pointer;';
+                    tag.className = 'compact-member-item';
                     tag.onclick = () => showPublicProfile(student.name, student.avatar_url, userStatus);
 
                     const safeAvatar = student.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random`;
+                    const firstName = student.name.split(' ')[0]; // Use first name for compactness
 
                     tag.innerHTML = `
-                        <img src="${safeAvatar}" style="width:24px; height:24px; border-radius:50%; object-fit:cover; border:1px solid #333; flex-shrink: 0;">
-                        <span style="font-weight:bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(student.name)}</span>
+                        <img src="${safeAvatar}" alt="Avatar">
+                        <div class="name-label">${escapeHTML(firstName)}</div>
+                        <div class="mini-profile-card">
+                            <strong>${escapeHTML(student.name)}</strong>
+                            <small>SR: ${student.sr_code.substring(0, 3)}***</small>
+                            ${userStatus !== 'Member' ? `<div class="role-badge">${userStatus}</div>` : ''}
+                            <div style="font-size:0.7rem; color:#888; margin-top:5px;">Click for full profile</div>
+                        </div>
                     `;
                     publicMemberList.appendChild(tag);
                 });
@@ -1956,11 +2043,11 @@ async function fetchRequests() {
     if (error) return console.error(error);
 
     if (!data || data.length === 0) {
-        container.innerHTML = '<h3 style="text-decoration:underline wavy #d63031;"><i class="fas fa-envelope-open-text"></i> Inbox / Requests</h3><p style="text-align:center; color:#666;">No new requests.</p>';
+        container.innerHTML = '<p style="text-align:center; color:#666;">No new requests.</p>';
         return;
     }
 
-    container.innerHTML = '<h3 style="text-decoration:underline wavy #d63031;"><i class="fas fa-envelope-open-text"></i> Inbox / Requests</h3>' + data.map(req => `
+    container.innerHTML = data.map(req => `
         <div class="student-strip" style="flex-direction:column; align-items:flex-start; gap:5px; background:#fffde7;">
             <div style="width:100%; display:flex; justify-content:space-between; border-bottom:1px dashed #ccc; padding-bottom:5px;">
                 <strong><i class="fas fa-user"></i> ${req.sender || 'Anonymous'}</strong>
@@ -2001,11 +2088,11 @@ async function fetchAdminFiles() {
     if (error) return console.error(error);
 
     if (!data || data.length === 0) {
-        container.innerHTML = '<h3 style="text-decoration:underline wavy #0984e3;"><i class="fas fa-folder-open"></i> Manage Files</h3><p style="text-align:center; color:#666;">No files uploaded.</p>';
+        container.innerHTML = '<p style="text-align:center; color:#666;">No files uploaded.</p>';
         return;
     }
 
-    container.innerHTML = '<h3 style="text-decoration:underline wavy #0984e3;"><i class="fas fa-folder-open"></i> Manage Files</h3>' + data.map(file => `
+    container.innerHTML = data.map(file => `
         <div class="student-strip" style="justify-content:space-between; align-items:center; background:#f0f8ff;">
             <div style="display:flex; flex-direction:column; gap:2px; overflow:hidden; text-align:left;">
                 <strong>${file.title}</strong>

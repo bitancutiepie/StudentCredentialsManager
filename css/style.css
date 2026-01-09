@@ -1172,3 +1172,157 @@ input[type="checkbox"] {
 }
 
 /* --- WIMPY KID THEME & ANIMATIONS --- */
+/* --- AUTOCOMPLETE DROPDOWN STYLES --- */
+.autocomplete-item {
+    padding: 12px 15px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.2s;
+    font-size: 1.1rem;
+}
+
+.autocomplete-item:last-child {
+    border-bottom: none;
+}
+
+.autocomplete-item:hover {
+    background: #f8f9fa;
+    transform: translateX(5px);
+}
+
+.autocomplete-item img {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 2px solid #000;
+    object-fit: cover;
+}
+
+.autocomplete-item .student-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.autocomplete-item .student-name {
+    font-weight: bold;
+    color: #2d3436;
+}
+
+.autocomplete-item .student-code {
+    font-size: 0.9rem;
+    color: #636e72;
+}
+
+.autocomplete-no-results {
+    padding: 15px;
+    text-align: center;
+    color: #999;
+    font-style: italic;
+}
+
+
+/* --- COMPACT CLASSMATE GRID UI --- */
+.compact-member-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    gap: 10px;
+    padding: 10px;
+    justify-items: center;
+}
+
+.compact-member-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    transition: transform 0.2s;
+    width: 100%;
+    position: relative;
+}
+
+.compact-member-item:hover {
+    transform: scale(1.1) translateY(-5px);
+    z-index: 10;
+}
+
+.compact-member-item img {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: 2px solid #000;
+    object-fit: cover;
+    background: #fff;
+    box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.1);
+}
+
+.compact-member-item .name-label {
+    font-size: 0.8rem;
+    text-align: center;
+    line-height: 1;
+    margin-top: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+    font-weight: bold;
+    color: #444;
+}
+
+/* Rich Mini Profile Card on Hover */
+.compact-member-item .mini-profile-card {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(10px) scale(0.8);
+    background: #fff;
+    color: #2d3436;
+    padding: 10px;
+    width: 180px;
+    border: 2px solid #000;
+    border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+    /* Sketchy border */
+    box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.2);
+    text-align: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.compact-member-item:hover .mini-profile-card {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-10px) scale(1) rotate(-2deg);
+    pointer-events: auto;
+}
+
+.mini-profile-card strong {
+    font-size: 1rem;
+    line-height: 1.1;
+    display: block;
+    margin-bottom: 2px;
+}
+
+.mini-profile-card small {
+    font-size: 0.8rem;
+    color: #666;
+    display: block;
+}
+
+.mini-profile-card .role-badge {
+    background: #ff7675;
+    color: white;
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 10px;
+    border: 1px solid #000;
+    align-self: center;
+    margin-top: 3px;
+}
