@@ -802,25 +802,25 @@ window.launchTurboTiling = function (srCode, password, name) {
             <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet">
             <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
             <style>
-                body { font-family: 'Patrick Hand', cursive; background: #fcf5e5; padding: 20px; border: 5px solid #000; height: 100vh; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden; }
-                .card { background: #fff; border: 3px solid #000; padding: 15px; box-shadow: 4px 4px 0 #000; margin-bottom: 20px; transform: rotate(-1deg); }
-                button { width: 100%; padding: 12px; margin: 8px 0; font-family: inherit; font-size: 1.2rem; cursor: pointer; border: 2px solid #000; transition: transform 0.1s; box-shadow: 3px 3px 0 #000; background: #fff; display: flex; align-items: center; justify-content: center; gap: 10px; }
+                body { font-family: 'Patrick Hand', cursive; background: #fcf5e5; padding: 20px; border: 5px solid #000; min-height: 100vh; box-sizing: border-box; display: flex; flex-direction: column; overflow-x: hidden; overflow-y: auto; }
+                .card { background: #fff; border: 3px solid #000; padding: 15px; box-shadow: 4px 4px 0 #000; margin-bottom: 20px; transform: rotate(-1deg); flex-shrink: 0; }
+                button { width: 100%; padding: 12px; margin: 8px 0; font-family: inherit; font-size: 1.2rem; cursor: pointer; border: 2px solid #000; transition: transform 0.1s; box-shadow: 3px 3px 0 #000; background: #fff; display: flex; align-items: center; justify-content: center; gap: 10px; flex-shrink: 0; }
                 button:active { transform: scale(0.98); box-shadow: 1px 1px 0 #000; }
                 .btn-copy-user { border-left: 10px solid #0984e3; }
                 .btn-copy-pass { border-left: 10px solid #d63031; }
-                .btn-done { background: #d63031; color: white; margin-top: auto; padding: 10px; font-size: 1.1rem; }
-                h2 { margin: 0; border-bottom: 2px dashed #000; padding-bottom: 5px; display: flex; justify-content: space-between; align-items: center; }
-                .tip { background: #fff740; padding: 10px; border: 2px solid #000; font-size: 0.9rem; margin-top: 10px; }
+                .btn-done { background: #d63031; color: white; margin-top: 20px; padding: 10px; font-size: 1.1rem; flex-shrink: 0; }
+                h2 { margin: 0 0 15px 0; border-bottom: 2px dashed #000; padding-bottom: 5px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+                .tip { background: #fff740; padding: 10px; border: 2px solid #000; font-size: 0.9rem; margin-top: 10px; flex-shrink: 0; }
                 
-                .enroll-section { background: #f1f2f6; border: 2px solid #000; padding: 10px; margin-top: 10px; border-radius: 5px; text-align: left; }
+                .enroll-section { background: #f1f2f6; border: 2px solid #000; padding: 10px; margin-top: 10px; border-radius: 5px; text-align: left; flex-shrink: 0; }
                 .enroll-section label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 0.9rem; }
                 select, input[type="file"] { width: 100%; padding: 5px; font-family: inherit; border: 1px solid #000; margin-bottom: 8px; box-sizing: border-box; }
                 .enroll-btn { background: #00b894; color: #fff; padding: 8px; font-size: 1rem; margin: 5px 0; border-left: 10px solid #006266; }
                 .receipt-link { font-size: 0.8rem; color: #0984e3; text-decoration: none; display: block; margin-top: 5px; }
                 
-                #search-container { margin-bottom: 15px; display: none; flex-direction: column; height: 350px; }
-                #search-input { width: 100%; padding: 10px; border: 2px solid #000; font-family: inherit; font-size: 1.1rem; box-sizing: border-box; margin-bottom: 10px; }
-                #search-results { flex: 1; background: #fff; border: 2px solid #000; overflow-y: auto; padding: 10px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-content: flex-start; }
+                #search-container { margin-bottom: 15px; display: none; flex-direction: column; max-height: 400px; border: 3px solid #000; background: #fff; padding: 10px; box-shadow: 4px 4px 0 rgba(0,0,0,0.1); }
+                #search-input { width: 100%; padding: 10px; border: 2px solid #000; font-family: inherit; font-size: 1.1rem; box-sizing: border-box; margin-bottom: 10px; flex-shrink: 0; }
+                #search-results { flex: 1; overflow-y: auto; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-content: flex-start; min-height: 100px; }
                 
                 .student-chip { 
                     background: #fff; border: 2px solid #333; padding: 5px 10px; border-radius: 20px; font-size: 0.9rem; 
@@ -911,8 +911,8 @@ window.launchTurboTiling = function (srCode, password, name) {
                 }
                 function toggleSearch() {
                     const container = document.getElementById('search-container');
-                    const isOpening = container.style.display !== 'block';
-                    container.style.display = isOpening ? 'block' : 'none';
+                    const isOpening = container.style.display !== 'flex';
+                    container.style.display = isOpening ? 'flex' : 'none';
                     if (isOpening) {
                         renderResults(students); // Show all students by default
                         document.getElementById('search-input').focus();
