@@ -1293,7 +1293,31 @@
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Drawing...';
             btn.disabled = true;
 
-            // 1. Create the Stage (Off-screen container)
+            // 1. Fetch Schedule Data (Monday to Saturday)
+            // Use 'sb' or 'window.db' depending on what's available globally. 
+            // In web2.html, 'sb' seems to be the variable for supabase client in this scope.
+            const client = (typeof sb !== 'undefined') ? sb : (window.db || window.supabaseClient);
+
+            let scheduleData = [];
+            if (client) {
+                const { data, error } = await client.from('schedule').select('*').order('start_time', { ascending: true });
+                if (!error && data) {
+                    scheduleData = data;
+                }
+            }
+
+            // Group by Day
+            const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const grouped = {};
+            days.forEach(d => grouped[d] = []);
+
+            scheduleData.forEach(item => {
+                if (grouped[item.day_of_week]) {
+                    grouped[item.day_of_week].push(item);
+                }
+            });
+
+            // 2. Create the Stage
             const stage = document.createElement('div');
             document.body.appendChild(stage);
 
@@ -1305,58 +1329,47 @@
                 height: height + 'px',
                 position: 'fixed', top: '0', left: '-9999px', zIndex: '-9999',
                 fontFamily: '"Patrick Hand", cursive',
-                padding: '80px',
+                padding: '40px',
                 boxSizing: 'border-box',
                 display: 'flex', flexDirection: 'column', alignItems: 'center'
             };
 
-            let cardStyles = {};
+            let tableColor = '#000';
             let titleColor = '#000';
             let footerColor = '#7f8c8d';
 
             if (bgStyle === 'paper') {
                 stageStyles.backgroundColor = '#fdfbf7';
                 stageStyles.backgroundImage = 'repeating-linear-gradient(#fdfbf7 0px, #fdfbf7 29px, #a4b0be 30px)';
-                cardStyles = {
-                    background: '#fff',
-                    border: '3px solid #000',
-                    boxShadow: '5px 5px 0 rgba(0,0,0,0.2)'
-                };
             } else {
-                // Glassmorphism Base
-                cardStyles = {
-                    background: 'rgba(255, 255, 255, 0.65)',
-                    border: '2px solid rgba(255, 255, 255, 0.9)',
-                    boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.2)',
-                    borderRadius: '15px'
-                };
-
+                // Glassmorphism Base and Theme Colors
                 if (bgStyle === 'midnight') {
                     stageStyles.background = 'linear-gradient(to bottom, #0f2027, #203a43, #2c5364)';
                     titleColor = '#fff';
                     footerColor = 'rgba(255,255,255,0.7)';
+                    tableColor = '#fff';
                 } else if (bgStyle === 'sunset') {
                     stageStyles.background = 'linear-gradient(to right, #ff7e5f, #feb47b)';
                 } else if (bgStyle === 'ocean') {
                     stageStyles.background = 'linear-gradient(to top, #30cfd0 0%, #330867 100%)';
                     titleColor = '#fff';
                     footerColor = 'rgba(255,255,255,0.7)';
+                    tableColor = '#fff';
                 } else if (bgStyle === 'forest') {
                     stageStyles.background = 'linear-gradient(135deg, #134e5e 0%, #71b280 100%)';
                     titleColor = '#fff';
                     footerColor = 'rgba(255,255,255,0.7)';
+                    tableColor = '#fff';
                 } else if (bgStyle === 'custom' && customBgData) {
-                    // Background handled via img tag below for better html2canvas stability
                     titleColor = '#fff';
                     footerColor = 'rgba(255,255,255,0.9)';
+                    tableColor = '#fff';
                 }
             }
 
-            Object.assign(stage.style, {
-                ...stageStyles
-            });
+            Object.assign(stage.style, { ...stageStyles });
 
-            // Add Custom Background Image if applicable
+            // Custom BG Image
             if (bgStyle === 'custom' && customBgData) {
                 const bgImg = document.createElement('img');
                 bgImg.src = customBgData;
@@ -1367,65 +1380,138 @@
                 stage.appendChild(bgImg);
             }
 
-            // Add Header
+            // Header
             const title = document.createElement('h1');
-            title.innerHTML = "MY CLASS SCHEDULE";
+            title.innerHTML = "CLASS SCHEDULE";
             Object.assign(title.style, {
                 fontFamily: '"Permanent Marker", cursive',
-                fontSize: isPortrait ? '80px' : '100px',
-                marginBottom: '50px',
+                fontSize: isPortrait ? '5rem' : '6rem', // Huge font
+                marginBottom: '30px',
+                marginTop: '20px',
                 transform: 'rotate(-2deg)',
-                textShadow: (bgStyle === 'custom') ? '2px 2px 4px rgba(0,0,0,0.8)' : '4px 4px 0px rgba(0,0,0,0.1)',
+                textShadow: '3px 3px 0px rgba(0,0,0,0.2)',
                 color: titleColor
             });
             stage.appendChild(title);
 
-            // Clone Schedule Items
-            const grid = document.createElement('div');
-            Object.assign(grid.style, {
-                display: 'grid',
-                gridTemplateColumns: isPortrait ? '1fr' : 'repeat(3, 1fr)',
-                gap: '40px', width: '100%', alignContent: 'start'
+            // 3. Build the Grid / Table Layout
+            const gridContainer = document.createElement('div');
+            Object.assign(gridContainer.style, {
+                display: 'flex',
+                flexWrap: 'nowrap', // Force single row if landscape
+                width: '100%',
+                height: '100%', // Fill available space
+                gap: '15px',
+                alignItems: 'stretch',
+                justifyContent: 'center'
             });
 
-            const cards = document.querySelectorAll('#schedule-list .class-card');
-            if (cards.length === 0) {
-                grid.innerHTML = '<h2 style="text-align:center; width:100%;">No classes found! Go have fun!</h2>';
-            } else {
-                cards.forEach(card => {
-                    const clone = card.cloneNode(true);
-                    // Remove interactive elements (Buttons, Links) for wallpaper
-                    clone.querySelectorAll('button, a').forEach(el => el.remove());
-
-                    // Clean up styles for static image
-                    clone.style.animation = 'none';
-                    clone.style.opacity = '1';
-
-                    // Apply Card Styles (Glass or Paper)
-                    Object.assign(clone.style, cardStyles);
-
-                    if (bgStyle === 'paper') {
-                        clone.style.transform = `rotate(${Math.random() * 4 - 2}deg)`;
-                    } else {
-                        clone.style.transform = `rotate(${Math.random() * 2 - 1}deg)`; // Less rotation for glass
-                    }
-
-                    // Boost font size for wallpaper resolution
-                    clone.querySelectorAll('*').forEach(el => {
-                        const style = window.getComputedStyle(el);
-                        const fontSize = parseFloat(style.fontSize);
-                        if (fontSize) el.style.fontSize = (fontSize * 1.5) + 'px';
-                    });
-                    grid.appendChild(clone);
-                });
+            // If portrait, might want 2 rows of 3
+            if (isPortrait) {
+                gridContainer.style.flexWrap = 'wrap';
             }
-            stage.appendChild(grid);
 
-            // Add Footer
+            days.forEach((day, index) => {
+                const dayCol = document.createElement('div');
+                Object.assign(dayCol.style, {
+                    flex: '1',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    border: (bgStyle === 'paper') ? '3px solid #000' : `2px solid ${tableColor}`,
+                    borderRadius: '10px',
+                    background: (bgStyle === 'paper') ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.1)',
+                    overflow: 'hidden',
+                    backdropFilter: 'blur(5px)',
+                    minWidth: isPortrait ? '45%' : '0' // In portrait, 2 cols per row
+                });
+
+                // Day Header
+                const header = document.createElement('div');
+                header.innerText = day.toUpperCase();
+                Object.assign(header.style, {
+                    background: (bgStyle === 'paper') ? '#000' : 'rgba(0,0,0,0.5)',
+                    color: '#fff',
+                    textAlign: 'center',
+                    fontFamily: '"Permanent Marker", cursive',
+                    fontSize: '1.8rem',
+                    padding: '10px 0'
+                });
+                dayCol.appendChild(header);
+
+                // Classes Container
+                const list = document.createElement('div');
+                Object.assign(list.style, {
+                    flex: '1',
+                    padding: '10px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '10px'
+                });
+
+                const classes = grouped[day];
+                if (classes.length === 0) {
+                    const emptyMsg = document.createElement('div');
+                    emptyMsg.innerText = "REST DAY";
+                    Object.assign(emptyMsg.style, {
+                        textAlign: 'center',
+                        color: (bgStyle === 'paper') ? '#bdc3c7' : 'rgba(255,255,255,0.5)',
+                        marginTop: 'auto',
+                        marginBottom: 'auto',
+                        fontSize: '1.5rem',
+                        fontWeight: 'bold',
+                        transform: 'rotate(-5deg)'
+                    });
+                    list.appendChild(emptyMsg);
+                } else {
+                    classes.forEach(cls => {
+                        const item = document.createElement('div');
+
+                        // Time Formatting (Standard 12h)
+                        const format12 = (t) => {
+                            if (!t) return '';
+                            const [hStr, mStr] = t.split(':');
+                            let h = parseInt(hStr, 10);
+                            const ampm = h >= 12 ? 'PM' : 'AM';
+                            h = h % 12;
+                            h = h ? h : 12;
+                            return `${h}:${mStr} ${ampm}`;
+                        };
+                        const tStart = format12(cls.start_time);
+                        const tEnd = format12(cls.end_time);
+
+                        // Item Style
+                        Object.assign(item.style, {
+                            borderBottom: (bgStyle === 'paper') ? '2px dashed #000' : `1px dashed ${tableColor}`,
+                            paddingBottom: '8px'
+                        });
+
+                        // Dynamic Font Sizing for Mobile Optimization
+                        const fontSizeTime = isPortrait ? '2rem' : '1.4rem';
+                        const fontSizeSubj = isPortrait ? '1.6rem' : '1.2rem';
+                        const fontSizeProf = isPortrait ? '1.3rem' : '1rem';
+
+                        item.innerHTML = `
+                            <div style="font-weight:bold; font-size:${fontSizeTime}; color:${(bgStyle === 'paper' ? '#d63031' : '#ff7675')}">${tStart} - ${tEnd}</div>
+                            <div style="font-size:${fontSizeSubj}; line-height:1.1; font-weight:bold; color:${tableColor}">${cls.subject_name}</div>
+                            <div style="font-size:${fontSizeProf}; margin-top:5px; color:${(bgStyle === 'paper' ? '#2d3436' : footerColor)}">
+                                <i class="fas fa-chalkboard-teacher"></i> ${cls.instructor || 'TBA'}
+                            </div>
+                        `;
+                        list.appendChild(item);
+                    });
+                }
+
+                dayCol.appendChild(list);
+                gridContainer.appendChild(dayCol);
+            });
+
+            stage.appendChild(gridContainer);
+
+            // Footer
             const footer = document.createElement('div');
             footer.innerText = "Generated by Sistema ni JV";
             Object.assign(footer.style, {
-                marginTop: 'auto', fontSize: '40px', color: footerColor, fontFamily: '"Permanent Marker", cursive'
+                marginTop: '20px', fontSize: '2rem', color: footerColor, fontFamily: '"Permanent Marker", cursive'
             });
             stage.appendChild(footer);
 
@@ -1434,13 +1520,11 @@
                 const canvas = await html2canvas(stage, { scale: 1, useCORS: true, logging: false });
                 const dataUrl = canvas.toDataURL('image/png');
                 const filename = `WimpySchedule_${width}x${height}_${Date.now()}.png`;
-
                 showWallpaperPreview(dataUrl, filename);
             } catch (err) {
                 console.error(err);
                 alert("Oops! Could not generate wallpaper.");
             } finally {
-                // Delay removal slightly to allow library cleanup to complete
                 setTimeout(() => stage.remove(), 2000);
                 btn.innerHTML = originalText;
                 btn.disabled = false;
