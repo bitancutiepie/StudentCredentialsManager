@@ -1945,7 +1945,7 @@ async function fetchLandingGallery() {
         </div>
     `}).join('');
 
-    startGallerySlideshow();
+    // startGallerySlideshow(); // Disabled for Masonry Layout
 }
 
 // --- GALLERY LIGHTBOX WITH NAVIGATION ---

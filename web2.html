@@ -928,6 +928,7 @@
                 <option value="ocean">Ocean Glass</option>
                 <option value="forest">Forest Glass</option>
                 <option value="custom">Custom Image (Upload)</option>
+                <option value="ipown">Ipown Pormat (Modern)</option>
             </select>
             <input type="file" id="wp-custom-bg" accept="image/*" class="hidden"
                 style="margin-bottom: 20px; font-family: 'Patrick Hand'; font-size: 1rem; width: 100%; border: 2px dashed #000; padding: 10px;">
@@ -1196,7 +1197,36 @@
         // --- WALLPAPER GENERATOR LOGIC ---
         window.openWallpaperModal = function () {
             document.getElementById('wallpaperModal').classList.remove('hidden');
+            updateWallpaperOptions();
         }
+
+        window.updateWallpaperOptions = function () {
+            const sizeSelect = document.getElementById('wp-size-select');
+            const bgSelect = document.getElementById('wp-bg-select');
+            const ipownOption = bgSelect.querySelector('option[value="ipown"]');
+
+            let isMobile = false;
+            const val = sizeSelect.value;
+
+            if (val === 'auto') {
+                isMobile = window.innerWidth <= 768; // Simple width check for "Mobile"
+            } else {
+                const [w, h] = val.split(',').map(Number);
+                isMobile = h > w; // Portrait = Mobile assumption
+            }
+
+            if (isMobile) {
+                ipownOption.style.display = 'block';
+                ipownOption.disabled = false;
+            } else {
+                ipownOption.style.display = 'none';
+                ipownOption.disabled = true;
+                if (bgSelect.value === 'ipown') bgSelect.value = 'paper'; // Reset if invalid
+            }
+        }
+
+        // Add listener to Size Select
+        document.getElementById('wp-size-select').addEventListener('change', updateWallpaperOptions);
 
         window.toggleCustomBgInput = function (select) {
             const input = document.getElementById('wp-custom-bg');
@@ -1298,6 +1328,17 @@
             // In web2.html, 'sb' seems to be the variable for supabase client in this scope.
             const client = (typeof sb !== 'undefined') ? sb : (window.db || window.supabaseClient);
 
+            // Helper for Time Formatting (Moved top level scope of func)
+            const format12 = (t) => {
+                if (!t) return '';
+                const [hStr, mStr] = t.split(':');
+                let h = parseInt(hStr, 10);
+                const ampm = h >= 12 ? 'PM' : 'AM';
+                h = h % 12;
+                h = h ? h : 12;
+                return `${h}:${mStr} ${ampm}`;
+            };
+
             let scheduleData = [];
             if (client) {
                 const { data, error } = await client.from('schedule').select('*').order('start_time', { ascending: true });
@@ -1360,6 +1401,12 @@
                     titleColor = '#fff';
                     footerColor = 'rgba(255,255,255,0.7)';
                     tableColor = '#fff';
+                } else if (bgStyle === 'ipown') {
+                    stageStyles.background = 'linear-gradient(to top, #09203f 0%, #537895 100%)'; // Dark blue gradient
+                    stageStyles.fontFamily = '"Montserrat", sans-serif'; // Override font for ipown
+                    titleColor = '#fff';
+                    footerColor = 'rgba(255,255,255,0.9)';
+                    tableColor = '#fff';
                 } else if (bgStyle === 'custom' && customBgData) {
                     titleColor = '#fff';
                     footerColor = 'rgba(255,255,255,0.9)';
@@ -1380,138 +1427,357 @@
                 stage.appendChild(bgImg);
             }
 
-            // Header
-            const title = document.createElement('h1');
-            title.innerHTML = "CLASS SCHEDULE";
-            Object.assign(title.style, {
-                fontFamily: '"Permanent Marker", cursive',
-                fontSize: isPortrait ? '5rem' : '6rem', // Huge font
-                marginBottom: '30px',
-                marginTop: '20px',
-                transform: 'rotate(-2deg)',
-                textShadow: '3px 3px 0px rgba(0,0,0,0.2)',
-                color: titleColor
-            });
-            stage.appendChild(title);
-
-            // 3. Build the Grid / Table Layout
-            const gridContainer = document.createElement('div');
-            Object.assign(gridContainer.style, {
-                display: 'flex',
-                flexWrap: 'nowrap', // Force single row if landscape
-                width: '100%',
-                height: '100%', // Fill available space
-                gap: '15px',
-                alignItems: 'stretch',
-                justifyContent: 'center'
-            });
-
-            // If portrait, might want 2 rows of 3
-            if (isPortrait) {
-                gridContainer.style.flexWrap = 'wrap';
+            // Header (Only for non-ipown, as ipown has its own header)
+            if (bgStyle !== 'ipown') {
+                const title = document.createElement('h1');
+                title.innerHTML = "CLASS SCHEDULE";
+                Object.assign(title.style, {
+                    fontFamily: '"Permanent Marker", cursive',
+                    fontSize: isPortrait ? '5rem' : '6rem', // Huge font
+                    marginBottom: '30px',
+                    marginTop: '20px',
+                    transform: 'rotate(-2deg)',
+                    textShadow: '3px 3px 0px rgba(0,0,0,0.2)',
+                    color: titleColor
+                });
+                stage.appendChild(title);
             }
 
-            days.forEach((day, index) => {
-                const dayCol = document.createElement('div');
-                Object.assign(dayCol.style, {
-                    flex: '1',
+
+            // 3. Build the Layout
+            // Check if using the specific "Ipown" layout
+            if (bgStyle === 'ipown') {
+                // IPOWN FORMAT: Refined Wimpy + iPhone Layout
+                const container = document.createElement('div');
+                Object.assign(container.style, {
+                    width: '100%',
+                    height: '100%',
                     display: 'flex',
                     flexDirection: 'column',
-                    border: (bgStyle === 'paper') ? '3px solid #000' : `2px solid ${tableColor}`,
-                    borderRadius: '10px',
-                    background: (bgStyle === 'paper') ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.1)',
-                    overflow: 'hidden',
-                    backdropFilter: 'blur(5px)',
-                    minWidth: isPortrait ? '45%' : '0' // In portrait, 2 cols per row
+                    justifyContent: 'flex-start',
+                    padding: '20px',
+                    paddingTop: '320px' // High top padding for Lock Screen transparency
                 });
 
-                // Day Header
-                const header = document.createElement('div');
-                header.innerText = day.toUpperCase();
-                Object.assign(header.style, {
-                    background: (bgStyle === 'paper') ? '#000' : 'rgba(0,0,0,0.5)',
-                    color: '#fff',
-                    textAlign: 'center',
+                // Title Area
+                const headerBox = document.createElement('div');
+                headerBox.style.textAlign = 'center';
+                headerBox.style.marginBottom = '30px';
+
+                const mainTitle = document.createElement('h1');
+                mainTitle.innerText = "CLASS SCHEDULE";
+                Object.assign(mainTitle.style, {
                     fontFamily: '"Permanent Marker", cursive',
-                    fontSize: '1.8rem',
-                    padding: '10px 0'
+                    fontSize: isPortrait ? '3.8rem' : '5rem', // Slightly toned down
+                    color: '#000',
+                    transform: 'rotate(-2deg)',
+                    margin: '0',
+                    textShadow: '2px 2px 0px rgba(0,0,0,0.1)'
                 });
-                dayCol.appendChild(header);
+                headerBox.appendChild(mainTitle);
 
-                // Classes Container
-                const list = document.createElement('div');
-                Object.assign(list.style, {
-                    flex: '1',
-                    padding: '10px',
+                const subTitle = document.createElement('h2');
+                subTitle.innerText = "BSIT 2106";
+                Object.assign(subTitle.style, {
+                    fontFamily: '"Patrick Hand", cursive',
+                    fontSize: isPortrait ? '2rem' : '2.5rem',
+                    color: '#2d3436',
+                    marginTop: '5px',
+                    fontWeight: 'bold'
+                });
+                headerBox.appendChild(subTitle);
+                container.appendChild(headerBox);
+
+                // List Container
+                const listContainer = document.createElement('div');
+                Object.assign(listContainer.style, {
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '10px'
+                    // Use flex & justify to distribute, but allow huge gap at bottom if needed
+                    flex: '1',
+                    justifyContent: 'space-evenly',
+                    width: isPortrait ? '92%' : '75%', // Tighter width
+                    maxWidth: '1000px',
+                    margin: '0 auto',
+                    paddingBottom: '50px'
                 });
 
-                const classes = grouped[day];
-                if (classes.length === 0) {
-                    const emptyMsg = document.createElement('div');
-                    emptyMsg.innerText = "REST DAY";
-                    Object.assign(emptyMsg.style, {
-                        textAlign: 'center',
-                        color: (bgStyle === 'paper') ? '#bdc3c7' : 'rgba(255,255,255,0.5)',
-                        marginTop: 'auto',
-                        marginBottom: 'auto',
-                        fontSize: '1.5rem',
-                        fontWeight: 'bold',
-                        transform: 'rotate(-5deg)'
+                days.forEach(day => {
+                    const dayClasses = grouped[day];
+                    if (dayClasses.length === 0) return;
+
+                    const row = document.createElement('div');
+                    Object.assign(row.style, {
+                        display: 'flex',
+                        alignItems: 'stretch', // Stretch to equal height
+                        background: '#fcfaf5', // Off-white paper color
+                        border: '2px solid #000', // Thinner border
+                        borderRadius: '20px 5px 15px 5px', // Less crazy radius
+                        padding: '0', // Removing padding from container to let children handle it
+                        overflow: 'hidden', // Contain children
+                        color: '#000',
+                        boxShadow: '4px 4px 0 rgba(0,0,0,0.15)',
+                        transform: `rotate(${Math.random() * 1.5 - 0.75}deg)`, // More subtle rotation
+                        marginBottom: '15px'
                     });
-                    list.appendChild(emptyMsg);
-                } else {
-                    classes.forEach(cls => {
-                        const item = document.createElement('div');
 
-                        // Time Formatting (Standard 12h)
-                        const format12 = (t) => {
-                            if (!t) return '';
-                            const [hStr, mStr] = t.split(':');
-                            let h = parseInt(hStr, 10);
-                            const ampm = h >= 12 ? 'PM' : 'AM';
-                            h = h % 12;
-                            h = h ? h : 12;
-                            return `${h}:${mStr} ${ampm}`;
-                        };
-                        const tStart = format12(cls.start_time);
-                        const tEnd = format12(cls.end_time);
+                    // Day Name (Left Side Column)
+                    const dayLabel = document.createElement('div');
+                    dayLabel.innerText = day.substr(0, 3).toUpperCase(); // Shorten to MON, TUE
+                    Object.assign(dayLabel.style, {
+                        fontFamily: '"Permanent Marker", cursive',
+                        fontSize: isPortrait ? '2rem' : '2.5rem',
+                        width: '60px', // Fixed small width
+                        backgroundColor: '#000', // Black sidebar
+                        color: '#fff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        writingMode: 'vertical-lr', // Vertical text
+                        transform: 'rotate(180deg)', // Fix orientation
+                        textAlign: 'center',
+                        borderRight: '2px solid #000'
+                    });
+                    row.appendChild(dayLabel);
 
-                        // Item Style
-                        Object.assign(item.style, {
-                            borderBottom: (bgStyle === 'paper') ? '2px dashed #000' : `1px dashed ${tableColor}`,
-                            paddingBottom: '8px'
+                    // Classes List (Right Side)
+                    const classListCtx = document.createElement('div');
+                    Object.assign(classListCtx.style, {
+                        flex: '1',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        padding: '15px 20px',
+                        gap: '12px'
+                    });
+
+                    dayClasses.forEach(cls => {
+                        const cRow = document.createElement('div');
+                        Object.assign(cRow.style, {
+                            display: 'flex',
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                            alignItems: 'center', // Center vertically
+                            fontFamily: '"Patrick Hand", cursive',
+                            fontWeight: 'bold',
+                            borderBottom: '1px dashed #ccc',
+                            paddingBottom: '10px',
+                            width: '100%'
                         });
 
-                        // Dynamic Font Sizing for Mobile Optimization
-                        const fontSizeTime = isPortrait ? '2rem' : '1.4rem';
-                        const fontSizeSubj = isPortrait ? '1.6rem' : '1.2rem';
-                        const fontSizeProf = isPortrait ? '1.3rem' : '1rem';
+                        // LEFT: Details
+                        const leftCol = document.createElement('div');
+                        Object.assign(leftCol.style, {
+                            display: 'flex',
+                            flexDirection: 'column',
+                            flex: '1'
+                        });
 
-                        item.innerHTML = `
+                        // Subject
+                        const subjSpan = document.createElement('div');
+                        subjSpan.innerText = cls.subject_name;
+                        Object.assign(subjSpan.style, {
+                            fontSize: isPortrait ? '1.4rem' : '1.6rem',
+                            color: '#000',
+                            lineHeight: '1.2'
+                        });
+                        leftCol.appendChild(subjSpan);
+
+                        // Time & Prof
+                        const tStart = format12(cls.start_time);
+                        const tEnd = format12(cls.end_time);
+                        const detailsSpan = document.createElement('div');
+                        detailsSpan.innerHTML = `<span style="color:#c0392b">${tStart}-${tEnd}</span> &bull; <span style="color:#7f8c8d; font-weight:normal;">${cls.instructor || 'TBA'}</span>`;
+                        detailsSpan.style.fontSize = isPortrait ? '1rem' : '1.2rem';
+                        detailsSpan.style.marginTop = '2px';
+                        leftCol.appendChild(detailsSpan);
+
+                        cRow.appendChild(leftCol);
+
+                        // RIGHT: Vertical Room Tag (Pill)
+                        const roomNo = (cls.room || 'TBA').replace('RM', '').trim();
+                        const roomTag = document.createElement('div');
+                        Object.assign(roomTag.style, {
+                            background: '#e74c3c',
+                            color: '#fff',
+                            borderRadius: '20px',
+                            padding: '5px 8px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            marginLeft: '10px',
+                            minWidth: '28px',
+                            boxShadow: '1px 1px 0 rgba(0,0,0,0.2)',
+                            border: '2px solid #000'
+                        });
+
+                        for (let char of roomNo) {
+                            const s = document.createElement('span');
+                            s.innerText = char;
+                            s.style.lineHeight = '0.8';
+                            s.style.fontSize = '0.9rem';
+                            s.style.fontFamily = '"Permanent Marker", cursive';
+                            roomTag.appendChild(s);
+                        }
+
+                        cRow.appendChild(roomTag);
+                        classListCtx.appendChild(cRow);
+                    });
+                    row.appendChild(classListCtx);
+
+                    listContainer.appendChild(row);
+                });
+
+                container.appendChild(listContainer);
+                stage.appendChild(container);
+
+            } else {
+                // --- ORIGINAL GRID LAYOUT (Wimpy/Paper/Standard Glass) ---
+                const gridContainer = document.createElement('div');
+                Object.assign(gridContainer.style, {
+                    display: 'flex',
+                    flexWrap: 'nowrap', // Force single row if landscape
+                    width: '100%',
+                    height: '100%', // Fill available space
+                    gap: '15px',
+                    alignItems: 'stretch',
+                    justifyContent: 'center'
+                });
+
+                // If portrait, might want 2 rows of 3
+                if (isPortrait) {
+                    gridContainer.style.flexWrap = 'wrap';
+                }
+
+                days.forEach((day, index) => {
+                    const dayCol = document.createElement('div');
+                    Object.assign(dayCol.style, {
+                        flex: '1',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        border: (bgStyle === 'paper') ? '3px solid #000' : `2px solid ${tableColor}`,
+                        borderRadius: '10px',
+                        background: (bgStyle === 'paper') ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.1)',
+                        overflow: 'hidden',
+                        backdropFilter: 'blur(5px)',
+                        minWidth: isPortrait ? '45%' : '0' // In portrait, 2 cols per row
+                    });
+
+                    // Day Header
+                    const header = document.createElement('div');
+                    header.innerText = day.toUpperCase();
+                    Object.assign(header.style, {
+                        background: (bgStyle === 'paper') ? '#000' : 'rgba(0,0,0,0.5)',
+                        color: '#fff',
+                        textAlign: 'center',
+                        fontFamily: '"Permanent Marker", cursive',
+                        fontSize: '1.8rem',
+                        padding: '10px 0'
+                    });
+                    dayCol.appendChild(header);
+
+                    // Classes Container
+                    const list = document.createElement('div');
+                    Object.assign(list.style, {
+                        flex: '1',
+                        padding: '10px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '10px'
+                    });
+
+                    const classes = grouped[day];
+                    if (classes.length === 0) {
+                        const emptyMsg = document.createElement('div');
+                        emptyMsg.innerText = "REST DAY";
+                        Object.assign(emptyMsg.style, {
+                            textAlign: 'center',
+                            color: (bgStyle === 'paper') ? '#bdc3c7' : 'rgba(255,255,255,0.5)',
+                            marginTop: 'auto',
+                            marginBottom: 'auto',
+                            fontSize: '1.5rem',
+                            fontWeight: 'bold',
+                            transform: 'rotate(-5deg)'
+                        });
+                        list.appendChild(emptyMsg);
+                    } else {
+                        classes.forEach(cls => {
+                            const item = document.createElement('div');
+
+                            // Item Style wrapper
+                            Object.assign(item.style, {
+                                borderBottom: (bgStyle === 'paper') ? '2px dashed #000' : `1px dashed ${tableColor}`,
+                                paddingBottom: '8px',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'stretch'
+                            });
+
+                            // LEFT: Standard Info
+                            const leftBox = document.createElement('div');
+                            leftBox.style.flex = '1';
+
+                            const tStart = format12(cls.start_time);
+                            const tEnd = format12(cls.end_time);
+                            // Dynamic Font Sizing for Mobile Optimization
+                            const fontSizeTime = isPortrait ? '1.8rem' : '1.4rem';
+                            const fontSizeSubj = isPortrait ? '1.5rem' : '1.2rem';
+                            const fontSizeProf = isPortrait ? '1.3rem' : '1rem';
+
+                            leftBox.innerHTML = `
                             <div style="font-weight:bold; font-size:${fontSizeTime}; color:${(bgStyle === 'paper' ? '#d63031' : '#ff7675')}">${tStart} - ${tEnd}</div>
                             <div style="font-size:${fontSizeSubj}; line-height:1.1; font-weight:bold; color:${tableColor}">${cls.subject_name}</div>
                             <div style="font-size:${fontSizeProf}; margin-top:5px; color:${(bgStyle === 'paper' ? '#2d3436' : footerColor)}">
                                 <i class="fas fa-chalkboard-teacher"></i> ${cls.instructor || 'TBA'}
                             </div>
                         `;
-                        list.appendChild(item);
-                    });
-                }
+                            item.appendChild(leftBox);
 
-                dayCol.appendChild(list);
-                gridContainer.appendChild(dayCol);
-            });
+                            // RIGHT: Vertical Room Tag
+                            const roomNo = (cls.room || 'TBA').replace('RM', '').trim();
+                            const roomTag = document.createElement('div');
+                            Object.assign(roomTag.style, {
+                                background: '#e74c3c', // Red
+                                color: '#fff',
+                                borderRadius: '50px',
+                                padding: '5px 8px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                marginLeft: '8px',
+                                minWidth: '30px',
+                                boxShadow: '2px 2px 0 rgba(0,0,0,0.2)',
+                                border: (bgStyle === 'paper') ? '2px solid #000' : 'none'
+                            });
 
-            stage.appendChild(gridContainer);
+                            // Stack characters
+                            for (let char of roomNo) {
+                                const s = document.createElement('span');
+                                s.innerText = char;
+                                s.style.lineHeight = '0.9';
+                                s.style.fontSize = fontSizeSubj;
+                                s.style.fontFamily = '"Permanent Marker", cursive';
+                                roomTag.appendChild(s);
+                            }
+                            item.appendChild(roomTag);
+
+                            list.appendChild(item);
+                        });
+                    }
+
+                    dayCol.appendChild(list);
+                    gridContainer.appendChild(dayCol);
+                });
+
+                stage.appendChild(gridContainer);
+            }
 
             // Footer
             const footer = document.createElement('div');
             footer.innerText = "Generated by Sistema ni JV";
             Object.assign(footer.style, {
-                marginTop: '20px', fontSize: '2rem', color: footerColor, fontFamily: '"Permanent Marker", cursive'
+                marginTop: '20px', fontSize: '2rem', color: footerColor, fontFamily: (bgStyle === 'ipown' ? '"Montserrat", sans-serif' : '"Permanent Marker", cursive')
             });
             stage.appendChild(footer);
 
