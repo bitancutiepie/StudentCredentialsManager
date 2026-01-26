@@ -277,7 +277,7 @@ async function loadSchedule(dayFilter) {
         const start12h = formatTime12h(cls.start_time);
         const end12h = formatTime12h(cls.end_time);
 
-        const deleteBtn = isAdmin ? `<button onclick="event.stopPropagation(); deleteClass(${cls.id})" class="sketch-btn danger" style="float:right; padding: 5px 10px; font-size:0.9rem;">X</button>` : '';
+        const deleteBtn = isAdmin ? `<button onclick="event.stopPropagation(); deleteClass(${cls.id})" class="sketch-btn danger" style="position:absolute; top:10px; right:10px; padding: 5px 10px; font-size:0.9rem; z-index:15;">X</button>` : '';
 
         // Copy button for Meet link
         const copyBtn = cls.meet_link ?
@@ -301,8 +301,8 @@ async function loadSchedule(dayFilter) {
                     ${cls.classroom_link ? `<a href="${cls.classroom_link}" target="_blank" class="sketch-btn classroom"><i class="fas fa-chalkboard"></i> Class</a>` : ''}
                     ${copyBtn}
                     ${isAdmin ? `
-                        <button onclick="openEditLinksModal(${cls.id})" class="sketch-btn" style="background:#0984e3; color:#fff; border-color:#0984e3;">
-                            <i class="fas fa-plus-circle"></i> ${cls.meet_link || cls.classroom_link ? 'Edit' : 'Add'} Links
+                        <button onclick="openEditClassModal(${cls.id})" class="sketch-btn" style="background:#0984e3; color:#fff; border-color:#0984e3;">
+                            <i class="fas fa-edit"></i> Edit Details
                         </button>
                     ` : ''}
                 </div>
@@ -556,37 +556,52 @@ window.deleteAllSchedules = async function () {
 }
 
 
-window.openEditLinksModal = async function (id) {
+window.openEditClassModal = async function (id) {
     if (!isAdmin) return;
 
-    // Show modal immediately with loader or placeholder if you like, but let's just fetch
     const { data: cls, error } = await db.from('schedule').select('*').eq('id', id).single();
     if (error || !cls) return showToast("Error loading class data", "error");
 
-    document.getElementById('edit-link-class-id').value = id;
-    document.getElementById('edit-link-meet').value = cls.meet_link || '';
-    document.getElementById('edit-link-classroom').value = cls.classroom_link || '';
+    document.getElementById('edit-class-id').value = id;
+    document.getElementById('edit-class-day').value = cls.day_of_week;
+    document.getElementById('edit-class-code').value = cls.subject_code || '';
+    document.getElementById('edit-class-name').value = cls.subject_name || '';
+    document.getElementById('edit-class-start').value = cls.start_time || '';
+    document.getElementById('edit-class-end').value = cls.end_time || '';
+    document.getElementById('edit-class-room').value = cls.room || '';
+    document.getElementById('edit-class-instructor').value = cls.instructor || '';
+    document.getElementById('edit-class-meet').value = cls.meet_link || '';
+    document.getElementById('edit-class-classroom').value = cls.classroom_link || '';
 
-    const modal = document.getElementById('editLinksModal');
+    const modal = document.getElementById('editClassModal');
     if (modal) modal.classList.remove('hidden');
 }
 
-window.saveClassLinks = async function () {
-    const id = document.getElementById('edit-link-class-id').value;
-    const meet = document.getElementById('edit-link-meet').value.trim();
-    const classroom = document.getElementById('edit-link-classroom').value.trim();
+window.saveClassEdit = async function () {
+    const id = document.getElementById('edit-class-id').value;
+    const updateData = {
+        day_of_week: document.getElementById('edit-class-day').value,
+        subject_code: document.getElementById('edit-class-code').value.trim(),
+        subject_name: document.getElementById('edit-class-name').value.trim(),
+        start_time: document.getElementById('edit-class-start').value,
+        end_time: document.getElementById('edit-class-end').value,
+        room: document.getElementById('edit-class-room').value.trim(),
+        instructor: document.getElementById('edit-class-instructor').value.trim(),
+        meet_link: document.getElementById('edit-class-meet').value.trim(),
+        classroom_link: document.getElementById('edit-class-classroom').value.trim()
+    };
 
     if (!id) return;
 
     const { error } = await db.from('schedule')
-        .update({ meet_link: meet, classroom_link: classroom })
+        .update(updateData)
         .eq('id', id);
 
     if (error) {
         showToast("Update failed: " + error.message, "error");
     } else {
-        showToast("Links updated successfully!");
-        const modal = document.getElementById('editLinksModal');
+        showToast("Class updated successfully!");
+        const modal = document.getElementById('editClassModal');
         if (modal) modal.classList.add('hidden');
         // Refresh schedule
         const labelEl = document.getElementById('current-day-label');

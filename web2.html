@@ -736,35 +736,90 @@
         </div>
     </div>
 
-    <!-- Edit Class Links Modal -->
-    <div id="editLinksModal" class="wimpy-modal-overlay hidden">
-        <div class="wimpy-modal-box" style="text-align: left; max-width: 450px;">
+    <!-- Edit Class Modal -->
+    <div id="editClassModal" class="wimpy-modal-overlay hidden">
+        <div class="wimpy-modal-box" style="text-align: left; max-width: 550px; height: 85vh; overflow-y: auto;">
             <div
-                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom: 2px solid #000; padding-bottom:10px;">
-                <h2 style="margin:0; font-size: 1.5rem;"><i class="fas fa-link"></i> Update Links</h2>
-                <button onclick="document.getElementById('editLinksModal').classList.add('hidden')"
+                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom: 2px solid #000; padding-bottom:10px; position: sticky; top: -30px; background: white; z-index: 10; padding-top: 10px;">
+                <h2 style="margin:0; font-size: 1.5rem;"><i class="fas fa-edit"></i> Edit Class Details</h2>
+                <button onclick="document.getElementById('editClassModal').classList.add('hidden')"
                     class="sketch-btn danger" style="width:auto; padding: 5px 10px;">X</button>
             </div>
 
-            <input type="hidden" id="edit-link-class-id">
+            <input type="hidden" id="edit-class-id">
 
-            <div style="margin-bottom: 15px;">
-                <label style="display:block; font-family:'Patrick Hand'; font-size: 1.2rem; margin-bottom:5px;">Google
-                    Meet Link:</label>
-                <input type="text" id="edit-link-meet" placeholder="https://meet.google.com/..."
-                    style="width:100%; padding:10px; border:3px solid #000; border-radius: 5px; font-family:'Patrick Hand'; font-size: 1.1rem;">
+            <div style="display: grid; grid-template-columns: 1fr; gap: 15px;">
+                <div>
+                    <label style="display:block; font-family:'Patrick Hand'; font-size: 1.1rem;">Day of Week:</label>
+                    <select id="edit-class-day"
+                        style="width:100%; padding:8px; border:2px solid #000; border-radius: 5px; font-family:'Patrick Hand';">
+                        <option value="Monday">Monday</option>
+                        <option value="Tuesday">Tuesday</option>
+                        <option value="Wednesday">Wednesday</option>
+                        <option value="Thursday">Thursday</option>
+                        <option value="Friday">Friday</option>
+                    </select>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div>
+                        <label style="display:block; font-family:'Patrick Hand'; font-size: 1.1rem;">Subject
+                            Code:</label>
+                        <input type="text" id="edit-class-code"
+                            style="width:100%; padding:8px; border:2px solid #000; border-radius: 5px; font-family:'Patrick Hand';">
+                    </div>
+                    <div>
+                        <label style="display:block; font-family:'Patrick Hand'; font-size: 1.1rem;">Subject
+                            Name:</label>
+                        <input type="text" id="edit-class-name"
+                            style="width:100%; padding:8px; border:2px solid #000; border-radius: 5px; font-family:'Patrick Hand';">
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div>
+                        <label style="display:block; font-family:'Patrick Hand'; font-size: 1.1rem;">Start Time:</label>
+                        <input type="time" id="edit-class-start"
+                            style="width:100%; padding:8px; border:2px solid #000; border-radius: 5px;">
+                    </div>
+                    <div>
+                        <label style="display:block; font-family:'Patrick Hand'; font-size: 1.1rem;">End Time:</label>
+                        <input type="time" id="edit-class-end"
+                            style="width:100%; padding:8px; border:2px solid #000; border-radius: 5px;">
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div>
+                        <label style="display:block; font-family:'Patrick Hand'; font-size: 1.1rem;">Room / Lab:</label>
+                        <input type="text" id="edit-class-room"
+                            style="width:100%; padding:8px; border:2px solid #000; border-radius: 5px; font-family:'Patrick Hand';">
+                    </div>
+                    <div>
+                        <label style="display:block; font-family:'Patrick Hand'; font-size: 1.1rem;">Instructor:</label>
+                        <input type="text" id="edit-class-instructor"
+                            style="width:100%; padding:8px; border:2px solid #000; border-radius: 5px; font-family:'Patrick Hand';">
+                    </div>
+                </div>
+
+                <div>
+                    <label style="display:block; font-family:'Patrick Hand'; font-size: 1.1rem;">Google Meet
+                        Link:</label>
+                    <input type="text" id="edit-class-meet" placeholder="https://meet.google.com/..."
+                        style="width:100%; padding:8px; border:2px solid #000; border-radius: 5px; font-family:'Patrick Hand';">
+                </div>
+
+                <div>
+                    <label style="display:block; font-family:'Patrick Hand'; font-size: 1.1rem;">Google Classroom
+                        Link:</label>
+                    <input type="text" id="edit-class-classroom" placeholder="https://classroom.google.com/..."
+                        style="width:100%; padding:8px; border:2px solid #000; border-radius: 5px; font-family:'Patrick Hand';">
+                </div>
             </div>
 
-            <div style="margin-bottom: 20px;">
-                <label style="display:block; font-family:'Patrick Hand'; font-size: 1.2rem; margin-bottom:5px;">Google
-                    Classroom Link:</label>
-                <input type="text" id="edit-link-classroom" placeholder="https://classroom.google.com/..."
-                    style="width:100%; padding:10px; border:3px solid #000; border-radius: 5px; font-family:'Patrick Hand'; font-size: 1.1rem;">
-            </div>
-
-            <button onclick="saveClassLinks()" class="sketch-btn"
-                style="width:100%; background:#000; color:#fff; font-size: 1.3rem; padding: 12px;">
-                <i class="fas fa-check-circle"></i> UPDATE NOW
+            <button onclick="saveClassEdit()" class="sketch-btn"
+                style="width:100%; background:#000; color:#fff; font-size: 1.3rem; padding: 12px; margin-top: 20px;">
+                <i class="fas fa-save"></i> SAVE CHANGES
             </button>
         </div>
     </div>

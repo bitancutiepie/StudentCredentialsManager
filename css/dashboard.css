@@ -317,6 +317,13 @@ h2:hover {
     border-color: transparent transparent rgba(0, 0, 0, 0.1) transparent;
 }
 
+.class-header {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 5px;
+}
+
 .subject-code {
     font-family: 'Permanent Marker', cursive;
     font-size: 1.5rem;
@@ -324,7 +331,8 @@ h2:hover {
 }
 
 .time-badge {
-    float: right;
+    display: inline-block;
+    margin-top: 5px;
     font-weight: bold;
     background: #000;
     color: #fff;
@@ -570,12 +578,11 @@ h2:hover {
     .paper-content {
         padding: 20px 15px;
         background-size: 100% 30px;
-        /* Adjust line height */
+        border-left: none;
     }
 
     .paper-content::before {
         display: none;
-        /* Remove margin line on mobile */
     }
 
     h1 {
@@ -605,13 +612,32 @@ h2:hover {
         box-sizing: border-box;
     }
 
+    /* Fix elongated delete buttons on class cards */
+    .class-card .sketch-btn.danger {
+        width: auto !important;
+        padding: 5px 10px;
+    }
+
     .filter-bar {
-        justify-content: center;
+        justify-content: flex-start;
+        overflow-x: auto;
+        padding-bottom: 10px;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+        gap: 8px;
+        flex-wrap: nowrap;
+    }
+
+    .filter-bar::-webkit-scrollbar {
+        display: none;
     }
 
     .filter-bar .sketch-btn {
         width: auto;
-        flex: 1 1 auto;
+        white-space: nowrap;
+        flex: 0 0 auto;
+        padding: 6px 12px;
+        font-size: 0.95rem;
     }
 
     /* Prevent iOS zoom on inputs */
@@ -668,6 +694,11 @@ h2:hover {
         width: 16px !important;
         height: 16px !important;
         font-size: 0.6rem !important;
+    }
+
+    /* Modal Form Grid Responsiveness */
+    .wimpy-modal-box div[style*="grid-template-columns: 1fr 1fr"] {
+        grid-template-columns: 1fr !important;
     }
 }
 
@@ -1142,14 +1173,19 @@ h2:hover {
 
 @media (max-width: 768px) {
     .profile-header-container {
-        gap: 15px;
+        gap: 10px;
+        justify-content: center;
+        text-align: center;
     }
 
     .profile-text-stack {
-        gap: 12px;
+        align-items: center;
+        min-width: 100%;
     }
 
-    /* More gap for mobile rotations */
+    .profile-text-stack small {
+        justify-content: center;
+    }
 }
 
 /* --- Extracted Styles --- */
@@ -1517,6 +1553,7 @@ h2:hover {
     border: 1.5px solid #000;
     box-shadow: 2px 2px 0 #000;
 }
+
 /* --- CUSTOM FORM CHECKBOXES (Charcoal Style) --- */
 .custom-checkbox-container {
     display: flex;
@@ -1527,7 +1564,8 @@ h2:hover {
 }
 
 .custom-checkbox-container input[type='checkbox'] {
-    display: none; /* Hide default checkbox */
+    display: none;
+    /* Hide default checkbox */
 }
 
 /* Reuse todo-checkbox styles but smaller */
@@ -1538,11 +1576,11 @@ h2:hover {
 }
 
 /* Handle Checked State via CSS (no JS needed) */
-.custom-checkbox-container input:checked + .todo-checkbox .charcoal-x {
+.custom-checkbox-container input:checked+.todo-checkbox .charcoal-x {
     opacity: 1;
 }
 
-.custom-checkbox-container input:checked + .todo-checkbox .charcoal-x svg path {
+.custom-checkbox-container input:checked+.todo-checkbox .charcoal-x svg path {
     animation: drawX 0.4s ease-out forwards;
 }
 
@@ -1550,4 +1588,3 @@ h2:hover {
     font-size: 1.1rem;
     font-family: 'Patrick Hand', cursive;
 }
-
