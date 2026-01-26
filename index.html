@@ -155,9 +155,18 @@
                 style="border-top: 2px dashed #d63031; margin-top: 20px;">
                 <div class="member-list-title" onclick="toggleAdminList()"
                     style="cursor: pointer; color: #d63031; transform: rotate(-1deg);" title="Click to show/hide"><i
-                        class="fas fa-user-shield"></i> Admin <i class="fas fa-chevron-down" id="adminToggleIcon"
+                        class="fas fa-crown"></i> Main Admin <i class="fas fa-chevron-down" id="adminToggleIcon"
                         style="transition: transform 0.3s; transform: rotate(180deg);"></i></div>
                 <div class="member-tags" id="adminList" style="justify-content: center;"></div>
+            </div>
+
+            <div id="coAdminSection" class="member-list-section hidden"
+                style="border-top: 2px dashed #0984e3; margin-top: 10px;">
+                <div class="member-list-title" onclick="toggleCoAdminList()"
+                    style="cursor: pointer; color: #0984e3; transform: rotate(1deg);" title="Click to show/hide"><i
+                        class="fas fa-user-shield"></i> Co-Admins <i class="fas fa-chevron-down" id="coAdminToggleIcon"
+                        style="transition: transform 0.3s; transform: rotate(180deg);"></i></div>
+                <div class="member-tags" id="coAdminList" style="justify-content: center;"></div>
             </div>
 
             <div class="member-list-section">

@@ -1127,30 +1127,60 @@ async function fetchMembers() {
         if (statuses) statuses.forEach(s => statusMap[s.user_id] = s.status);
 
         // --- ADMIN SECTION ---
-        const admins = students.filter(s => s.sr_code === 'ADMIN' || s.role === 'admin');
+        const mainAdmin = students.find(s => s.sr_code === 'ADMIN');
+        const coAdmins = students.filter(s => s.sr_code !== 'ADMIN' && (s.role === 'admin' || (s.role && s.role.startsWith('admin:tools:'))));
+
         const adminList = document.getElementById('adminList');
         const adminSection = document.getElementById('adminSection');
+        const coAdminList = document.getElementById('coAdminList');
+        const coAdminSection = document.getElementById('coAdminSection');
 
+        // Render Main Admin
         if (adminList && adminSection) {
             adminList.innerHTML = '';
-            if (admins.length > 0) {
+            if (mainAdmin) {
                 adminSection.classList.remove('hidden');
-                admins.forEach(admin => {
+                const tag = document.createElement('div');
+                tag.className = 'member-tag';
+                tag.style.cssText = 'cursor: pointer; border-color: #d63031; background: #fff0f0;';
+                tag.onclick = () => showPublicProfile(mainAdmin.name, mainAdmin.avatar_url, "System Administrator");
+
+                const safeAvatar = mainAdmin.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(mainAdmin.name)}&background=random`;
+
+                tag.innerHTML = `
+                    <div style="position:relative;">
+                        <img src="${safeAvatar}" style="width:28px; height:28px; border-radius:50%; object-fit:cover; border:2px solid #d63031; flex-shrink: 0;">
+                        <i class="fas fa-crown" style="position:absolute; top:-12px; left:50%; transform:translateX(-50%) rotate(-10deg); color:#f1c40f; font-size:0.8rem; text-shadow:1px 1px 0 #000;"></i>
+                    </div>
+                    <span style="font-weight:bold; color: #d63031; font-size:1.1rem;">${mainAdmin.name}</span>
+                `;
+                adminList.appendChild(tag);
+            } else {
+                adminSection.classList.add('hidden');
+            }
+        }
+
+        // Render Co-Admins
+        if (coAdminList && coAdminSection) {
+            coAdminList.innerHTML = '';
+            if (coAdmins.length > 0) {
+                coAdminSection.classList.remove('hidden');
+                coAdmins.sort((a, b) => a.name.localeCompare(b.name)).forEach(admin => {
                     const tag = document.createElement('div');
                     tag.className = 'member-tag';
-                    tag.style.cssText = 'cursor: pointer; border-color: #d63031; background: #fff0f0;';
-                    tag.onclick = () => showPublicProfile(admin.name, admin.avatar_url, "System Administrator");
+                    tag.style.cssText = 'cursor: pointer; border-color: #0984e3; background: #f0f8ff;';
+                    tag.onclick = () => showPublicProfile(admin.name, admin.avatar_url, "Co-Administrator");
 
                     const safeAvatar = admin.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(admin.name)}&background=random`;
 
                     tag.innerHTML = `
-                        <img src="${safeAvatar}" style="width:24px; height:24px; border-radius:50%; object-fit:cover; border:1px solid #d63031; flex-shrink: 0;">
-                        <span style="font-weight:bold; color: #d63031;">${admin.name}</span>
+                        <img src="${safeAvatar}" style="width:24px; height:24px; border-radius:50%; object-fit:cover; border:1px solid #0984e3; flex-shrink: 0;">
+                        <span style="font-weight:bold; color: #0984e3;">${admin.name}</span>
                     `;
-                    adminList.appendChild(tag);
+                    coAdminList.appendChild(tag);
                 });
             } else {
-                adminSection.classList.add('hidden');
+                coAdminSection.classList.add('hidden');
             }
         }
 
@@ -1160,7 +1190,7 @@ async function fetchMembers() {
             publicMemberList.className = 'compact-member-grid hidden'; // Helper class + Default hidden state
 
             // Filter valid members first (Exclude Admin/Principal)
-            const validMembers = students.filter(s => s.sr_code !== 'ADMIN' && s.role !== 'admin' && s.name !== 'Principal User' && !s.name.includes('Admin'));
+            const validMembers = students.filter(s => s.sr_code !== 'ADMIN' && s.role !== 'admin' && !(s.role && s.role.startsWith('admin:tools:')) && s.name !== 'Principal User' && !s.name.includes('Admin'));
 
             // Update Badge with Animation
             const badge = document.getElementById('memberCountBadge');
@@ -1205,7 +1235,7 @@ async function fetchMembers() {
 
         if (enrolledList && notEnrolledList) {
             const enrolled = students.filter(s => s.enrollment_status === 'Enrolled');
-            const notEnrolled = students.filter(s => s.enrollment_status !== 'Enrolled' && s.sr_code !== 'ADMIN' && s.role !== 'admin');
+            const notEnrolled = students.filter(s => s.enrollment_status !== 'Enrolled' && s.sr_code !== 'ADMIN' && s.role !== 'admin' && !(s.role && s.role.startsWith('admin:tools:')));
 
             // Update Counts
             const countIn = document.getElementById('count-in');
@@ -2391,6 +2421,17 @@ window.submitRequest = async function () {
 window.toggleAdminList = function () {
     const list = document.getElementById('adminList');
     const icon = document.getElementById('adminToggleIcon');
+
+    if (list) list.classList.toggle('hidden');
+    if (icon) {
+        icon.style.transform = list.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
+    }
+}
+
+// --- CO-ADMIN LIST TOGGLE ---
+window.toggleCoAdminList = function () {
+    const list = document.getElementById('coAdminList');
+    const icon = document.getElementById('coAdminToggleIcon');
 
     if (list) list.classList.toggle('hidden');
     if (icon) {

@@ -53,6 +53,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (user.sr_code === 'ADMIN') {
             await populateRevokeDropdown(); // Load admins to revoke
         }
+
+        // Show Admin Privilege Pop-up
+        if (typeof showAdminLoginNotification === 'function') {
+            showAdminLoginNotification();
+        }
     }
 });
 
@@ -1554,4 +1559,107 @@ window.deleteGlobalTodo = async function (id) {
         showToast("Task deleted.");
         loadTodos();
     }
+}
+
+/**
+ * Shows a robust admin privileges pop-up when an admin enters the binder.
+ */
+function showAdminLoginNotification() {
+    // 1. Basic check
+    if (!isAdmin || !user) return;
+
+    // 2. Define the tools and their descriptive labels (Matching admin.js mapping)
+    const toolDefinitions = [
+        { id: 'schedule', label: 'Class Schedule Management', icon: 'fa-clock' },
+        { id: 'homework', label: 'Homework & Planner Control', icon: 'fa-thumbtack' },
+        { id: 'event', label: 'Event Calendar Editor', icon: 'fa-calendar-alt' },
+        { id: 'file', label: 'File Cabinet & Resources', icon: 'fa-paperclip' },
+        { id: 'todo', label: 'Global To-Do List Power', icon: 'fa-check-double' },
+        { id: 'email', label: 'System Email Blast (Carrier Pigeon)', icon: 'fa-envelope' },
+        { id: 'messages', label: 'Message & Chat Monitor', icon: 'fa-comments' },
+        { id: 'gallery', label: 'Landing Page Gallery Control', icon: 'fa-images' },
+        { id: 'storage', label: 'Bucket Storage Monitor', icon: 'fa-hdd' },
+        { id: 'promote', label: 'Admin Privilege Management', icon: 'fa-crown' },
+        { id: 'revoke', label: 'Admin Access Revocation', icon: 'fa-user-slash' },
+        { id: 'blacklist', label: 'Student Black List (VIP)', icon: 'fa-user-shield' }
+    ];
+
+    const accessibleTools = [];
+
+    // 4. Filter based on permissions
+    toolDefinitions.forEach(tool => {
+        // Special case for promote/revoke which are strictly main admin
+        if (tool.id === 'promote' || tool.id === 'revoke') {
+            if (user.sr_code === 'ADMIN') accessibleTools.push(tool);
+        } else if (hasPermission(tool.id)) {
+            accessibleTools.push(tool);
+        }
+    });
+
+    if (accessibleTools.length === 0) return;
+
+    // 5. Create Modal Elements
+    const overlay = document.createElement('div');
+    overlay.className = 'wimpy-modal-overlay';
+    overlay.id = 'admin-notif-overlay';
+    overlay.style.zIndex = '10005';
+
+    const box = document.createElement('div');
+    box.className = 'wimpy-modal-box';
+    box.style.maxWidth = '450px';
+    box.style.borderWidth = '4px';
+    box.style.background = '#fdfbf7'; // Paper color from CSS
+    box.style.padding = '30px';
+    box.style.transform = 'rotate(-1deg)';
+
+    // Build Tool List HTML
+    let toolsHtml = accessibleTools.map(t =>
+        `<div style="display:flex; align-items:center; gap:12px; height:40px; line-height:40px; box-sizing:border-box; font-family:'Patrick Hand'; font-size:1.25rem;">
+            <div style="background:#000; color:#fff; border-radius:50%; width:24px; height:24px; display:flex; align-items:center; justify-content:center; font-size:0.8rem; transform:translateY(-2px); flex-shrink:0;">
+                <i class="fas ${t.icon}"></i>
+            </div>
+            <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transform:translateY(-2px);">${t.label}</span>
+        </div>`
+    ).join('');
+
+    box.innerHTML = `
+        <div style="text-align:left; position:relative;">
+            <!-- Subtle Decorative Crown -->
+            <div style="position:absolute; top:-45px; right:-20px; font-size:4rem; color:rgba(255, 247, 64, 0.4); transform:rotate(15deg); z-index:-1;">
+                <i class="fas fa-crown"></i>
+            </div>
+            
+            <h2 style="margin:0 0 5px 0; font-size:2.5rem; line-height:1; font-family:'Patrick Hand';">Hoy admin ka!</h2>
+            <p style="font-size:1.15rem; margin-bottom:15px; color:#555; font-style:italic; font-family:'Patrick Hand';">"Eto ang may access ka, Boss:"</p>
+            
+            <!-- Authentic Lined Notebook Container -->
+            <div style="position:relative; background:#fdfbf7; border:3px solid #000; border-radius:3px; margin-bottom:20px; box-shadow:inset 2px 2px 8px rgba(0,0,0,0.1); overflow:hidden;">
+                <!-- Vertical Red Margin Line -->
+                <div style="position:absolute; left:40px; top:0; bottom:0; width:2px; background:rgba(214, 48, 49, 0.4); z-index:1;"></div>
+                
+                <!-- Lined Content Wrapper -->
+                <div style="background: repeating-linear-gradient(transparent, transparent 39px, #a4b0be 40px); background-size: 100% 40px; padding: 0 10px 0 50px; max-height:300px; overflow-y:auto; position:relative; scrollbar-width: thin;">
+                    ${toolsHtml}
+                </div>
+            </div>
+            
+            <button id="close-admin-notif" class="sketch-btn" style="width:100% !important; background:#000; color:#fff; padding: 12px; font-size: 1.5rem; font-family:'Patrick Hand';">
+                TARA G NA!
+            </button>
+        </div>
+    `;
+
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    // 6. Handle Close with Animation
+    document.getElementById('close-admin-notif').onclick = () => {
+        box.style.transition = 'all 0.4s ease';
+        box.style.opacity = '0';
+        box.style.transform = 'translateY(-20px) rotate(2deg)';
+
+        setTimeout(() => {
+            overlay.remove();
+        }, 400);
+    };
 }
