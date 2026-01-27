@@ -579,9 +579,12 @@ window.openEditClassModal = async function (id) {
 
 window.saveClassEdit = async function () {
     const id = document.getElementById('edit-class-id').value;
+    const subjectCode = document.getElementById('edit-class-code').value.trim();
+    const syncLinks = document.getElementById('sync-subject-links') ? document.getElementById('sync-subject-links').checked : false;
+
     const updateData = {
         day_of_week: document.getElementById('edit-class-day').value,
-        subject_code: document.getElementById('edit-class-code').value.trim(),
+        subject_code: subjectCode,
         subject_name: document.getElementById('edit-class-name').value.trim(),
         start_time: document.getElementById('edit-class-start').value,
         end_time: document.getElementById('edit-class-end').value,
@@ -593,20 +596,40 @@ window.saveClassEdit = async function () {
 
     if (!id) return;
 
-    const { error } = await db.from('schedule')
-        .update(updateData)
-        .eq('id', id);
+    try {
+        if (syncLinks && subjectCode) {
+            // Update all classes with the same subject code
+            const { error: syncError } = await db.from('schedule')
+                .update({
+                    meet_link: updateData.meet_link,
+                    classroom_link: updateData.classroom_link
+                })
+                .eq('subject_code', subjectCode);
 
-    if (error) {
-        showToast("Update failed: " + error.message, "error");
-    } else {
-        showToast("Class updated successfully!");
-        const modal = document.getElementById('editClassModal');
-        if (modal) modal.classList.add('hidden');
-        // Refresh schedule
-        const labelEl = document.getElementById('current-day-label');
-        const day = labelEl ? labelEl.innerText.replace(' Classes', '').replace('Weekly Schedule', 'All') : 'All';
-        loadSchedule(day);
+            if (syncError) console.warn("Failed to sync links:", syncError);
+        }
+
+        const { error } = await db.from('schedule')
+            .update(updateData)
+            .eq('id', id);
+
+        if (error) {
+            showToast("Update failed: " + error.message, "error");
+        } else {
+            showToast(syncLinks ? "Class updated & links synced!" : "Class updated successfully!");
+            const modal = document.getElementById('editClassModal');
+            if (modal) modal.classList.add('hidden');
+            // Reset sync checkbox
+            const syncCheck = document.getElementById('sync-subject-links');
+            if (syncCheck) syncCheck.checked = false;
+
+            // Refresh schedule
+            const labelEl = document.getElementById('current-day-label');
+            const day = labelEl ? labelEl.innerText.replace(' Classes', '').replace('Weekly Schedule', 'All') : 'All';
+            loadSchedule(day);
+        }
+    } catch (err) {
+        showToast("An unexpected error occurred: " + err.message, "error");
     }
 }
 
@@ -714,7 +737,13 @@ function checkLiveClass() {
                         </p>
                     </div>
                     <div>
-                        ${liveClass.meet_link ? `<a href="${liveClass.meet_link}" target="_blank" class="sketch-btn meet" style="font-size:1.2rem; border-width:3px;">Join Now <i class="fas fa-arrow-right"></i></a>` : ''}
+                        ${liveClass.meet_link ? `<a href="${liveClass.meet_link}" target="_blank" class="sketch-btn meet" style="font-size:1.1rem; border-width:3px; margin-bottom: 5px; display: flex; justify-content: center; align-items: center; gap: 8px;">
+                            <i class="fas fa-video"></i> Open G-Meet
+                        </a>` : ''}
+                        ${liveClass.classroom_link ? `<a href="${liveClass.classroom_link}" target="_blank" class="sketch-btn classroom" style="font-size:1.1rem; border-width:3px; display: flex; justify-content: center; align-items: center; gap: 8px; border-color: #00b894; color: #00b894;">
+                            <i class="fas fa-chalkboard"></i> Go to Classroom
+                        </a>` : ''}
+                        ${(!liveClass.meet_link && !liveClass.classroom_link) ? '<small style="color:#666; font-style:italic;">No links provided.</small>' : ''}
                     </div>
                 </div>
             </div>

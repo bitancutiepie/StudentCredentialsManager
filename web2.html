@@ -196,6 +196,7 @@
                                 <option value="Wednesday">Wednesday</option>
                                 <option value="Thursday">Thursday</option>
                                 <option value="Friday">Friday</option>
+                                <option value="Saturday">Saturday</option>
                             </select>
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                                 <input type="text" id="s-code" placeholder="Code (IT 211)" required>
@@ -544,6 +545,7 @@
                     <button class="sketch-btn" onclick="filterSchedule('Wednesday')">Wednesday</button>
                     <button class="sketch-btn" onclick="filterSchedule('Thursday')">Thursday</button>
                     <button class="sketch-btn" onclick="filterSchedule('Friday')">Friday</button>
+                    <button class="sketch-btn" onclick="filterSchedule('Saturday')">Saturday</button>
                     <button class="sketch-btn" onclick="filterSchedule('All')">All</button>
                     <button class="sketch-btn wallpaper-btn" onclick="openWallpaperModal()">
                         <i class="fas fa-camera-retro"></i> Wallpaper
@@ -758,6 +760,7 @@
                         <option value="Wednesday">Wednesday</option>
                         <option value="Thursday">Thursday</option>
                         <option value="Friday">Friday</option>
+                        <option value="Saturday">Saturday</option>
                     </select>
                 </div>
 
@@ -814,6 +817,21 @@
                         Link:</label>
                     <input type="text" id="edit-class-classroom" placeholder="https://classroom.google.com/..."
                         style="width:100%; padding:8px; border:2px solid #000; border-radius: 5px; font-family:'Patrick Hand';">
+                </div>
+
+                <div style="margin-top: 10px;">
+                    <label class="custom-checkbox-container" style="font-size: 1rem;">
+                        <input type="checkbox" id="sync-subject-links">
+                        <div class="todo-checkbox small">
+                            <div class="charcoal-x"><svg viewBox="0 0 100 100" style="width:100%; height:100%;">
+                                    <path d="M 20,20 L 80,80" fill="none" stroke="#000" stroke-width="12"
+                                        stroke-linecap="round" />
+                                    <path d="M 80,20 L 20,80" fill="none" stroke="#000" stroke-width="12"
+                                        stroke-linecap="round" />
+                                </svg></div>
+                        </div>
+                        <span>Apply links to ALL instances of this subject</span>
+                    </label>
                 </div>
             </div>
 
@@ -938,7 +956,7 @@
     </div>
 
     <!-- Notification Sound -->
-    <audio id="notif-sound" src="https://assets.mixkit.co/sfx/preview/mixkit-message-pop-alert-2354.mp3"
+    <audio id="notif-sound" src="https://raw.githubusercontent.com/Ionut-L/notification-sounds/master/pop.mp3"
         preload="auto"></audio>
 
     <!-- Chat Modal -->
