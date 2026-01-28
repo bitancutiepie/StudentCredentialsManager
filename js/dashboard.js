@@ -331,7 +331,7 @@ async function loadAssignments() {
             <div class="class-card" style="border-left: 5px solid #d32f2f; animation-delay: ${index * 0.1}s">
                 ${deleteBtn}
                 <h3>${escapeHTML(task.title)} <span style="font-size:0.8rem; background:#ddd; padding:2px 5px;">${escapeHTML(task.subject)}</span></h3>
-                <p>${escapeHTML(task.description || '')}</p>
+                <p style="white-space: pre-wrap; line-height: 1.4;">${escapeHTML(task.description || '')}</p>
                 <p style="color:#d32f2f; font-weight:bold;">Due: ${date}</p>
             </div>
         `;
@@ -1535,7 +1535,7 @@ window.loadTodos = async function () {
                             </svg>
                         </div>
                     </div>
-                    <span class="todo-task-text">${escapeHTML(todo.task_name)}</span>
+                    <span class="todo-task-text" style="white-space: pre-wrap; line-height: 1.4;">${escapeHTML(todo.task_name)}</span>
                     ${deleteBtn}
                 </div>
                 <div class="completions-area">
