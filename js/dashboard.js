@@ -327,6 +327,74 @@ window.toggleHomework = function (element) {
     }
 }
 
+
+
+// Global var for assignments to access data in modal
+let assignmentsData = [];
+
+// NEW: Calendar Prompt Logic
+window.openCalendarPrompt = function (index) {
+    const task = assignmentsData[index];
+    if (!task) return;
+
+    // Populate Modal
+    document.getElementById('cal-prompt-deadline').innerText = task.due_date ? new Date(task.due_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'No Deadline';
+    document.getElementById('cal-prompt-task-json').value = index;
+
+    // Default Start Date: Today
+    const now = new Date();
+    // Adjust to local ISO string for input[type=date] -> YYYY-MM-DD
+    const toLocalDateISO = (d) => {
+        const off = d.getTimezoneOffset() * 60000;
+        return new Date(d.getTime() - off).toISOString().slice(0, 10);
+    };
+
+    document.getElementById('cal-prompt-start').value = toLocalDateISO(now);
+
+    document.getElementById('calendarPromptModal').classList.remove('hidden');
+}
+
+window.confirmAddToCalendar = function () {
+    const index = document.getElementById('cal-prompt-task-json').value;
+    const task = assignmentsData[index];
+    if (!task) return;
+
+    const startVal = document.getElementById('cal-prompt-start').value; // YYYY-MM-DD
+
+    if (!startVal) return alert("Please select a start date.");
+
+    // Google Calendar All-Day Event Logic:
+    // Format: YYYYMMDD / YYYYMMDD
+    // Start Date = Selected "Start Work" date
+    // End Date = Deadline (Exclusive, so Deadline + 1 Day)
+
+    const sStr = startVal.replace(/-/g, '');
+
+    const deadlineObj = new Date(task.due_date);
+    deadlineObj.setDate(deadlineObj.getDate() + 1); // Add 1 day for exclusive end date
+
+    // Helper to format YYYYMMDD in Local Time
+    const getYMD = (d) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}${m}${day}`;
+    };
+
+    const eStr = getYMD(deadlineObj);
+
+    const dates = `${sStr}/${eStr}`;
+
+    const base = "https://www.google.com/calendar/render?action=TEMPLATE";
+    const params = new URLSearchParams();
+    params.append('text', "Do HW: " + task.title);
+    params.append('details', `Task: ${task.title}\nSubject: ${task.subject}\n\nDEADLINE: ${new Date(task.due_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}\n\nDetails: ${task.description || ''}`);
+    params.append('dates', dates);
+
+    window.open(`${base}&${params.toString()}`, '_blank');
+    document.getElementById('calendarPromptModal').classList.add('hidden');
+}
+
 async function loadAssignments() {
     const list = document.getElementById('assignment-list');
     if (!list) return;
@@ -337,9 +405,18 @@ async function loadAssignments() {
         return;
     }
 
+    assignmentsData = data; // Store globally
+
     list.innerHTML = data.map((task, index) => {
-        const date = task.due_date ? new Date(task.due_date).toLocaleDateString() : 'No date';
+        const date = task.due_date ? new Date(task.due_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'No date';
         const deleteBtn = isAdmin ? `<button onclick="event.stopPropagation(); deleteAssignment(${task.id})" class="sketch-btn danger" style="position:absolute; top:10px; right:10px; width:auto; padding:5px 10px; font-size:0.8rem; z-index:5;">X</button>` : '';
+
+        // Show button only if due date exists
+        const calBtn = task.due_date ? `
+            <button onclick="event.stopPropagation(); openCalendarPrompt(${index})" class="sketch-btn" style="width: auto; padding: 5px 10px; font-size: 0.9rem; margin: 0; background: #fff; color: #000; display: flex; align-items: center; gap: 5px;">
+                <i class="fab fa-google" style="color: #4285F4;"></i> Add to Calendar
+            </button>
+        ` : '';
 
         return `
             <div class="class-card homework-card" style="animation-delay: ${index * 0.1}s; cursor: pointer; position: relative;" onclick="toggleHomework(this)">
@@ -352,8 +429,9 @@ async function loadAssignments() {
                     <i class="fas fa-chevron-down hw-item-chevron" style="margin-top: 10px; color: #636e72; transition: transform 0.3s; font-size: 0.9rem;"></i>
                 </div>
                 <div class="assignment-description" style="display: none; margin: 15px 0;">${escapeHTML(task.description || '')}</div>
-                <div class="assignment-due-date">
-                    <i class="fas fa-calendar-day"></i> Due: ${date}
+                <div class="assignment-due-date" style="display: flex; justify-content: space-between; align-items: center;">
+                    <span><i class="fas fa-calendar-day"></i> Due: ${date}</span>
+                    ${calBtn}
                 </div>
             </div>
         `;

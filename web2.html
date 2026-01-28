@@ -1047,6 +1047,34 @@
         </div>
     </div>
 
+    <!-- Calendar Prompt Modal -->
+    <div id="calendarPromptModal" class="wimpy-modal-overlay hidden">
+        <div class="wimpy-modal-box">
+            <h2><i class="fab fa-google"></i> Schedule Work Time</h2>
+            <div
+                style="background: #f1f2f6; padding: 10px; border-radius: 5px; margin-bottom: 15px; border: 1px dashed #000;">
+                <p style="margin:0; font-weight:bold; color:#d63031;">DEADLINE:</p>
+                <p id="cal-prompt-deadline" style="margin:0; font-size:1.1rem;"></p>
+            </div>
+            <p>Aba ano kelan mo gagawin ya?</p>
+
+            <input type="hidden" id="cal-prompt-task-json">
+
+            <div style="margin-bottom: 20px;">
+                <label style="font-family:'Patrick Hand'; display:block;">Start Date:</label>
+                <input type="date" id="cal-prompt-start"
+                    style="width:100%; padding:10px; font-family:'Patrick Hand'; font-size:1.1rem; border:2px solid #000;">
+            </div>
+
+            <button onclick="confirmAddToCalendar()" class="sketch-btn"
+                style="background:#0984e3; color:#fff; margin-bottom:10px; width:100%; justify-content:center;">
+                <i class="fas fa-calendar-plus"></i> Add to Calendar
+            </button>
+            <button onclick="document.getElementById('calendarPromptModal').classList.add('hidden')"
+                class="sketch-btn danger" style="width:100%; justify-content:center;">Cancel</button>
+        </div>
+    </div>
+
     <!-- SCRIPTS -->
     <script src="js/common.js"></script>
     <script src="js/dashboard.js?v=202405152300"></script> <!-- Update this version number on every deployment -->
