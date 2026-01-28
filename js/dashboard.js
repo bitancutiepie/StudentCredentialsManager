@@ -313,6 +313,20 @@ async function loadSchedule(dayFilter) {
 }
 
 // --- ASSIGNMENTS LOGIC ---
+window.toggleHomework = function (element) {
+    const desc = element.querySelector('.assignment-description');
+    const icon = element.querySelector('.hw-item-chevron');
+    if (!desc || !icon) return;
+
+    if (desc.style.display === 'none' || desc.style.display === '') {
+        desc.style.display = 'block';
+        icon.style.transform = 'rotate(180deg)';
+    } else {
+        desc.style.display = 'none';
+        icon.style.transform = 'rotate(0deg)';
+    }
+}
+
 async function loadAssignments() {
     const list = document.getElementById('assignment-list');
     if (!list) return;
@@ -325,14 +339,22 @@ async function loadAssignments() {
 
     list.innerHTML = data.map((task, index) => {
         const date = task.due_date ? new Date(task.due_date).toLocaleDateString() : 'No date';
-        const deleteBtn = isAdmin ? `<button onclick="deleteAssignment(${task.id})" class="sketch-btn danger" style="float:right;">X</button>` : '';
+        const deleteBtn = isAdmin ? `<button onclick="event.stopPropagation(); deleteAssignment(${task.id})" class="sketch-btn danger" style="position:absolute; top:10px; right:10px; width:auto; padding:5px 10px; font-size:0.8rem; z-index:5;">X</button>` : '';
 
         return `
-            <div class="class-card" style="border-left: 5px solid #d32f2f; animation-delay: ${index * 0.1}s">
+            <div class="class-card homework-card" style="animation-delay: ${index * 0.1}s; cursor: pointer; position: relative;" onclick="toggleHomework(this)">
                 ${deleteBtn}
-                <h3>${escapeHTML(task.title)} <span style="font-size:0.8rem; background:#ddd; padding:2px 5px;">${escapeHTML(task.subject)}</span></h3>
-                <p style="white-space: pre-wrap; line-height: 1.4;">${escapeHTML(task.description || '')}</p>
-                <p style="color:#d32f2f; font-weight:bold;">Due: ${date}</p>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; padding-right: 30px;">
+                    <div>
+                        <div class="assignment-subject-tag">${escapeHTML(task.subject)}</div>
+                        <h3 style="margin-top: 5px;">${escapeHTML(task.title)}</h3>
+                    </div>
+                    <i class="fas fa-chevron-down hw-item-chevron" style="margin-top: 10px; color: #636e72; transition: transform 0.3s; font-size: 0.9rem;"></i>
+                </div>
+                <div class="assignment-description" style="display: none; margin: 15px 0;">${escapeHTML(task.description || '')}</div>
+                <div class="assignment-due-date">
+                    <i class="fas fa-calendar-day"></i> Due: ${date}
+                </div>
             </div>
         `;
     }).join('');
