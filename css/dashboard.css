@@ -190,6 +190,8 @@ html {
     padding: 40px 40px 40px 170px;
     background-image: repeating-linear-gradient(var(--paper-color) 0px, var(--paper-color) 29px, var(--line-color) 30px);
     position: relative;
+    /* Smooth transitions for tab switching height changes */
+    transition: min-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* The Vertical Red Margin Line */
@@ -217,19 +219,24 @@ h1 {
 
 /* --- TAB SWITCHING ANIMATION --- */
 .tab-content {
-    animation: paperSlideIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: paperSlideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     transform-origin: top left;
+}
+
+/* Ensure hidden tabs don't contribute to space, but also fade out if we were doing true crossfade */
+.tab-content.hidden {
+    display: none;
 }
 
 @keyframes paperSlideIn {
     0% {
         opacity: 0;
-        transform: translateX(-40px) rotate(-3deg);
+        transform: translateY(15px) rotate(-1deg);
     }
 
     100% {
         opacity: 1;
-        transform: translateX(0) rotate(0deg);
+        transform: translateY(0) rotate(0deg);
     }
 }
 
@@ -237,12 +244,12 @@ h1 {
 @keyframes paperDeal {
     0% {
         opacity: 0;
-        transform: translateY(50px) rotate(-5deg) scale(0.9);
+        transform: translateY(20px) scale(0.98);
     }
 
     100% {
         opacity: 1;
-        transform: translateY(0) rotate(0deg) scale(1);
+        transform: translateY(0) scale(1);
     }
 }
 
@@ -731,16 +738,18 @@ h2:hover {
         align-items: center;
     }
 
-    /* Fix Active Users List on Mobile (Horizontal) */
-    #active-users-list {
-        flex-direction: row !important;
-        flex-wrap: wrap;
-        justify-content: center;
+    /* Updated Active Users Header on Mobile */
+    .online-users-header {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 10px;
+        margin-bottom: 20px;
     }
 
-    #active-users-panel {
-        padding-bottom: 0 !important;
-        margin-top: 0 !important;
+    .avatar-stack {
+        justify-content: center;
+        padding-left: 0;
     }
 
     /* Freedom Wall Mobile Fix */
@@ -1052,22 +1061,101 @@ h2:hover {
     }
 }
 
-/* --- LIVE ACTIVE USERS STYLES --- */
-.live-user-bubble {
-    width: 45px;
-    height: 45px;
-    border-radius: 50%;
+/* --- EYE-CATCHING ONLINE USERS HEADER --- */
+.online-users-header {
+    margin: 10px 0 30px 0;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.4));
+    backdrop-filter: blur(10px);
     border: 2px solid #fff;
+    border-radius: 50px;
+    display: inline-flex;
+    align-items: center;
+    gap: 15px;
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.07);
+    animation: headerAppear 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes headerAppear {
+    from {
+        opacity: 0;
+        transform: translateY(-10px) scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.online-label {
+    font-family: 'Permanent Marker', cursive;
+    font-size: 0.9rem;
+    color: #2d3436;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Pulsing "Live" Indicator */
+.online-label::before {
+    content: '';
+    width: 10px;
+    height: 10px;
+    background: #2ecc71;
+    border-radius: 50%;
+    display: inline-block;
+    box-shadow: 0 0 0 rgba(46, 204, 113, 0.4);
+    animation: pulseLive 2s infinite;
+}
+
+@keyframes pulseLive {
+    0% {
+        box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7);
+    }
+
+    70% {
+        box-shadow: 0 0 0 10px rgba(46, 204, 113, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(46, 204, 113, 0);
+    }
+}
+
+.avatar-stack {
+    display: flex;
+    align-items: center;
+    padding-left: 5px;
+}
+
+.live-user-bubble {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 3px solid #fff;
     position: relative;
     cursor: pointer;
-    transition: transform 0.2s;
-    background-color: #fff;
-    /* Fallback */
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    background-color: #f1f2f6;
+    margin-left: -15px;
+    box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.1);
+    z-index: 1;
+    overflow: visible;
+}
+
+.live-user-bubble:first-child {
+    margin-left: 0;
 }
 
 .live-user-bubble:hover {
-    transform: scale(1.1);
-    z-index: 10;
+    transform: scale(1.3) translateY(-8px) rotate(5deg);
+    z-index: 100 !important;
+    margin-right: 15px;
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
 }
 
 .live-user-bubble img {
@@ -1075,39 +1163,41 @@ h2:hover {
     height: 100%;
     border-radius: 50%;
     object-fit: cover;
+    display: block;
 }
 
-/* The Green Dot */
+/* Updated Green Dot with animation */
 .live-user-bubble::after {
     content: '';
     position: absolute;
-    bottom: 0;
-    right: 0;
+    bottom: -2px;
+    right: -2px;
     width: 12px;
     height: 12px;
     background-color: #2ecc71;
-    /* Green */
-    border: 2px solid #2f3542;
-    /* Dark border to match theme */
+    border: 2px solid #fff;
     border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    z-index: 2;
 }
 
-/* Tooltip for the name */
+/* Floating Label Tooltip */
 .live-user-bubble:hover::before {
     content: attr(data-name);
     position: absolute;
-    left: 60px;
-    /* Push to the right of the sidebar */
-    top: 50%;
-    transform: translateY(-50%);
+    bottom: 55px;
+    left: 50%;
+    transform: translateX(-50%);
     background: #000;
     color: #fff;
-    padding: 5px 10px;
-    border-radius: 5px;
+    padding: 5px 12px;
+    border-radius: 20px;
     font-family: 'Patrick Hand';
     white-space: nowrap;
-    z-index: 20;
-    font-size: 1rem;
+    z-index: 101;
+    font-size: 0.95rem;
+    pointer-events: none;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 }
 
 /* --- CALENDAR STYLES --- */
