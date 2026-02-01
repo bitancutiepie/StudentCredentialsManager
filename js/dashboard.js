@@ -58,6 +58,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (typeof showAdminLoginNotification === 'function') {
             showAdminLoginNotification();
         }
+    } else {
+        // For non-admins, show highlights normally after a delay
+        setTimeout(showHighlightsModal, 2000);
     }
 });
 
@@ -990,19 +993,25 @@ async function updateProfilePic(id, file) {
 
 // --- DYNAMIC SUBJECTS LOGIC ---
 async function populateSubjectOptions() {
-    // 1. Fetch all subjects from the Schedule table
-    const { data, error } = await db.from('schedule').select('subject_code');
+    // 1. Fetch all subjects from the Schedule table (including names)
+    const { data, error } = await db.from('schedule').select('subject_code, subject_name');
 
     if (error || !data) {
         console.error("Error fetching subjects for dropdown:", error);
         return;
     }
 
-    // 2. Get Unique Codes (Remove duplicates) and Sort them
-    // This looks at your schedule and lists each subject only once
-    const subjects = [...new Set(data.map(item => item.subject_code))].sort();
+    // 2. Create a Map of Code -> Name and Get Unique Codes
+    const subjectMap = {};
+    data.forEach(item => {
+        if (!subjectMap[item.subject_code]) {
+            subjectMap[item.subject_code] = item.subject_name || item.subject_code;
+        }
+    });
+    window.subjectMapping = subjectMap; // Store globally for other scripts
+    const subjects = Object.keys(subjectMap).sort();
 
-    // 3. Populate Filter Bar (In Links Tab)
+    // 3. Populate Filter Bar (In Files Tab)
     const filterContainer = document.getElementById('link-filters');
     if (filterContainer) {
         // Start with All and General
@@ -1011,9 +1020,10 @@ async function populateSubjectOptions() {
             <button class="sketch-btn" onclick="filterFiles('General')">General</button>
         `;
 
-        // Add a button for each subject in your schedule
+        // Add a button for each subject using its Name, but filter by Code
         subjects.forEach(code => {
-            html += `<button class="sketch-btn" onclick="filterFiles('${code}')">${code}</button>`;
+            const displayName = subjectMap[code];
+            html += `<button class="sketch-btn" onclick="filterFiles('${code}')">${displayName}</button>`;
         });
 
         filterContainer.innerHTML = html;
@@ -1030,7 +1040,8 @@ async function populateSubjectOptions() {
 
         // Add an option for each subject
         subjects.forEach(code => {
-            html += `<option value="${code}">${code}</option>`;
+            const displayName = subjectMap[code];
+            html += `<option value="${code}">${displayName} (${code})</option>`;
         });
 
         select.innerHTML = html;
@@ -1797,13 +1808,148 @@ function showAdminLoginNotification() {
     document.body.appendChild(overlay);
 
     // 6. Handle Close with Animation
-    document.getElementById('close-admin-notif').onclick = () => {
+    document.getElementById('close-admin-notif').onclick = async () => {
         box.style.transition = 'all 0.4s ease';
         box.style.opacity = '0';
         box.style.transform = 'translateY(-20px) rotate(2deg)';
 
         setTimeout(() => {
             overlay.remove();
+            // --- QUEUE HIGHLIGHTS AFTER ADMIN POPUP ---
+            setTimeout(showHighlightsModal, 500);
         }, 400);
     };
+}
+
+// --- HIGHLIGHTS MODAL (QUICK UPDATES) ---
+async function showHighlightsModal() {
+    // 1. Ensure user and db are ready
+    const currentUser = window.user || user;
+    if (!currentUser || !db) {
+        console.warn("Highlights: User or DB not ready. Retrying...");
+        setTimeout(showHighlightsModal, 1000);
+        return;
+    }
+
+    console.log("Fetching quick highlights for:", currentUser.name);
+
+    try {
+        // 2. Prevent duplicates
+        if (document.getElementById('highlights-popup')) return;
+
+        // 3. Fetch Latest Homework (Limit 3)
+        const { data: homework, error: hError } = await db
+            .from('assignments')
+            .select('*')
+            .order('due_date', { ascending: true })
+            .limit(3);
+
+        // 3. Fetch New Files (Limit 3)
+        const { data: files, error: fError } = await db
+            .from('shared_files')
+            .select('*')
+            .neq('subject', 'LandingGallery')
+            .not('subject', 'like', 'Receipt-%')
+            .order('created_at', { ascending: false })
+            .limit(3);
+
+        if (hError || fError) throw new Error("Could not fetch highlights");
+
+        // 4. Create Modal Structure
+        const overlay = document.createElement('div');
+        overlay.className = 'highlights-overlay';
+        overlay.id = 'highlights-popup';
+
+        const box = document.createElement('div');
+        box.className = 'highlights-box';
+
+        // Helper for subject name
+        const getSubjectName = (code) => (window.subjectMapping && window.subjectMapping[code]) ? window.subjectMapping[code] : code;
+
+        const hwHtml = homework.length > 0 ? homework.map(h => `
+            <div class="highlight-item interactive" onclick="
+                const visitTime = new Date().toISOString();
+                db.from('students').update({ last_login: visitTime, last_action: 'Started: ${escapeHTML(h.title)}' }).eq('id', user.id).then();
+                switchTab('assignments', event); 
+                document.getElementById('highlights-popup').remove(); 
+                console.log('User clicked homework:', '${h.id}')">
+                <i class="fas fa-pencil-alt" style="color:#e67e22;"></i>
+                <div class="highlight-details">
+                    <span class="highlight-title">${escapeHTML(h.title)}</span>
+                    <span class="highlight-sub">${getSubjectName(h.subject)} • Due: ${new Date(h.due_date).toLocaleDateString()}</span>
+                </div>
+            </div>
+        `).join('') : '<p>No pending homework. Chill mode!</p>';
+
+        const filesHtml = files.length > 0 ? files.map(f => {
+            const safeUrl = (f.file_url || '').replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;");
+            const safeTitle = (f.title || 'File').replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;");
+            const lastSeenText = f.last_seen_by ? `<div style="font-size:0.7rem; color:#d63031; margin-top:2px;"><i class="fas fa-history"></i> Last by ${f.last_seen_by.split(' ')[0]}</div>` : '';
+            return `
+                <div class="highlight-item interactive" onclick="openFilePreview('${safeUrl}', '${safeTitle}', ${f.id}); document.getElementById('highlights-popup').remove(); console.log('User clicked file:', '${f.id}')">
+                    <i class="fas fa-file-alt" style="color:#0984e3;"></i>
+                    <div class="highlight-details">
+                        <span class="highlight-title">${escapeHTML(f.title)}</span>
+                        <span class="highlight-sub">${getSubjectName(f.subject)} • Uploaded Recently</span>
+                        ${lastSeenText}
+                    </div>
+                </div>
+            `;
+        }).join('') : '<p>No new files uploaded yet.</p>';
+
+        box.innerHTML = `
+            <div class="highlights-header">
+                <h2><i class="fas fa-bolt"></i> QUICK UPDATES</h2>
+                <p style="margin:5px 0 0 0; font-family:'Patrick Hand';">What's new in the Binder today?</p>
+            </div>
+            <div class="highlights-content">
+                <div class="highlights-section">
+                    <div class="highlights-section-title"><i class="fas fa-tasks"></i> Pending Homework</div>
+                    ${hwHtml}
+                </div>
+                <div class="highlights-section">
+                    <div class="highlights-section-title"><i class="fas fa-cloud-upload-alt"></i> Newest Files</div>
+                    ${filesHtml}
+                </div>
+            </div>
+            <div class="highlights-footer">
+                <button class="sketch-btn" id="close-highlights" style="background:#000; color:#fff; width:100%; font-size:1.2rem;">
+                    GOT IT, BOSS!
+                </button>
+            </div>
+        `;
+
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+
+        // 5. Track the Visit (Record in Supabase)
+        // We do this in a separate try-catch so if columns are missing, modal still shows
+        try {
+            const visitTime = new Date().toISOString();
+            const updatePayload = { last_login: visitTime };
+
+            // Optional: These columns might not exist yet, we only add them if we're sure
+            // but for now let's just update last_login as the primary tracker
+            await db.from('students')
+                .update(updatePayload)
+                .eq('id', currentUser.id);
+
+            console.log(`Visit recorded for ${currentUser.name} at ${visitTime}`);
+        } catch (trackErr) {
+            console.warn("Activity tracking failed (probably missing columns):", trackErr);
+        }
+
+        // 6. Set Session Flag & Handle Close
+        sessionStorage.setItem('highlights_shown', 'true');
+
+        document.getElementById('close-highlights').onclick = () => {
+            box.style.transform = 'scale(0.8) rotate(3deg)';
+            box.style.opacity = '0';
+            box.style.transition = 'all 0.3s ease-out';
+            setTimeout(() => overlay.remove(), 300);
+        };
+
+    } catch (err) {
+        console.warn("Highlights popup failed:", err);
+    }
 }

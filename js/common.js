@@ -25,7 +25,7 @@ async function getStudentsWithDetails() {
     // 1. Fetch Students
     const { data: students, error } = await window.db
         .from('students')
-        .select('id, name, avatar_url, sr_code, role, enrollment_status, email, password');
+        .select('id, name, avatar_url, sr_code, role, enrollment_status, email, password, last_login, last_action');
 
     if (error) {
         console.error("Error fetching students:", error);

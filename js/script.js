@@ -741,6 +741,12 @@ window.openStudentDetails = function (id) {
         <img src="${avatar}" style="width:100px; height:100px; border-radius:50%; border:3px solid #000; margin-bottom:15px; object-fit:cover;">
         <h2 style="margin:0;">${escapeHTML(student.name)}</h2>
         <p style="color:#666; margin-top:5px;">${escapeHTML(student.email) || 'No Email'}</p>
+        <p style="font-size:0.85rem; color:#d63031; margin-top:5px;">
+            <i class="fas fa-clock"></i> Last Seen: ${student.last_login ? new Date(student.last_login).toLocaleString() : 'Never'}
+        </p>
+        <p style="font-size:0.85rem; color:#0984e3; margin-top:3px; font-weight:bold;">
+            <i class="fas fa-eye"></i> Activity: ${student.last_action || 'Just lurking...'}
+        </p>
         
         <div style="background:#f1f2f6; padding:15px; border-radius:10px; border:2px dashed #ccc; margin:15px 0; text-align:left;">
             <div style="margin-bottom:10px;">

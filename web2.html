@@ -56,7 +56,7 @@
             <button class="tab-btn" onclick="switchTab('assignments', event)" style="background: #fab1a0;">To Do
                 List</button>
             <button class="tab-btn" onclick="switchTab('calendar', event)">Events</button>
-            <button class="tab-btn" onclick="switchTab('links', event)">Links</button>
+            <button class="tab-btn" onclick="switchTab('links', event)">Files</button>
             <button class="tab-btn" onclick="switchTab('help', event)">Help Guide</button>
             <button class="tab-btn admin-only hidden" onclick="switchTab('admin-tools', event)"
                 style="background: #2d3436; color: #fff; transform: rotate(-2deg);">Admin Tools</button>
@@ -593,7 +593,7 @@
 
             <!-- ================= LINKS & FILES TAB ================= -->
             <div id="links" class="tab-content hidden">
-                <h2><i class="fas fa-folder-open"></i> Subject Reviewers</h2>
+                <h2><i class="fas fa-folder-open"></i> Subject Files</h2>
 
                 <!-- Insert above <h3 id="file-filter-label"> -->
                 <div style="position: relative; margin-bottom: 15px;">
@@ -659,7 +659,7 @@
                     </div>
                     <div class="class-card" style="transform: rotate(1.5deg);">
                         <h3><i class="fas fa-eye"></i> File Previewer</h3>
-                        <p>No need to download everything! Click on any file in the <b>Links</b> tab to preview PDFs and
+                        <p>No need to download everything! Click on any file in the <b>Files</b> tab to preview PDFs and
                             images instantly before saving them.</p>
                     </div>
                     <div class="class-card" style="transform: rotate(-2deg);">
@@ -674,7 +674,7 @@
                     </div>
                     <div class="class-card" style="transform: rotate(-1.5deg);">
                         <h3><i class="fas fa-user-secret"></i> Secret Requests</h3>
-                        <p>Found a bug? Want to suggest a feature? Use the <b>"Secret Request"</b> card in the Links tab
+                        <p>Found a bug? Want to suggest a feature? Use the <b>"Secret Request"</b> card in the Files tab
                             to send an anonymous note to the admin.</p>
                     </div>
                 </div>
@@ -1092,8 +1092,39 @@
         let globalFiles = [];
 
         // --- 1. PREVIEW MODAL ---
-        window.openFilePreview = function (url, title) {
+        window.openFilePreview = async function (url, title, fileId) {
             if (!url) return alert('No file link available.');
+
+            // --- TRACKING: Record activity (Global & File-Specific) ---
+            try {
+                const currentUser = window.user || JSON.parse(localStorage.getItem('wimpy_user') || 'null');
+                if (currentUser && sb) {
+                    const visitTime = new Date().toISOString();
+
+                    // 1. Update Global Student Activity
+                    await sb.from('students')
+                        .update({
+                            last_login: visitTime,
+                            last_action: `Viewed File: ${title}`
+                        })
+                        .eq('id', currentUser.id);
+
+                    // 2. Update File-Specific 'Last Seen' (If fileId is provided)
+                    if (fileId) {
+                        await sb.from('shared_files')
+                            .update({
+                                last_seen_by: currentUser.name,
+                                last_seen_at: visitTime
+                            })
+                            .eq('id', fileId);
+                    }
+
+                    console.log(`Tracking: ${currentUser.name} viewed ${title}`);
+                }
+            } catch (err) {
+                console.warn("View tracking failed:", err);
+            }
+
             const existing = document.getElementById('filePreviewModal');
             if (existing) existing.remove();
 
@@ -1126,19 +1157,24 @@
             }
 
             const modalHtml = `
-                
-                <div id="filePreviewModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; display:grid; place-items:center;">
-                    <div class="sketch-box" style="width:90%; max-width:900px; height:85%; display:flex; flex-direction:column; padding:15px; background:#fff; position:relative; transform-origin: center center; animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; margin: 0; will-change: transform, opacity;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px dashed #000; padding-bottom:10px; margin-bottom:10px;">
-                            <h3 style="margin:0; font-size:1.5rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:60%;"><i class="fas fa-eye"></i> ${title}</h3>
-                            <div style="display:flex; gap:5px;">
+                <div id="filePreviewModal" class="file-preview-overlay">
+                    <div class="file-preview-box">
+                        <div class="preview-header">
+                            <h3><i class="fas fa-eye"></i> ${title}</h3>
+                            <div class="preview-actions">
                                 <a href="${url}" target="_blank" download style="text-decoration:none;">
-                                    <button class="preview-modal-btn" style="width:auto; margin:0; padding:5px 15px; font-size:1rem; background:#0984e3; color:#fff; border: 2px solid #000; border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; font-family: 'Patrick Hand';" title="Download"><i class="fas fa-download"></i></button>
+                                    <button class="sketch-btn" style="background:#0984e3; color:#fff; padding: 8px 15px; margin:0;" title="Download">
+                                        <i class="fas fa-download"></i> <span class="hide-mobile">DOWNLOAD</span>
+                                    </button>
                                 </a>
-                                <button class="preview-modal-btn" onclick="document.getElementById('filePreviewModal').remove()" style="width:auto; margin:0; padding:5px 15px; font-size:1rem; background:#d63031; color:#fff; border: 2px solid #000; border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; font-family: 'Patrick Hand';">CLOSE</button>
+                                <button class="sketch-btn danger" onclick="document.getElementById('filePreviewModal').remove()" style="padding: 8px 15px; margin:0;">
+                                    <i class="fas fa-times"></i> <span class="hide-mobile">CLOSE</span>
+                                </button>
                             </div>
                         </div>
-                    <div style="flex:1; overflow:hidden; background:#fff; border:none; position:relative;">${contentHtml}</div>
+                        <div class="preview-body">
+                            ${contentHtml}
+                        </div>
                     </div>
                 </div>`;
             document.body.insertAdjacentHTML('beforeend', modalHtml);
@@ -1174,35 +1210,46 @@
             list.innerHTML = files.map(file => {
                 const safeUrl = (file.file_url || '').replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;");
                 const safeTitle = (file.title || 'File').replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;");
-                // Use escapeHTML if available (from dashboard.js) or fallback to basic escape
+                const subjectCode = file.subject || 'General';
+                const subject = (subjectCode === 'General') ? 'General' : (window.subjectMapping ? window.subjectMapping[subjectCode] || subjectCode : subjectCode);
                 const displayTitle = typeof escapeHTML === 'function' ? escapeHTML(file.title) : safeTitle;
-                const subject = file.subject || 'General';
-                const deleteBtn = isAdmin ? `<button onclick="event.stopPropagation(); deleteFile(${file.id})" class="sketch-btn danger" style="position:absolute; top:10px; right:10px; padding: 5px 10px; font-size: 0.9rem; z-index: 50; border-radius: 5px;">X</button>` : '';
+
+                // Use escapeHTML if available (from dashboard.js) or fallback to basic escape
+                const deleteBtn = isAdmin ? `<button onclick="event.stopPropagation(); deleteFile(${file.id})" class="sketch-btn danger" style="position:absolute; top:-12px; left:-12px; padding: 4px 10px; font-size: 0.8rem; z-index: 50; border-radius: 6px; transform: rotate(-8deg); box-shadow: 3px 3px 0 #000;">DELETE</button>` : '';
 
                 const createdAt = new Date(file.created_at);
                 const isNew = createdAt > dateLimit && subject !== 'General';
-                const badgeHtml = isNew ? `<div style="font-size: 0.8rem; background: #d63031; color: white; padding: 2px 6px; border-radius: 4px; transform: rotate(5deg); margin-left: 10px; font-family: 'Permanent Marker', cursive;">NEW!</div>` : '';
+                const badgeHtml = isNew ? `<span class="new-badge-sketch">NEW!</span>` : '';
+
+                const lastSeenHtml = file.last_seen_by ? `
+                    <div class="file-last-seen" style="margin-top:8px; font-size:0.75rem; color:#d63031; font-family:'Patrick Hand'; display:flex; align-items:center; gap:5px; border-top:1px dashed #ddd; padding-top:5px;">
+                        <i class="fas fa-history"></i> Last seen by ${escapeHTML(file.last_seen_by)} • ${new Date(file.last_seen_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                ` : '';
 
                 return `
-                <div style="width: 100%; background: #fff; border: 2px solid #000; border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; padding: 10px; display: flex; align-items: center; gap: 10px; box-shadow: 3px 3px 0 rgba(0,0,0,0.1); transition: transform 0.2s; cursor: pointer; margin-bottom: 15px; position: relative;" 
-                     onclick="openFilePreview('${safeUrl}', '${safeTitle}')"
-                     onmouseover="this.style.transform='scale(1.02) rotate(-1deg)'" 
-                     onmouseout="this.style.transform='scale(1) rotate(0deg)'">
+                <div class="file-card-mini" onclick="openFilePreview('${safeUrl}', '${safeTitle}', ${file.id})">
                     ${deleteBtn}
-                    <div style="font-size: 1.5rem; color: #000;"><i class="fas fa-file-alt"></i></div>
-                    <div style="text-align: left; flex: 1;">
-                        <div style="font-size: 0.8rem; text-transform: uppercase; font-weight: bold; color: #666;">${subject}</div>
-                        <div style="font-size: 1.1rem; line-height: 1.1; font-weight: bold;">${displayTitle}</div>
-                        <div style="font-size: 0.8rem; color: #2980b9; margin-top: 2px;"><i class="fas fa-eye"></i> Click to Preview</div>
+                    <div class="file-icon-box">
+                        <i class="fas ${file.file_type && file.file_type.includes('image') ? 'fa-file-image' : 'fa-file-pdf'}"></i>
                     </div>
-                    ${badgeHtml}
+                    <div class="file-info-main">
+                        <div class="file-subject-label">${subject} ${badgeHtml}</div>
+                        <div class="file-title-text">${displayTitle}</div>
+                        <div class="file-hint-text"><i class="fas fa-eye"></i> Tap to Preview</div>
+                        ${lastSeenHtml}
+                    </div>
                 </div>`;
             }).join('');
         }
 
         // Override Search/Filter
         window.searchFiles = function () { const q = document.getElementById('file-search').value.toLowerCase(); renderFileList(globalFiles.filter(f => f.title.toLowerCase().includes(q) || f.subject.toLowerCase().includes(q))); }
-        window.filterFiles = function (s) { document.getElementById('file-filter-label').innerText = 'Showing: ' + s; renderFileList(s === 'All' ? globalFiles : globalFiles.filter(f => f.subject === s)); }
+        window.filterFiles = function (s) {
+            const displayName = (s === 'All' || s === 'General') ? s : (window.subjectMapping ? window.subjectMapping[s] || s : s);
+            document.getElementById('file-filter-label').innerText = 'Showing: ' + displayName;
+            renderFileList(s === 'All' ? globalFiles : globalFiles.filter(f => f.subject === s));
+        }
 
         // Override deleteFile to use the inline refresh logic
         window.deleteFile = async function (id) {
