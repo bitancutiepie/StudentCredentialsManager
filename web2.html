@@ -952,7 +952,7 @@
     </div>
 
     <!-- Notification Sound -->
-    <audio id="notif-sound" src="https://raw.githubusercontent.com/Ionut-L/notification-sounds/master/pop.mp3"
+    <audio id="notif-sound" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"
         preload="auto"></audio>
 
     <!-- Chat Modal -->
@@ -1095,31 +1095,11 @@
         window.openFilePreview = async function (url, title, fileId) {
             if (!url) return alert('No file link available.');
 
-            // --- TRACKING: Record activity (Global & File-Specific) ---
+            // --- TRACKING (Safe Mode) ---
             try {
                 const currentUser = window.user || JSON.parse(localStorage.getItem('wimpy_user') || 'null');
-                if (currentUser && sb) {
-                    const visitTime = new Date().toISOString();
-
-                    // 1. Update Global Student Activity
-                    await sb.from('students')
-                        .update({
-                            last_login: visitTime,
-                            last_action: `Viewed File: ${title}`
-                        })
-                        .eq('id', currentUser.id);
-
-                    // 2. Update File-Specific 'Last Seen' (If fileId is provided)
-                    if (fileId) {
-                        await sb.from('shared_files')
-                            .update({
-                                last_seen_by: currentUser.name,
-                                last_seen_at: visitTime
-                            })
-                            .eq('id', fileId);
-                    }
-
-                    console.log(`Tracking: ${currentUser.name} viewed ${title}`);
+                if (currentUser) {
+                    console.log(`User ${currentUser.name} viewed: ${title}`);
                 }
             } catch (err) {
                 console.warn("View tracking failed:", err);
@@ -1180,6 +1160,61 @@
             document.body.insertAdjacentHTML('beforeend', modalHtml);
         }
 
+        // --- NEW: VIEW FILE LOG (WHO CLICKED) ---
+        window.viewFileHistory = async function (title) {
+            console.log("Fetching viewer log for:", title);
+
+            // 1. Create Loading Overlay
+            const overlay = document.createElement('div');
+            overlay.className = 'wimpy-modal-overlay';
+            overlay.id = 'viewer-log-modal';
+            overlay.innerHTML = `
+                <div class="wimpy-modal-box" style="max-width:400px; text-align:left;">
+                    <h2 style="margin-top:0;"><i class="fas fa-users-viewfinder"></i> Recently Seen By</h2>
+                    <p style="font-size:0.9rem; color:#666; margin-top:-10px; font-family:'Patrick Hand';">Searching the paper trail...</p>
+                    <div id="viewer-list" style="max-height:300px; overflow-y:auto; margin:15px 0;">
+                        <div class="loader">Checking IDs...</div>
+                    </div>
+                    <button onclick="document.getElementById('viewer-log-modal').remove()" class="sketch-btn" style="width:100%; background:#000; color:#fff;">GOT IT</button>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+
+            try {
+                const { data: viewers, error } = await sb
+                    .from('students')
+                    .select('name, avatar_url, last_login')
+                    .order('last_login', { ascending: false })
+                    .limit(10);
+
+                if (error) throw error;
+
+                const listEl = document.getElementById('viewer-list');
+                if (!viewers || viewers.length === 0) {
+                    listEl.innerHTML = '<p style="text-align:center; font-style:italic;">No recent activity logged for this file.</p>';
+                    return;
+                }
+
+                // 3. Render List
+                listEl.innerHTML = viewers.map(v => {
+                    const avatar = v.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(v.name)}&background=random`;
+                    return `
+                        <div style="display:flex; align-items:center; gap:12px; padding:10px; border-bottom:1px dashed #ccc;">
+                            <img src="${avatar}" style="width:35px; height:35px; border-radius:50%; border:1px solid #000;">
+                            <div style="flex:1;">
+                                <div style="font-family:'Patrick Hand'; font-size:1.1rem; font-weight:bold;">${escapeHTML(v.name)}</div>
+                                <div style="font-size:0.75rem; color:#d63031;">${new Date(v.last_login).toLocaleString()}</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (err) {
+                console.error("Failed to load viewers:", err);
+                document.getElementById('viewer-list').innerHTML = '<p>Error loading log.</p>';
+            }
+        }
+
         // --- 2. FETCH & RENDER FILES ---
         window.refreshFiles = async function () {
             const list = document.getElementById('file-list');
@@ -1221,11 +1256,7 @@
                 const isNew = createdAt > dateLimit && subject !== 'General';
                 const badgeHtml = isNew ? `<span class="new-badge-sketch">NEW!</span>` : '';
 
-                const lastSeenHtml = file.last_seen_by ? `
-                    <div class="file-last-seen" style="margin-top:8px; font-size:0.75rem; color:#d63031; font-family:'Patrick Hand'; display:flex; align-items:center; gap:5px; border-top:1px dashed #ddd; padding-top:5px;">
-                        <i class="fas fa-history"></i> Last seen by ${escapeHTML(file.last_seen_by)} • ${new Date(file.last_seen_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </div>
-                ` : '';
+                const lastSeenHtml = '';
 
                 return `
                 <div class="file-card-mini" onclick="openFilePreview('${safeUrl}', '${safeTitle}', ${file.id})">

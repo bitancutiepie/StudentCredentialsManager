@@ -79,9 +79,8 @@ function checkSession() {
     isAdmin = window.isAdmin; // Keep local var synced
 
     // Update last login for "Recently Spotted" tracker on session restore
-    db.from('students')
-        .update({ last_login: new Date().toISOString() })
-        .eq('id', user.id).then();
+    // --- TRACKING DISABLED (MISSING COLUMNS) ---
+    // db.from('students').update({ last_login: new Date().toISOString() }).eq('id', user.id).then();
 
     // Setup Avatar
     setupAvatarUpdate(user.name, user.avatar_url);
@@ -1868,8 +1867,6 @@ async function showHighlightsModal() {
 
         const hwHtml = homework.length > 0 ? homework.map(h => `
             <div class="highlight-item interactive" onclick="
-                const visitTime = new Date().toISOString();
-                db.from('students').update({ last_login: visitTime, last_action: 'Started: ${escapeHTML(h.title)}' }).eq('id', user.id).then();
                 switchTab('assignments', event); 
                 document.getElementById('highlights-popup').remove(); 
                 console.log('User clicked homework:', '${h.id}')">
@@ -1884,14 +1881,12 @@ async function showHighlightsModal() {
         const filesHtml = files.length > 0 ? files.map(f => {
             const safeUrl = (f.file_url || '').replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;");
             const safeTitle = (f.title || 'File').replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;");
-            const lastSeenText = f.last_seen_by ? `<div style="font-size:0.7rem; color:#d63031; margin-top:2px;"><i class="fas fa-history"></i> Last by ${f.last_seen_by.split(' ')[0]}</div>` : '';
             return `
                 <div class="highlight-item interactive" onclick="openFilePreview('${safeUrl}', '${safeTitle}', ${f.id}); document.getElementById('highlights-popup').remove(); console.log('User clicked file:', '${f.id}')">
                     <i class="fas fa-file-alt" style="color:#0984e3;"></i>
                     <div class="highlight-details">
                         <span class="highlight-title">${escapeHTML(f.title)}</span>
                         <span class="highlight-sub">${getSubjectName(f.subject)} • Uploaded Recently</span>
-                        ${lastSeenText}
                     </div>
                 </div>
             `;
@@ -1922,14 +1917,12 @@ async function showHighlightsModal() {
         overlay.appendChild(box);
         document.body.appendChild(overlay);
 
-        // 5. Track the Visit (Record in Supabase)
-        // We do this in a separate try-catch so if columns are missing, modal still shows
+        // 5. Track the Visit (Record in Supabase) - DISABLED UNTIL SCHEMA UPDATED
+        /*
         try {
             const visitTime = new Date().toISOString();
             const updatePayload = { last_login: visitTime };
 
-            // Optional: These columns might not exist yet, we only add them if we're sure
-            // but for now let's just update last_login as the primary tracker
             await db.from('students')
                 .update(updatePayload)
                 .eq('id', currentUser.id);
@@ -1938,6 +1931,7 @@ async function showHighlightsModal() {
         } catch (trackErr) {
             console.warn("Activity tracking failed (probably missing columns):", trackErr);
         }
+        */
 
         // 6. Set Session Flag & Handle Close
         sessionStorage.setItem('highlights_shown', 'true');
