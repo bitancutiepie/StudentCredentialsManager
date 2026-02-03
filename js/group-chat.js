@@ -138,11 +138,16 @@ window.groupChat = {
         if (!text) return;
 
         if (!window.user) {
-            alert("You must be logged in to chat!");
-            return;
+            // Try to recover user from storage if global var is missing
+            const stored = localStorage.getItem('wimpy_user');
+            if (stored) window.user = JSON.parse(stored);
+            else {
+                alert("You must be logged in to chat!");
+                return;
+            }
         }
 
-        input.value = ''; // Clear immediately (Optimistic?)
+        input.value = ''; // Clear input immediately
 
         // Prepare Payload
         const payload = {
@@ -155,12 +160,15 @@ window.groupChat = {
 
         const jsonString = JSON.stringify(payload);
 
-        // Optimistic Render
-        // We'll let the realtime listener handle the render to ensure consistency, 
-        // OR we can render tentatively. For now, let's wait for realtime (it's fast enough).
-        // Actually, rendering immediately feels better.
-        // this.renderMessage({ content: jsonString, created_at: payload.t }); // Fake record
-        // this.scrollToBottom();
+        // OPTIMISTIC RENDER (Immediate Feedback)
+        // We render a temporary object that looks like a DB record
+        const tempRecord = {
+            content: jsonString,
+            created_at: payload.t,
+            color: 'CHAT_HIDDEN'
+        };
+        this.renderMessage(tempRecord);
+        this.scrollToBottom();
 
         const client = window.db || window.supabaseClient;
         const { error } = await client.from('notes').insert([{
@@ -174,13 +182,15 @@ window.groupChat = {
 
         if (error) {
             console.error("Send failed:", error);
-            // Optionally show error toast
+            // Show error in chat or toast
+            if (window.showToast) window.showToast("Message failed to send!", "error");
+            else alert("Message failed to send!");
         }
     },
 
     scrollToBottom: function () {
         const historyContainer = document.getElementById('gc-history');
-        historyContainer.scrollTop = historyContainer.scrollHeight;
+        if (historyContainer) historyContainer.scrollTop = historyContainer.scrollHeight;
     },
 
     updateBadge: function (show) {
@@ -210,12 +220,34 @@ window.groupChat = {
     }
 };
 
-// Initialize when loaded
+// Robust Initialization
 document.addEventListener('DOMContentLoaded', () => {
-    // Wait a bit for window.db to be ready
-    setTimeout(() => {
-        if (window.user) window.groupChat.init();
-    }, 1000);
+    let attempts = 0;
+    const maxAttempts = 10; // Try for 5 seconds (10 * 500ms)
+
+    const tryInit = () => {
+        // Check if DB and User are ready
+        if (window.db && window.user) {
+            window.groupChat.init();
+        } else if (localStorage.getItem('wimpy_user') && window.db) {
+            // Recover user if DB is ready but window.user isn't set yet
+            try {
+                window.user = JSON.parse(localStorage.getItem('wimpy_user'));
+                window.groupChat.init();
+            } catch (e) {
+                console.error("User recovery failed", e);
+            }
+        } else {
+            attempts++;
+            if (attempts < maxAttempts) {
+                setTimeout(tryInit, 500);
+            } else {
+                console.warn("Group Chat: Could not init (User or DB missing after timeout).");
+            }
+        }
+    };
+
+    tryInit();
 });
 
 // Bind Enter Key
