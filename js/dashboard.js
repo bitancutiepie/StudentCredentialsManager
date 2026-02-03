@@ -1199,7 +1199,7 @@ async function fetchNotes() {
     const noteLayer = document.getElementById('freedom-wall-board');
     if (!noteLayer) return;
 
-    const { data, error } = await db.from('notes').select('*');
+    const { data, error } = await db.from('notes').select('*').neq('color', 'CHAT_HIDDEN');
     if (error) return;
 
     noteLayer.innerHTML = '';

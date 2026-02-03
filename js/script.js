@@ -1378,8 +1378,8 @@ async function postNote() {
     if (error) showToast('Failed to stick note.', 'error');
     else { showToast('Note posted!'); noteInput.value = ''; fetchNotes(); }
 }
-async function fetchNotes() {
-    const { data, error } = await supabaseClient.from('notes').select('*');
+window.fetchNotes = async function () {
+    const { data, error } = await supabaseClient.from('notes').select('*').neq('color', 'CHAT_HIDDEN');
     if (error) return;
 
     // Check if Admin (for delete capability)
@@ -1449,6 +1449,8 @@ async function fetchNotes() {
     });
     setTimeout(resolveCollisions, 200);
 }
+
+
 
 window.toggleLike = async function (id) {
     let likedNotes = [];
@@ -1532,6 +1534,11 @@ function setupRealtimeNotes() {
     supabaseClient
         .channel('public:notes')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'notes' }, payload => {
+            // IGNORE CHAT MESSAGES
+            if (payload.new && payload.new.color === 'CHAT_HIDDEN') return;
+            // Also ignore deletes of hidden notes if possible, but difficult to know color of deleted row.
+            // However, sticky notes are deleted by ID. If ID doesn't exist in DOM, no harm done.
+
             if (payload.eventType === 'INSERT') {
                 fetchNotes(); // New note added, refresh board
             } else if (payload.eventType === 'DELETE') {

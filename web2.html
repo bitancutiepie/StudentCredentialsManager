@@ -36,6 +36,99 @@
 
     <link rel="stylesheet" href="css/common.css">
     <link rel="stylesheet" href="css/dashboard.css">
+    <style>
+        /* Group Chat Styles */
+        .gc-message {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+            max-width: 85%;
+        }
+
+        .gc-message.me {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .gc-message.them {
+            align-self: flex-start;
+        }
+
+        .gc-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid #000;
+            flex-shrink: 0;
+            object-fit: cover;
+        }
+
+        .gc-content-wrapper {
+            display: flex;
+            flex-direction: column;
+            max-width: 100%;
+        }
+
+        .gc-message.me .gc-content-wrapper {
+            align-items: flex-end;
+        }
+
+        .gc-name {
+            font-size: 0.75rem;
+            color: #666;
+            margin-bottom: 2px;
+            font-weight: bold;
+        }
+
+        .gc-bubble {
+            padding: 8px 12px;
+            border-radius: 15px;
+            border: 2px solid #000;
+            font-size: 0.95rem;
+            word-wrap: break-word;
+            box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        .gc-message.me .gc-bubble {
+            background: #6c5ce7;
+            color: white;
+            border-bottom-right-radius: 2px;
+        }
+
+        .gc-message.them .gc-bubble {
+            background: #fff;
+            color: black;
+            border-bottom-left-radius: 2px;
+        }
+
+        .gc-time {
+            font-size: 0.65rem;
+            color: #999;
+            margin-top: 2px;
+        }
+
+        #groupChatModal {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            width: 350px;
+            height: 500px;
+            z-index: 9000;
+            display: flex;
+            flex-direction: column;
+            animation: slideUp 0.3s ease-out;
+            filter: drop-shadow(5px 5px 0 #000);
+        }
+
+        @media (max-width: 600px) {
+            #groupChatModal {
+                width: 90%;
+                right: 5%;
+                bottom: 20px;
+                height: 60vh;
+            }
+        }
+    </style>
 </head>
 
 <body>
@@ -88,6 +181,15 @@
                             <i class="fas fa-camera"></i>
                         </div>
                     </div>
+                    <!-- Group Chat Button -->
+                    <div onclick="window.groupChat.toggle()"
+                        style="position: relative; cursor: pointer; font-size: 2rem; color: #6c5ce7; margin-right: 5px;"
+                        title="Class Group Chat">
+                        <i class="fas fa-comments"></i>
+                        <span id="gc-badge"
+                            style="position: absolute; top: -5px; right: -5px; background: #d63031; color: #fff; font-size: 0.8rem; font-weight: bold; padding: 2px 6px; border-radius: 50%; display: none;">!</span>
+                    </div>
+
                     <div onclick="openInboxModal()"
                         style="position: relative; cursor: pointer; font-size: 2rem; color: #2d3436;"
                         title="My Messages">
@@ -1973,6 +2075,40 @@
             }
         }
     </script>
+    <!-- GROUP CHAT MODAL -->
+    <div id="groupChatModal" class="hidden">
+        <div class="sketch-box"
+            style="width: 100%; height: 100%; display: flex; flex-direction: column; padding: 0; overflow: hidden; background: #fff; border: 3px solid #000;">
+            <!-- Header -->
+            <div
+                style="padding: 10px; background: #6c5ce7; color: white; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #000;">
+                <h3 style="margin: 0; font-size: 1.2rem;"><i class="fas fa-users"></i> Class Chismis</h3>
+                <button onclick="window.groupChat.close()"
+                    style="background: transparent; border: none; color: white; font-size: 1.2rem; cursor: pointer;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- History -->
+            <div id="gc-history"
+                style="flex: 1; overflow-y: auto; padding: 10px; background: #dfe6e9; display: flex; flex-direction: column; gap: 8px;">
+                <!-- Messages go here -->
+            </div>
+
+            <!-- Input -->
+            <div style="padding: 10px; border-top: 3px solid #000; background: #fff; display: flex; gap: 5px;">
+                <input type="text" id="gc-input" placeholder="Say something..."
+                    style="flex: 1; padding: 8px; border: 2px solid #000; font-family: 'Patrick Hand'; font-size: 1rem;">
+                <button onclick="window.groupChat.send()"
+                    style="background: #6c5ce7; color: white; border: 2px solid #000; padding: 0 15px; cursor: pointer;">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Group Chat Script -->
+    <script src="js/group-chat.js"></script>
 </body>
 
 </html>
