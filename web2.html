@@ -171,32 +171,39 @@
 
             <div class="profile-header-container">
                 <!-- Avatar & Inbox Group -->
-                <div style="display: flex; align-items: center; gap: 15px;">
-                    <div style="position: relative;">
-                        <img id="userAvatarDisplay"
-                            style="width: 65px; height: 65px; border-radius: 50%; border: 2px solid #000; cursor: pointer; object-fit: cover;"
-                            title="Click to change profile picture">
-                        <div onclick="document.getElementById('userAvatarDisplay').click()"
-                            style="position: absolute; bottom: -2px; right: -5px; background: #2d3436; color: #fff; border: 2px solid #fff; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; box-shadow: 2px 2px 0 rgba(0,0,0,0.2); cursor: pointer;">
-                            <i class="fas fa-camera"></i>
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <div style="position: relative;">
+                            <img id="userAvatarDisplay"
+                                style="width: 65px; height: 65px; border-radius: 50%; border: 2px solid #000; cursor: pointer; object-fit: cover;"
+                                title="Click to change profile picture">
+                            <div onclick="document.getElementById('userAvatarDisplay').click()"
+                                style="position: absolute; bottom: -2px; right: -5px; background: #2d3436; color: #fff; border: 2px solid #fff; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; box-shadow: 2px 2px 0 rgba(0,0,0,0.2); cursor: pointer;">
+                                <i class="fas fa-camera"></i>
+                            </div>
+                        </div>
+                        <!-- Group Chat Button -->
+                        <div onclick="window.groupChat.toggle()"
+                            style="position: relative; cursor: pointer; font-size: 2rem; color: #6c5ce7; margin-right: 5px;"
+                            title="Class Group Chat">
+                            <i class="fas fa-comments"></i>
+                            <span id="gc-badge"
+                                style="position: absolute; top: -5px; right: -5px; background: #d63031; color: #fff; font-size: 0.8rem; font-weight: bold; padding: 2px 6px; border-radius: 50%; display: none;">!</span>
+                        </div>
+
+                        <div onclick="openInboxModal()"
+                            style="position: relative; cursor: pointer; font-size: 2rem; color: #2d3436;"
+                            title="My Messages">
+                            <i class="fas fa-envelope"></i>
+                            <span id="msg-badge"
+                                style="position: absolute; top: -5px; right: -5px; background: #d63031; color: #fff; font-size: 0.8rem; font-weight: bold; padding: 2px 6px; border-radius: 50%; display: none;">0</span>
                         </div>
                     </div>
-                    <!-- Group Chat Button -->
-                    <div onclick="window.groupChat.toggle()"
-                        style="position: relative; cursor: pointer; font-size: 2rem; color: #6c5ce7; margin-right: 5px;"
-                        title="Class Group Chat">
-                        <i class="fas fa-comments"></i>
-                        <span id="gc-badge"
-                            style="position: absolute; top: -5px; right: -5px; background: #d63031; color: #fff; font-size: 0.8rem; font-weight: bold; padding: 2px 6px; border-radius: 50%; display: none;">!</span>
-                    </div>
-
-                    <div onclick="openInboxModal()"
-                        style="position: relative; cursor: pointer; font-size: 2rem; color: #2d3436;"
-                        title="My Messages">
-                        <i class="fas fa-envelope"></i>
-                        <span id="msg-badge"
-                            style="position: absolute; top: -5px; right: -5px; background: #d63031; color: #fff; font-size: 0.8rem; font-weight: bold; padding: 2px 6px; border-radius: 50%; display: none;">0</span>
-                    </div>
+                    <!-- NEW: Edit Name Button -->
+                    <button onclick="editUserName()" class="sketch-btn"
+                        style="padding: 2px 8px; font-size: 0.8rem; transform: rotate(-1deg); width: auto; margin-top: -5px;">
+                        <i class="fas fa-user-edit"></i> Change Name
+                    </button>
                 </div>
 
                 <!-- Text Info Stack -->
@@ -1128,6 +1135,22 @@
         </div>
     </div>
 
+    <!-- Name Edit Modal -->
+    <div id="editNameModal" class="wimpy-modal-overlay hidden">
+        <div class="wimpy-modal-box">
+            <h2><i class="fas fa-signature"></i> Change Name</h2>
+            <p>What should we call you now?</p>
+            <input type="text" id="nameChangeInput" placeholder="Enter new name" maxlength="30"
+                style="margin-bottom: 20px; font-family: 'Patrick Hand'; font-size: 1.2rem; padding: 10px; border: 2px solid #000; background: #fff; width: 100%; text-align: center; box-sizing: border-box;">
+            <button onclick="saveUserName()" class="sketch-btn"
+                style="background:#000; color:#fff; margin-bottom:10px; width:100%; justify-content:center;">
+                <i class="fas fa-check"></i> Update Name
+            </button>
+            <button onclick="document.getElementById('editNameModal').classList.add('hidden')"
+                class="sketch-btn danger">Cancel</button>
+        </div>
+    </div>
+
     <!-- Add Event Modal (Calendar) -->
     <div id="addEventModal" class="wimpy-modal-overlay hidden">
         <div class="wimpy-modal-box">
@@ -1455,6 +1478,63 @@
                     showToast("Status updated!");
                 }
             }
+        }
+
+        // --- NAME CHANGE LOGIC ---
+        window.editUserName = function () {
+            const currentUser = window.user || JSON.parse(localStorage.getItem('wimpy_user') || 'null');
+            if (!currentUser) return alert("Please log in first.");
+
+            document.getElementById('nameChangeInput').value = currentUser.name;
+            document.getElementById('editNameModal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('nameChangeInput').focus(), 100);
+        }
+
+        window.saveUserName = async function () {
+            const newName = document.getElementById('nameChangeInput').value.trim();
+            const modal = document.getElementById('editNameModal');
+            let currentUser = window.user || JSON.parse(localStorage.getItem('wimpy_user') || 'null');
+
+            if (!newName) return alert("Name cannot be empty!");
+            if (!currentUser) return;
+            if (newName === currentUser.name) return modal.classList.add('hidden');
+
+            if (window.showWimpyConfirm && !await showWimpyConfirm(`Change your name to "${newName}"?`)) return;
+
+            modal.classList.add('hidden');
+
+            // Show loading toast if available
+            if (window.showToast) showToast("Updating your ID card...");
+
+            // 1. Update Supabase
+            const { error } = await sb.from('students')
+                .update({ name: newName })
+                .eq('id', currentUser.id);
+
+            if (error) {
+                console.error("Name update failed:", error);
+                alert("Could not update name: " + error.message);
+                return;
+            }
+
+            // 2. Update local state
+            currentUser.name = newName;
+            window.user = currentUser;
+
+            // 3. Update Storage (Check both for safety)
+            localStorage.setItem('wimpy_user', JSON.stringify(currentUser));
+            if (sessionStorage.getItem('wimpy_user')) sessionStorage.setItem('wimpy_user', JSON.stringify(currentUser));
+
+            // 4. Update UI
+            const welcomeEl = document.getElementById('welcome-msg');
+            if (welcomeEl) {
+                welcomeEl.innerText = `Hey ${newName}! 2nd Sem na, aral mabuti.`;
+            }
+
+            // 5. Update Real-time Presence
+            if (window.refreshPresence) window.refreshPresence();
+
+            if (window.showToast) showToast("Name updated successfully!");
         }
         // Init Status
         async function initUserStatus() {

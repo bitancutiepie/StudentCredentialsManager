@@ -858,7 +858,7 @@ function checkLiveClass() {
 }
 
 // Global variable for the channel
-let roomChannel;
+window.roomChannel = null;
 
 async function initLiveTracking() {
     if (!user) return;
@@ -871,7 +871,7 @@ async function initLiveTracking() {
     };
 
     // 1. Create a channel for 'room-1' (Everyone connects here)
-    roomChannel = db.channel('room-1', {
+    window.roomChannel = db.channel('room-1', {
         config: {
             presence: {
                 key: user.id, // Use User ID as key so duplicates (2 tabs) update the same entry
@@ -880,17 +880,37 @@ async function initLiveTracking() {
     });
 
     // 2. Subscribe to Presence Events (Sync)
-    roomChannel
+    window.roomChannel
         .on('presence', { event: 'sync' }, () => {
-            const newState = roomChannel.presenceState();
+            const newState = window.roomChannel.presenceState();
             renderActiveUsers(newState);
         })
         .subscribe(async (status) => {
             if (status === 'SUBSCRIBED') {
                 // 3. Track (announce) ourselves to the room
-                await roomChannel.track(userPayload);
+                await window.roomChannel.track(userPayload);
             }
         });
+}
+
+/**
+ * Robust Name/Avatar Change: Re-announce to the room immediately
+ */
+window.refreshPresence = async function () {
+    if (!window.roomChannel || !window.user) return;
+
+    // Update local user reference in dashboard.js if it drifted
+    user = window.user;
+
+    const userPayload = {
+        user_id: user.id,
+        name: user.name,
+        avatar: user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`,
+        online_at: new Date().toISOString()
+    };
+
+    console.log("Re-tracking presence for:", user.name);
+    await window.roomChannel.track(userPayload);
 }
 
 function renderActiveUsers(presenceState) {
@@ -985,6 +1005,9 @@ async function updateProfilePic(id, file) {
         sessionStorage.setItem('wimpy_user', JSON.stringify(user));
     }
     showToast('Nice! New picture saved.');
+
+    // --- REFRESH PRESENCE ---
+    if (window.refreshPresence) window.refreshPresence();
 }
 
 // showToast removed (in common.js)
