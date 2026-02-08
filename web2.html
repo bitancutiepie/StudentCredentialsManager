@@ -400,10 +400,18 @@
                             </select>
 
                             <input type="text" id="email-subject" placeholder="Subject (e.g. You passed!)" required>
-                            <textarea id="email-body" placeholder="Write your message here..."
-                                style="height: 100px;"></textarea>
+                            <div style="position: relative; margin-bottom: 20px;">
+                                <textarea id="email-body" placeholder="Write your message here..."
+                                    style="height: 120px; width: 100%; box-sizing: border-box;"></textarea>
+                                <button type="button" onclick="quickAddHomeworkToEmail()" class="sketch-btn"
+                                    title="Auto-retrieve Homework List"
+                                    style="position: absolute; bottom: 5px; right: 5px; width: auto; margin: 0; background: #f1c40f; color: #000; padding: 4px 10px; font-size: 0.8rem; z-index: 5;">
+                                    <i class="fas fa-list-check"></i> IMPORT HOMEWORK
+                                </button>
+                            </div>
 
-                            <button type="submit" class="sketch-btn" style="background: #000; color: #fff;">
+                            <button type="submit" class="sketch-btn"
+                                style="background: #000; color: #fff; width: 100%; justify-content:center;">
                                 <i class="fas fa-paper-plane"></i> Send Email
                             </button>
                         </form>
@@ -1077,8 +1085,9 @@
                 <input type="hidden" id="chat-target-id">
                 <input type="text" id="chat-input" placeholder="Write a note..." required autocomplete="off"
                     style="margin:0; border: 2px solid #000;">
-                <button type="submit" class="sketch-btn" style="width:auto; margin:0; background:#000; color:#fff;"><i
-                        class="fas fa-paper-plane"></i></button>
+                <button type="submit" class="sketch-btn" style="width:auto; margin:0; background:#000; color:#fff;">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
             </form>
         </div>
     </div>

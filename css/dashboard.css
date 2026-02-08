@@ -2070,3 +2070,12 @@ h2:hover {
         transform: rotate(0deg);
     }
 }
+
+/* Admin Only utility */
+.admin-only.hidden {
+    display: none !important;
+}
+
+#blast-option-container {
+    animation: urgentPulse 2s infinite;
+}

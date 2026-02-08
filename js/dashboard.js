@@ -332,11 +332,11 @@ window.toggleHomework = function (element) {
 
 
 // Global var for assignments to access data in modal
-let assignmentsData = [];
+window.assignmentsData = [];
 
 // NEW: Calendar Prompt Logic
 window.openCalendarPrompt = function (index) {
-    const task = assignmentsData[index];
+    const task = window.assignmentsData[index];
     if (!task) return;
 
     // Populate Modal
@@ -358,7 +358,7 @@ window.openCalendarPrompt = function (index) {
 
 window.confirmAddToCalendar = function () {
     const index = document.getElementById('cal-prompt-task-json').value;
-    const task = assignmentsData[index];
+    const task = window.assignmentsData[index];
     if (!task) return;
 
     const startVal = document.getElementById('cal-prompt-start').value; // YYYY-MM-DD
@@ -407,7 +407,7 @@ async function loadAssignments() {
         return;
     }
 
-    assignmentsData = data; // Store globally
+    window.assignmentsData = data; // Store globally
 
     list.innerHTML = data.map((task, index) => {
         const date = task.due_date ? new Date(task.due_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'No date';

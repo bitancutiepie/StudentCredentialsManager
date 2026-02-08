@@ -448,3 +448,21 @@ window.populateEmailDropdown = async function () {
         }
     });
 }
+window.quickAddHomeworkToEmail = function () {
+    const tasks = window.assignmentsData || [];
+    if (tasks.length === 0) return showToast("No homework found to attach!");
+
+    const body = document.getElementById('email-body');
+
+    // Format the list
+    let text = "📚 UPCOMING HOMEWORK & TASKS:\n";
+    tasks.forEach((t, i) => {
+        const date = t.due_date ? new Date(t.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'No date';
+        text += `${i + 1}. [${t.subject}] ${t.title} - Due: ${date}\n`;
+    });
+
+    text += "\nAralll mabutiii! 📝";
+
+    body.value = text;
+    body.focus();
+}
