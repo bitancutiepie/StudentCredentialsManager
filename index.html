@@ -179,11 +179,24 @@
                 </div>
             </div>
 
-            <div class="member-list-section" style="border-top: none; margin-top: 10px;">
+            <div class="member-list-section" style="border-top: 2px dashed #000; margin-top: 15px;">
                 <div class="member-list-title"><i class="fas fa-eye"></i> Just Spotted:</div>
                 <div id="recentLoginsList"
-                    style="display:flex; flex-direction:column; gap:5px; align-items:center; font-size: 0.9rem;">
-                    <span style="color:#666; font-style:italic;">No recent activity...</span>
+                    style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; width: 100%; transition: all 0.5s;">
+                    <span style="color:#666; font-style:italic;">Finding our kosa...</span>
+                </div>
+
+                <!-- Compact Collapsible History -->
+                <div style="text-align:center; margin-top: 10px;">
+                    <button onclick="toggleAllSpotted()" class="sketch-btn"
+                        style="width:auto; padding: 5px 15px; font-size: 0.9rem; background: #fff; color: #000; border: 2px solid #000;">
+                        <i class="fas fa-history"></i> <span id="spottedBtnText">View Full History</span>
+                    </button>
+                </div>
+
+                <div id="allSpottedList" class="hidden"
+                    style="margin-top: 15px; display: grid; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap: 10px; padding: 10px; background: rgba(0,0,0,0.03); border-radius: 8px; border: 1px dashed #000;">
+                    <!-- Full history injected here -->
                 </div>
             </div>
 

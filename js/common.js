@@ -200,3 +200,53 @@ function copyToClipboard(text) {
         showToast('Failed to copy', 'error');
     });
 }
+
+/**
+ * Updates the student's last_login timestamp in the database.
+ * Throttled to once every 2 minutes per session.
+ */
+async function trackActivity() {
+    const userStr = localStorage.getItem('wimpy_user') || sessionStorage.getItem('wimpy_user');
+    if (!userStr || !window.db) return;
+
+    const user = JSON.parse(userStr);
+    const now = new Date();
+    const lastTracked = sessionStorage.getItem('last_track_time');
+
+    // Throttle: Only update every 2 minutes
+    if (lastTracked && (now - new Date(lastTracked)) < 120000) return;
+
+    try {
+        await window.db
+            .from('students')
+            .update({ last_login: now.toISOString() })
+            .eq('id', user.id);
+
+        sessionStorage.setItem('last_track_time', now.toISOString());
+        console.log("Activity tracked for:", user.name);
+    } catch (err) {
+        console.warn("Presence tracking failed:", err);
+    }
+}
+
+/**
+ * Helper to format timestamp as "X ago"
+ */
+function timeAgo(dateString) {
+    if (!dateString) return "Unknown";
+    const date = new Date(dateString);
+    const now = new Date();
+    const seconds = Math.floor((now - date) / 1000);
+
+    let interval = seconds / 31536000;
+    if (interval > 1) return Math.floor(interval) + "y ago";
+    interval = seconds / 2592000;
+    if (interval > 1) return Math.floor(interval) + "mo ago";
+    interval = seconds / 86400;
+    if (interval > 1) return Math.floor(interval) + "d ago";
+    interval = seconds / 3600;
+    if (interval > 1) return Math.floor(interval) + "h ago";
+    interval = seconds / 60;
+    if (interval > 1) return Math.floor(interval) + "m ago";
+    return "Just now";
+}

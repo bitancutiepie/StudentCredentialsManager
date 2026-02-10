@@ -56,9 +56,7 @@ const initApp = async () => {
         const user = JSON.parse(storedUser);
 
         // Update last login for "Recently Spotted" tracker on session restore
-        await supabaseClient.from('students')
-            .update({ last_login: new Date().toISOString() })
-            .eq('id', user.id);
+        await trackActivity();
 
         // IF ADMIN: Check if they should see the choice menu or go straight to binder
         const isMain = (user.sr_code === 'ADMIN');
@@ -130,6 +128,7 @@ function loadLandingPageContent() {
     fetchNewUploads(); // <--- ADD THIS LINE HERE
     fetchLandingGallery(); // <--- AND THIS ONE
     setupRealtimeNotes(); // <--- Initialize Realtime Listener
+    setupRealtimeSpotted(); // <--- NEW: Track recent visitors
     showWelcomeNote();
 
     // --- PASSWORD TOGGLE ---
@@ -355,10 +354,9 @@ async function handleLogin(srCode, password) {
         sessionStorage.setItem('wimpy_user', userPayload);
     }
 
-    await supabaseClient
-        .from('students')
-        .update({ last_login: new Date().toISOString() })
-        .eq('id', data.id);
+    // Use centralized tracking
+    sessionStorage.removeItem('last_track_time'); // Force update on fresh login
+    await trackActivity();
 
     // === ADMIN CHECK ===
 
@@ -1328,41 +1326,142 @@ function showPublicProfile(name, avatarUrl, status) {
 async function fetchRecentLogins() {
     const container = document.getElementById('recentLoginsList');
     if (!container) return;
-    const { data, error } = await supabaseClient.from('students').select('name, avatar_url, last_login').neq('sr_code', 'ADMIN').not('last_login', 'is', null).order('last_login', { ascending: false }).limit(5);
+
+    // Fetch last 12 active users
+    const { data, error } = await supabaseClient
+        .from('students')
+        .select('name, avatar_url, last_login')
+        .neq('sr_code', 'ADMIN')
+        .not('last_login', 'is', null)
+        .order('last_login', { ascending: false })
+        .limit(10);
+
     if (error) return;
-    if (!data || data.length === 0) return;
+    if (!data || data.length === 0) {
+        container.innerHTML = '<span style="color:#666; font-style:italic;">No recent activity...</span>';
+        return;
+    }
+
     container.innerHTML = '';
+    const now = new Date();
+
     data.forEach(student => {
+        const lastSeen = new Date(student.last_login);
+        const diffMinutes = Math.floor((now - lastSeen) / 60000);
+        const isOnline = diffMinutes < 5;
+
         const row = document.createElement('div');
-        row.style.cssText = 'display:flex; align-items:center; gap:10px; width:100%; max-width:350px; justify-content:space-between; border-bottom:1px dashed #ccc; padding:5px 0;';
+        row.style.cssText = `
+            display:flex; 
+            align-items:center; 
+            gap:8px; 
+            justify-content:space-between; 
+            border: 2px solid #000;
+            background: #fff;
+            padding: 6px 10px;
+            border-radius: 12px;
+            box-shadow: 2px 2px 0 rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+            overflow: hidden;
+        `;
+        row.onmouseover = () => row.style.transform = 'scale(1.02) rotate(-1deg)';
+        row.onmouseout = () => row.style.transform = 'scale(1) rotate(0deg)';
+
         const safeAvatar = student.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random`;
+
+        const statusBadge = isOnline
+            ? '<span style="background: #00b894; color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.6rem; font-weight: bold; border: 1px solid #000;">ONLINE</span>'
+            : `<small style="color:#666; font-family:sans-serif; font-size:0.75rem;">${timeAgo(student.last_login)}</small>`;
+
         row.innerHTML = `
-            <div style="display:flex; align-items:center; gap:8px;">
-                <img src="${safeAvatar}" style="width:25px; height:25px; border-radius:50%; object-fit:cover; border:1px solid #333;">
-                <span>${escapeHTML(student.name)}</span>
+            <div style="display:flex; align-items:center; gap:6px; min-width:0; flex:1;">
+                <div style="position:relative; flex-shrink:0;">
+                    <img src="${safeAvatar}" style="width:28px; height:28px; border-radius:50%; object-fit:cover; border:1px solid #000;">
+                    ${isOnline ? '<div style="position:absolute; bottom:0; right:0; width:8px; height:8px; background:#00b894; border:1px solid #fff; border-radius:50%;"></div>' : ''}
+                </div>
+                <span style="font-weight:bold; font-size:0.85rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHTML(student.name.split(' ')[0])}</span>
             </div>
-            <small style="color:#666; font-family:sans-serif; font-size:0.8rem;">${timeAgo(student.last_login)}</small>
+            <div style="flex-shrink:0;">${statusBadge}</div>
         `;
         container.appendChild(row);
     });
 }
 
-function timeAgo(dateString) {
-    const date = new Date(dateString);
-    const now = new Date();
-    const seconds = Math.floor((now - date) / 1000);
-    let interval = seconds / 31536000;
-    if (interval > 1) return Math.floor(interval) + "y ago";
-    interval = seconds / 2592000;
-    if (interval > 1) return Math.floor(interval) + "mo ago";
-    interval = seconds / 86400;
-    if (interval > 1) return Math.floor(interval) + "d ago";
-    interval = seconds / 3600;
-    if (interval > 1) return Math.floor(interval) + "h ago";
-    interval = seconds / 60;
-    if (interval > 1) return Math.floor(interval) + "m ago";
-    return "Just now";
+/**
+ * Realtime listener for "Just Spotted" list
+ */
+function setupRealtimeSpotted() {
+    supabaseClient
+        .channel('public:students_spotted')
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'students' }, payload => {
+            // Only refresh if last_login changed
+            if (payload.new.last_login !== payload.old.last_login) {
+                fetchRecentLogins();
+                // Also refresh full history if open
+                const historyEl = document.getElementById('allSpottedList');
+                if (historyEl && !historyEl.classList.contains('hidden')) {
+                    fetchAllSpotted();
+                }
+            }
+        })
+        .subscribe();
 }
+
+window.toggleAllSpotted = function () {
+    const list = document.getElementById('allSpottedList');
+    const btnText = document.getElementById('spottedBtnText');
+    if (!list || !btnText) return;
+
+    if (list.classList.contains('hidden')) {
+        list.classList.remove('hidden');
+        btnText.innerText = "Hide History";
+        fetchAllSpotted();
+    } else {
+        list.classList.add('hidden');
+        btnText.innerText = "View Full History";
+    }
+}
+
+async function fetchAllSpotted() {
+    const container = document.getElementById('allSpottedList');
+    if (!container) return;
+
+    container.innerHTML = '<div style="grid-column: 1/-1; text-align:center; font-size:0.8rem;">Loading everyone...</div>';
+
+    const { data, error } = await supabaseClient
+        .from('students')
+        .select('name, avatar_url, last_login')
+        .neq('sr_code', 'ADMIN')
+        .not('last_login', 'is', null)
+        .order('last_login', { ascending: false });
+
+    if (error || !data) {
+        container.innerHTML = '<div style="grid-column: 1/-1; text-align:center;">Failed to load.</div>';
+        return;
+    }
+
+    container.innerHTML = data.map(v => {
+        const avatar = v.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(v.name)}&background=random`;
+        const lastSeen = new Date(v.last_login);
+        const isOnline = (new Date() - lastSeen) < 300000; // 5 mins
+
+        const timeStr = lastSeen.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        return `
+            <div title="${escapeHTML(v.name)} | Seen: ${lastSeen.toLocaleString()}" 
+                 style="position:relative; display:flex; flex-direction:column; align-items:center; gap:2px; transition: transform 0.2s; cursor: help;"
+                 onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+                <img src="${avatar}" style="width:40px; height:40px; border-radius:50%; border:2px solid ${isOnline ? '#00b894' : '#000'}; background:#fff;">
+                <span style="font-size:0.6rem; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%; text-align:center; line-height:1;">
+                    ${escapeHTML(v.name.split(' ')[0])}
+                </span>
+                <span style="font-size:0.5rem; color:#666; font-family:sans-serif;">${timeStr}</span>
+                ${isOnline ? '<div style="position:absolute; top:2px; right:12px; width:8px; height:8px; background:#00b894; border:1px solid #fff; border-radius:50%;"></div>' : ''}
+            </div>
+        `;
+    }).join('');
+}
+
 
 // --- DRAGGABLE NOTES ---
 async function postNote() {

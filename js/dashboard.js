@@ -62,6 +62,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         // For non-admins, show highlights normally after a delay
         setTimeout(showHighlightsModal, 2000);
     }
+
+    // Heartbeat: Update last_login every 5 minutes while page is open
+    setInterval(() => {
+        trackActivity();
+    }, 300000); // 5 minutes
 });
 
 // --- AUTH CHECK ---
@@ -79,8 +84,7 @@ function checkSession() {
     isAdmin = window.isAdmin; // Keep local var synced
 
     // Update last login for "Recently Spotted" tracker on session restore
-    // --- TRACKING DISABLED (MISSING COLUMNS) ---
-    // db.from('students').update({ last_login: new Date().toISOString() }).eq('id', user.id).then();
+    trackActivity();
 
     // Setup Avatar
     setupAvatarUpdate(user.name, user.avatar_url);
@@ -1890,49 +1894,58 @@ async function showHighlightsModal() {
 
         const hwHtml = homework.length > 0 ? homework.map(h => `
             <div class="highlight-item interactive" onclick="
-                switchTab('assignments', event); 
+                window.switchTab('assignments', event); 
                 document.getElementById('highlights-popup').remove(); 
                 console.log('User clicked homework:', '${h.id}')">
-                <i class="fas fa-pencil-alt" style="color:#e67e22;"></i>
+                <i class="fas fa-thumbtack" style="color:#d63031;"></i>
                 <div class="highlight-details">
                     <span class="highlight-title">${escapeHTML(h.title)}</span>
-                    <span class="highlight-sub">${getSubjectName(h.subject)} • Due: ${new Date(h.due_date).toLocaleDateString()}</span>
+                    <span class="highlight-sub">${getSubjectName(h.subject)} • <span style="color:#d63031; font-weight:bold;">Due ${window.timeAgo ? window.timeAgo(h.due_date) : new Date(h.due_date).toLocaleDateString()}</span></span>
                 </div>
             </div>
-        `).join('') : '<p>No pending homework. Chill mode!</p>';
+        `).join('') : '<p style="text-align:center; padding:20px; color:#666; font-style:italic;">No pending homework. Chill mode! 😎</p>';
 
         const filesHtml = files.length > 0 ? files.map(f => {
             const safeUrl = (f.file_url || '').replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;");
             const safeTitle = (f.title || 'File').replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;");
+
+            // Icon logic to match the mini-cards
+            let iconClass = 'fa-file';
+            let iconColor = '#2f3542';
+            const fType = (f.file_type || '').toLowerCase();
+            if (fType.includes('pdf')) { iconClass = 'fa-file-pdf'; iconColor = '#d63031'; }
+            else if (fType.includes('image')) { iconClass = 'fa-file-image'; iconColor = '#00b894'; }
+            else if (fType.includes('word')) { iconClass = 'fa-file-word'; iconColor = '#0984e3'; }
+
             return `
-                <div class="highlight-item interactive" onclick="openFilePreview('${safeUrl}', '${safeTitle}', ${f.id}); document.getElementById('highlights-popup').remove(); console.log('User clicked file:', '${f.id}')">
-                    <i class="fas fa-file-alt" style="color:#0984e3;"></i>
+                <div class="highlight-item interactive" onclick="openFilePreview('${safeUrl}', '${safeTitle}', ${f.id}); document.getElementById('highlights-popup').remove();">
+                    <i class="fas ${iconClass}" style="color:${iconColor};"></i>
                     <div class="highlight-details">
                         <span class="highlight-title">${escapeHTML(f.title)}</span>
-                        <span class="highlight-sub">${getSubjectName(f.subject)} • Uploaded Recently</span>
+                        <span class="highlight-sub">${getSubjectName(f.subject)} • ${window.timeAgo ? window.timeAgo(f.created_at) : 'Just uploaded'}</span>
                     </div>
                 </div>
             `;
-        }).join('') : '<p>No new files uploaded yet.</p>';
+        }).join('') : '<p style="text-align:center; padding:20px; color:#666; font-style:italic;">No new files uploaded yet. 📂</p>';
 
         box.innerHTML = `
             <div class="highlights-header">
-                <h2><i class="fas fa-bolt"></i> QUICK UPDATES</h2>
-                <p style="margin:5px 0 0 0; font-family:'Patrick Hand';">What's new in the Binder today?</p>
+                <h2><i class="fas fa-bolt" style="color:#f1c40f;"></i> WHAT'S NEW?</h2>
+                <p style="margin:5px 0 0 0; font-family:'Patrick Hand'; font-size:1.1rem;">Here's your quick recap, <b>${currentUser.name.split(' ')[0]}</b>!</p>
             </div>
             <div class="highlights-content">
                 <div class="highlights-section">
-                    <div class="highlights-section-title"><i class="fas fa-tasks"></i> Pending Homework</div>
+                    <div class="highlights-section-title"><i class="fas fa-thumbtack"></i> Homework Alert</div>
                     ${hwHtml}
                 </div>
-                <div class="highlights-section">
-                    <div class="highlights-section-title"><i class="fas fa-cloud-upload-alt"></i> Newest Files</div>
+                <div class="highlights-section" style="margin-bottom:10px;">
+                    <div class="highlights-section-title"><i class="fas fa-folder-open"></i> New Resources</div>
                     ${filesHtml}
                 </div>
             </div>
             <div class="highlights-footer">
-                <button class="sketch-btn" id="close-highlights" style="background:#000; color:#fff; width:100%; font-size:1.2rem;">
-                    GOT IT, BOSS!
+                <button class="sketch-btn" id="close-highlights" style="background:#000; color:#fff; width:100%; font-size:1.2rem; transform:rotate(-1deg);">
+                    OKAY, BACK TO WORK!
                 </button>
             </div>
         `;

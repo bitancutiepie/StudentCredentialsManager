@@ -268,7 +268,20 @@ window.refreshInboxList = async function (showLoader = true) {
 
     if (!students) { list.innerHTML = '<p>Error loading users.</p>'; return; }
 
-    // 4. Render list
+    // 4. Sort: Unread first, then by latest message date
+    students.sort((a, b) => {
+        const convA = conversations[a.id];
+        const convB = conversations[b.id];
+
+        // If one has unread and other doesn't, unread goes first
+        if (convA.unreadCount > 0 && convB.unreadCount === 0) return -1;
+        if (convA.unreadCount === 0 && convB.unreadCount > 0) return 1;
+
+        // Otherwise sort by latest message time
+        return new Date(convB.lastMessage.created_at) - new Date(convA.lastMessage.created_at);
+    });
+
+    // 5. Render list
     list.innerHTML = students.map(s => {
         const conv = conversations[s.id];
         const isUnread = conv.unreadCount > 0;

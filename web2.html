@@ -728,7 +728,7 @@
                 <!-- The Dynamic File List -->
                 <div style="margin-bottom: 30px; min-height: 200px;">
                     <h3 id="file-filter-label" style="color: #666; font-size: 1.2rem;">Showing: All Files</h3>
-                    <div id="file-list" class="grid-container">
+                    <div id="file-list" class="file-grid">
                         <div class="loader">Opening filing cabinet...</div>
                     </div>
                 </div>
@@ -1229,11 +1229,26 @@
         window.openFilePreview = async function (url, title, fileId) {
             if (!url) return alert('No file link available.');
 
-            // --- TRACKING (Safe Mode) ---
+            // --- TRACKING (Persistent Mode) ---
             try {
                 const currentUser = window.user || JSON.parse(localStorage.getItem('wimpy_user') || 'null');
-                if (currentUser) {
-                    console.log(`User ${currentUser.name} viewed: ${title}`);
+                if (currentUser && fileId) {
+                    const logPayload = {
+                        type: 'file_view',
+                        u: currentUser.name,
+                        a: currentUser.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.name)}&background=random`,
+                        fid: fileId,
+                        t: new Date().toISOString()
+                    };
+
+                    // Use 'notes' table with a hidden color for logging (proven pattern in group-chat.js)
+                    await window.db.from('notes').insert([{
+                        content: JSON.stringify(logPayload),
+                        x_pos: 0, y_pos: 0, rotation: 0,
+                        color: 'FILE_VIEW',
+                        likes: 0
+                    }]);
+                    console.log(`View logged for file ${fileId}`);
                 }
             } catch (err) {
                 console.warn("View tracking failed:", err);
@@ -1295,8 +1310,8 @@
         }
 
         // --- NEW: VIEW FILE LOG (WHO CLICKED) ---
-        window.viewFileHistory = async function (title) {
-            console.log("Fetching viewer log for:", title);
+        window.viewFileHistory = async function (fileId, title) {
+            console.log("Fetching viewer log for file ID:", fileId);
 
             // 1. Create Loading Overlay
             const overlay = document.createElement('div');
@@ -1305,9 +1320,9 @@
             overlay.innerHTML = `
                 <div class="wimpy-modal-box" style="max-width:400px; text-align:left;">
                     <h2 style="margin-top:0;"><i class="fas fa-users-viewfinder"></i> Recently Seen By</h2>
-                    <p style="font-size:0.9rem; color:#666; margin-top:-10px; font-family:'Patrick Hand';">Searching the paper trail...</p>
+                    <p style="font-size:0.9rem; color:#666; margin-top:-10px; font-family:'Patrick Hand';">File: ${title}</p>
                     <div id="viewer-list" style="max-height:300px; overflow-y:auto; margin:15px 0;">
-                        <div class="loader">Checking IDs...</div>
+                        <div class="loader">Checking the paper trail...</div>
                     </div>
                     <button onclick="document.getElementById('viewer-log-modal').remove()" class="sketch-btn" style="width:100%; background:#000; color:#fff;">GOT IT</button>
                 </div>
@@ -1315,29 +1330,40 @@
             document.body.appendChild(overlay);
 
             try {
-                const { data: viewers, error } = await sb
-                    .from('students')
-                    .select('name, avatar_url, last_login')
-                    .order('last_login', { ascending: false })
-                    .limit(10);
+                // Fetch from notes table where color is FILE_VIEW
+                const { data: logs, error } = await window.db
+                    .from('notes')
+                    .select('content, created_at')
+                    .eq('color', 'FILE_VIEW')
+                    .order('created_at', { ascending: false })
+                    .limit(50); // Fetch more to filter
 
                 if (error) throw error;
 
+                // Filter for this specific file in JS
+                const fileViewers = (logs || [])
+                    .map(log => {
+                        try { return JSON.parse(log.content); } catch (e) { return null; }
+                    })
+                    .filter(v => v && v.fid == fileId)
+                    .slice(0, 10); // Show last 10 unique views or just last 10 views
+
                 const listEl = document.getElementById('viewer-list');
-                if (!viewers || viewers.length === 0) {
-                    listEl.innerHTML = '<p style="text-align:center; font-style:italic;">No recent activity logged for this file.</p>';
+                if (!fileViewers || fileViewers.length === 0) {
+                    listEl.innerHTML = '<p style="text-align:center; font-style:italic; padding: 20px;">Nobody has viewed this file yet. Be the first!</p>';
                     return;
                 }
 
                 // 3. Render List
-                listEl.innerHTML = viewers.map(v => {
-                    const avatar = v.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(v.name)}&background=random`;
+                listEl.innerHTML = fileViewers.map(v => {
+                    const avatar = v.a || `https://ui-avatars.com/api/?name=${encodeURIComponent(v.u)}&background=random`;
+                    const timeDisp = window.timeAgo ? window.timeAgo(v.t) : new Date(v.t).toLocaleString();
                     return `
                         <div style="display:flex; align-items:center; gap:12px; padding:10px; border-bottom:1px dashed #ccc;">
                             <img src="${avatar}" style="width:35px; height:35px; border-radius:50%; border:1px solid #000;">
                             <div style="flex:1;">
-                                <div style="font-family:'Patrick Hand'; font-size:1.1rem; font-weight:bold;">${escapeHTML(v.name)}</div>
-                                <div style="font-size:0.75rem; color:#d63031;">${new Date(v.last_login).toLocaleString()}</div>
+                                <div style="font-family:'Patrick Hand'; font-size:1.1rem; font-weight:bold;">${typeof escapeHTML === 'function' ? escapeHTML(v.u) : v.u}</div>
+                                <div style="font-size:0.75rem; color:#d63031;">${timeDisp}</div>
                             </div>
                         </div>
                     `;
@@ -1383,26 +1409,49 @@
                 const subject = (subjectCode === 'General') ? 'General' : (window.subjectMapping ? window.subjectMapping[subjectCode] || subjectCode : subjectCode);
                 const displayTitle = typeof escapeHTML === 'function' ? escapeHTML(file.title) : safeTitle;
 
-                // Use escapeHTML if available (from dashboard.js) or fallback to basic escape
-                const deleteBtn = isAdmin ? `<button onclick="event.stopPropagation(); deleteFile(${file.id})" class="sketch-btn danger" style="position:absolute; top:-12px; left:-12px; padding: 4px 10px; font-size: 0.8rem; z-index: 50; border-radius: 6px; transform: rotate(-8deg); box-shadow: 3px 3px 0 #000;">DELETE</button>` : '';
-
                 const createdAt = new Date(file.created_at);
                 const isNew = createdAt > dateLimit && subject !== 'General';
-                const badgeHtml = isNew ? `<span class="new-badge-sketch">NEW!</span>` : '';
+                const badgeHtml = isNew ? `<span class="new-badge-sketch" style="background:#ff4757; color:#fff; padding:2px 6px; border-radius:4px; font-size:0.7rem; margin-left:5px; border:1px solid #000; display:inline-block; transform:rotate(5deg);">NEW!</span>` : '';
 
-                const lastSeenHtml = '';
+                // Better Icon Logic
+                let iconClass = 'fa-file';
+                let iconColor = '#2f3542';
+                const fType = (file.file_type || '').toLowerCase();
+                if (fType.includes('pdf')) { iconClass = 'fa-file-pdf'; iconColor = '#d63031'; }
+                else if (fType.includes('image')) { iconClass = 'fa-file-image'; iconColor = '#00b894'; }
+                else if (fType.includes('word')) { iconClass = 'fa-file-word'; iconColor = '#0984e3'; }
+                else if (fType.includes('ppt')) { iconClass = 'fa-file-powerpoint'; iconColor = '#e17055'; }
+                else if (fType.includes('video')) { iconClass = 'fa-file-video'; iconColor = '#6c5ce7'; }
+
+                const deleteBtn = isAdmin ? `<button onclick="event.stopPropagation(); deleteFile(${file.id})" class="sketch-btn danger" style="position:absolute; top:-5px; right:-5px; padding: 4px 8px; font-size: 0.7rem; z-index: 50; border-radius: 6px; transform: rotate(5deg); box-shadow: 2px 2px 0 #000;">DEL</button>` : '';
 
                 return `
-                <div class="file-card-mini" onclick="openFilePreview('${safeUrl}', '${safeTitle}', ${file.id})">
+                <div class="file-card-mini" onclick="openFilePreview('${safeUrl}', '${safeTitle}', ${file.id})" style="animation-delay: ${Math.random() * 0.5}s;">
                     ${deleteBtn}
-                    <div class="file-icon-box">
-                        <i class="fas ${file.file_type && file.file_type.includes('image') ? 'fa-file-image' : 'fa-file-pdf'}"></i>
+                    <div class="file-icon-box" style="border-color: ${iconColor}; color: ${iconColor};">
+                        <i class="fas ${iconClass}"></i>
                     </div>
                     <div class="file-info-main">
-                        <div class="file-subject-label">${subject} ${badgeHtml}</div>
-                        <div class="file-title-text">${displayTitle}</div>
-                        <div class="file-hint-text"><i class="fas fa-eye"></i> Tap to Preview</div>
-                        ${lastSeenHtml}
+                        <div class="file-subject-label" style="display:flex; align-items:center; gap:5px;">
+                            <span style="color:${iconColor}; font-weight:bold; font-size: 0.7rem;">${subject}</span>
+                            ${badgeHtml}
+                        </div>
+                        <div class="file-title-text" style="font-weight:bold; font-size:1rem; line-height:1.2; margin-top:2px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">${displayTitle}</div>
+                        
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; border-top: 1px dashed #eee; padding-top: 8px;">
+                            <span style="font-size:0.7rem; color:#666;"><i class="fas fa-clock"></i> ${timeAgo ? timeAgo(file.created_at) : createdAt.toLocaleDateString()}</span>
+                            <div style="display:flex; gap:10px;">
+                                <button onclick="event.stopPropagation(); viewFileHistory(${file.id}, '${safeTitle}')" class="sketch-icon-btn" title="See who viewed this" style="background:none; border:none; color:#fdcb6e; cursor:pointer; font-size:0.9rem;">
+                                    <i class="fas fa-users-viewfinder"></i>
+                                </button>
+                                <button onclick="event.stopPropagation(); copyToClipboard('${safeUrl}')" class="sketch-icon-btn" title="Copy Direct Link" style="background:none; border:none; color:#636e72; cursor:pointer; font-size:0.9rem;">
+                                    <i class="fas fa-link"></i>
+                                </button>
+                                <button class="sketch-icon-btn" title="Preview" style="background:none; border:none; color:#0984e3; cursor:pointer; font-size:0.9rem;">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>`;
             }).join('');
