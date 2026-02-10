@@ -1478,7 +1478,7 @@ async function postNote() {
     else { showToast('Note posted!'); noteInput.value = ''; fetchNotes(); }
 }
 window.fetchNotes = async function () {
-    const { data, error } = await supabaseClient.from('notes').select('*').neq('color', 'CHAT_HIDDEN');
+    const { data, error } = await supabaseClient.from('notes').select('*').not('color', 'in', '("CHAT_HIDDEN", "FILE_VIEW")');
     if (error) return;
 
     // Check if Admin (for delete capability)
@@ -1634,7 +1634,7 @@ function setupRealtimeNotes() {
         .channel('public:notes')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'notes' }, payload => {
             // IGNORE CHAT MESSAGES
-            if (payload.new && payload.new.color === 'CHAT_HIDDEN') return;
+            if (payload.new && (payload.new.color === 'CHAT_HIDDEN' || payload.new.color === 'FILE_VIEW')) return;
             // Also ignore deletes of hidden notes if possible, but difficult to know color of deleted row.
             // However, sticky notes are deleted by ID. If ID doesn't exist in DOM, no harm done.
 
