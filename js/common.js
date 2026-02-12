@@ -535,13 +535,43 @@ window.checkActiveAnnouncements = async function () {
 
 // --- GLOBAL HAMILAW UTILITY ---
 window.triggerGlobalShock = function (senderName) {
-    // 1. Play the Shock Sound
+    // 1. Play the Shock Sound with Amplification
     try {
-        const shockAudio = new Audio('soundShock.wav');
-        shockAudio.volume = 1.0;
-        shockAudio.play().catch(e => console.warn("Shock audio blocked by browser:", e));
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const source = audioCtx.createBufferSource();
+
+        fetch('soundShock.wav')
+            .then(response => response.arrayBuffer())
+            .then(data => audioCtx.decodeAudioData(data))
+            .then(buffer => {
+                source.buffer = buffer;
+
+                // Gain node to boost volume beyond 1.0
+                const gainNode = audioCtx.createGain();
+                gainNode.gain.value = 3.5; // BOOSTED! (Careful: might clip but that adds to the 'scary' feel)
+
+                source.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+
+                source.start(0);
+
+                // Also play a second one slightly offset for extra "Loudness" / Chaos
+                const source2 = audioCtx.createBufferSource();
+                source2.buffer = buffer;
+                const gainNode2 = audioCtx.createGain();
+                gainNode2.gain.value = 2.0;
+                source2.connect(gainNode2);
+                gainNode2.connect(audioCtx.destination);
+                source2.start(audioCtx.currentTime + 0.05);
+
+            }).catch(e => {
+                // Fallback to basic audio if Web Audio fails
+                const fallback = new Audio('soundShock.wav');
+                fallback.volume = 1.0;
+                fallback.play();
+            });
     } catch (e) {
-        console.error("Failed to play shock sound:", e);
+        console.error("Failed to play amplified shock sound:", e);
     }
 
     // Try both IDs (binder vs landing page use different IDs)
