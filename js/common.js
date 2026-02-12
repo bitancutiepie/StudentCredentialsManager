@@ -535,12 +535,25 @@ window.checkActiveAnnouncements = async function () {
 
 // --- GLOBAL HAMILAW UTILITY ---
 window.triggerGlobalShock = function (senderName) {
+    // 1. Play the Shock Sound
+    try {
+        const shockAudio = new Audio('soundShock.wav');
+        shockAudio.volume = 1.0;
+        shockAudio.play().catch(e => console.warn("Shock audio blocked by browser:", e));
+    } catch (e) {
+        console.error("Failed to play shock sound:", e);
+    }
+
     // Try both IDs (binder vs landing page use different IDs)
     const binderOverlay = document.getElementById('hamilaw-overlay');
     const landingOverlay = document.getElementById('jumpscare-overlay');
     const overlay = binderOverlay || landingOverlay;
 
     if (!overlay) return;
+
+    // 2. Add full screen shake
+    document.body.style.animation = 'shake 0.1s infinite';
+    setTimeout(() => { document.body.style.animation = ''; }, 1500);
 
     overlay.classList.remove('hidden');
     overlay.style.display = 'flex'; // Ensure visible
@@ -549,7 +562,7 @@ window.triggerGlobalShock = function (senderName) {
     const img = overlay.querySelector('img');
     if (img) {
         // Switch index.html's pat.png to monster.png if it's a Hamilaw shock
-        if (img.src.includes('pat.png')) {
+        if (img.src && img.src.includes('pat.png')) {
             img.src = 'monster.png';
         }
         img.style.animation = 'shake 0.1s infinite';
@@ -562,7 +575,7 @@ window.triggerGlobalShock = function (senderName) {
         overlay.style.display = 'none';
 
         // Restore pat.png for index.html jumpscares if needed
-        if (img && img.src.includes('monster.png') && landingOverlay) {
+        if (img && img.src && img.src.includes('monster.png') && landingOverlay) {
             img.src = 'assets/images/pat.png';
         }
     }, 1500);
