@@ -532,3 +532,38 @@ window.checkActiveAnnouncements = async function () {
         console.error("Failed to check active announcements:", err);
     }
 }
+
+// --- GLOBAL HAMILAW UTILITY ---
+window.triggerGlobalShock = function (senderName) {
+    // Try both IDs (binder vs landing page use different IDs)
+    const binderOverlay = document.getElementById('hamilaw-overlay');
+    const landingOverlay = document.getElementById('jumpscare-overlay');
+    const overlay = binderOverlay || landingOverlay;
+
+    if (!overlay) return;
+
+    overlay.classList.remove('hidden');
+    overlay.style.display = 'flex'; // Ensure visible
+
+    // Find the image inside
+    const img = overlay.querySelector('img');
+    if (img) {
+        // Switch index.html's pat.png to monster.png if it's a Hamilaw shock
+        if (img.src.includes('pat.png')) {
+            img.src = 'monster.png';
+        }
+        img.style.animation = 'shake 0.1s infinite';
+    }
+
+    console.warn(`!!! HAMILAW SHOCK BY ${senderName} !!!`);
+
+    setTimeout(() => {
+        overlay.classList.add('hidden');
+        overlay.style.display = 'none';
+
+        // Restore pat.png for index.html jumpscares if needed
+        if (img && img.src.includes('monster.png') && landingOverlay) {
+            img.src = 'assets/images/pat.png';
+        }
+    }, 1500);
+}

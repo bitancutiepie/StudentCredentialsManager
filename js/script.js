@@ -117,6 +117,17 @@ const initApp = async () => {
                 }
             });
 
+            publicChannel.on('broadcast', { event: 'hamilaw' }, (payload) => {
+                const { target_id, sender_name } = payload.payload;
+                const storedUser = localStorage.getItem('wimpy_user') || sessionStorage.getItem('wimpy_user');
+                if (storedUser) {
+                    const user = JSON.parse(storedUser);
+                    if (target_id === user.id) {
+                        if (window.triggerGlobalShock) window.triggerGlobalShock(sender_name);
+                    }
+                }
+            });
+
             publicChannel.subscribe();
 
             // Check for active announcements

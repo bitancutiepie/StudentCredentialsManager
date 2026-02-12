@@ -900,6 +900,12 @@ async function initLiveTracking() {
                     if (window.loadRecentAnnouncementsSidebar) {
                         window.loadRecentAnnouncementsSidebar();
                     }
+                })
+                .on('broadcast', { event: 'hamilaw' }, (payload) => {
+                    const { target_id, sender_name } = payload.payload;
+                    if (window.user && target_id === window.user.id) {
+                        if (window.triggerGlobalShock) window.triggerGlobalShock(sender_name);
+                    }
                 });
         }
 
@@ -978,8 +984,8 @@ function renderActiveUsers(presenceState) {
         div.style.cssText = borderStyle;
 
         div.innerHTML = `<img src="${u.avatar}" alt="${u.name}">`;
-        // Add Click to Chat
-        div.onclick = () => openChatModal(u.user_id, u.name);
+        // Change: Show Action Menu instead of instant chat
+        div.onclick = () => window.showUserActionMenu(u.user_id, u.name);
 
         list.appendChild(div);
     });
@@ -2113,5 +2119,73 @@ window.deleteAnnouncementSidebar = async function (id) {
     } catch (err) {
         console.error("Failed to delete announcement:", err);
         showToast("Error deleting announcement", "error");
+    }
+};
+// --- HAMILAW (SHOCK) FEATURE ---
+window.showUserActionMenu = function (targetId, targetName) {
+    if (targetId === window.user.id) return; // Can't shock self
+
+    const overlay = document.createElement('div');
+    overlay.className = 'wimpy-modal-overlay';
+    overlay.style.zIndex = '10007';
+    overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+
+    const box = document.createElement('div');
+    box.className = 'wimpy-modal-box';
+    box.style.textAlign = 'center';
+    box.style.maxWidth = '300px';
+    box.style.padding = '30px';
+    box.style.background = '#fff';
+    box.style.transform = 'rotate(-1deg)';
+
+    box.innerHTML = `
+        <h3 style="margin:0 0 15px 0; font-family:'Permanent Marker'; font-size:1.5rem;">Choose Action</h3>
+        <p style="font-family:'Patrick Hand'; color:#666; font-size:1.1rem; margin-bottom:20px;">What do you want to do with <b>${targetName}</b>?</p>
+        
+        <div style="display:flex; flex-direction:column; gap:12px;">
+            <button id="action-msg" class="sketch-btn" style="background:#6c5ce7; color:#fff;">
+                <i class="fas fa-comment"></i> SEND MESSAGE
+            </button>
+            <button id="action-shock" class="sketch-btn danger" style="background:#d63031; color:#fff;">
+                 👻 "HAMILAW" (SHOCK)
+            </button>
+            <button id="action-cancel" class="sketch-btn" style="border:none; text-decoration:underline; width:auto; margin:0 auto;">CANCEL</button>
+        </div>
+    `;
+
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    document.getElementById('action-msg').onclick = () => {
+        overlay.remove();
+        if (window.openChatModal) window.openChatModal(targetId, targetName);
+    };
+
+    document.getElementById('action-shock').onclick = () => {
+        overlay.remove();
+        window.hamilawUser(targetId, targetName);
+    };
+
+    document.getElementById('action-cancel').onclick = () => overlay.remove();
+};
+
+window.hamilawUser = async function (targetId, targetName) {
+    if (!window.roomChannel) return;
+
+    try {
+        const resp = await window.roomChannel.send({
+            type: 'broadcast',
+            event: 'hamilaw',
+            payload: {
+                target_id: targetId,
+                sender_name: window.user.name
+            }
+        });
+
+        if (resp === 'ok') {
+            showToast(`👻 Hamilaw sent to ${targetName.split(' ')[0]}!`, "success");
+        }
+    } catch (err) {
+        console.error("Hamilaw failed:", err);
     }
 };
