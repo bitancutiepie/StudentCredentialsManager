@@ -100,16 +100,10 @@ const initApp = async () => {
     // Start Jumpscare Timer
     startJumpscareTimer();
 
-    // REALTIME ANNOUNCEMENT LISTENER (Everyone)
+    // REALTIME LISTENERS (Everyone)
     if (window.db && window.db.channel) {
         try {
             const publicChannel = window.db.channel('room-1');
-            publicChannel.on('broadcast', { event: 'announcement' }, (payload) => {
-                console.log("Announcement detected:", payload);
-                if (window.showAnnouncementPopup) {
-                    window.showAnnouncementPopup(payload.payload);
-                }
-            });
 
             publicChannel.on('broadcast', { event: 'comment' }, (payload) => {
                 if (window.handleIncomingComment) {
@@ -122,18 +116,18 @@ const initApp = async () => {
                 const storedUser = localStorage.getItem('wimpy_user') || sessionStorage.getItem('wimpy_user');
                 if (storedUser) {
                     const user = JSON.parse(storedUser);
-                    if (target_id === user.id) {
+                    if (target_id === user.id && user.sr_code !== 'ADMIN') {
                         if (window.triggerGlobalShock) window.triggerGlobalShock(sender_name);
                     }
                 }
             });
 
-            publicChannel.subscribe();
+            publicChannel.on('broadcast', { event: 'system_reload' }, () => {
+                showToast("📦 System Update: Refreshing in 3s...", "info");
+                setTimeout(() => location.reload(true), 3000);
+            });
 
-            // Check for active announcements
-            if (window.checkActiveAnnouncements) {
-                window.checkActiveAnnouncements();
-            }
+            publicChannel.subscribe();
         } catch (e) {
             console.warn("Realtime initialization delayed:", e);
         }

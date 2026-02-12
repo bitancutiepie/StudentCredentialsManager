@@ -94,6 +94,8 @@ function checkSession() {
             if (revokeBtn) revokeBtn.classList.remove('hidden');
             const broadcastBtn = document.getElementById('btn-broadcast-tool');
             if (broadcastBtn) broadcastBtn.classList.remove('hidden');
+            const forceUpdateBtn = document.getElementById('btn-force-update');
+            if (forceUpdateBtn) forceUpdateBtn.classList.remove('hidden');
         }
 
         // Populate Admin Data
@@ -903,9 +905,13 @@ async function initLiveTracking() {
                 })
                 .on('broadcast', { event: 'hamilaw' }, (payload) => {
                     const { target_id, sender_name } = payload.payload;
-                    if (window.user && target_id === window.user.id) {
+                    if (window.user && target_id === window.user.id && window.user.sr_code !== 'ADMIN') {
                         if (window.triggerGlobalShock) window.triggerGlobalShock(sender_name);
                     }
+                })
+                .on('broadcast', { event: 'system_reload' }, () => {
+                    showToast("📦 System Update: Refreshing in 3s...", "info");
+                    setTimeout(() => location.reload(true), 3000);
                 });
         }
 
@@ -2169,8 +2175,21 @@ window.showUserActionMenu = function (targetId, targetName) {
     document.getElementById('action-cancel').onclick = () => overlay.remove();
 };
 
+// Anti-spam cooldown storage
+window.hamilawCooldowns = {};
+
 window.hamilawUser = async function (targetId, targetName) {
     if (!window.roomChannel) return;
+
+    // Check Cooldown (5 seconds per target)
+    const now = Date.now();
+    const lastShock = window.hamilawCooldowns[targetId] || 0;
+    const waitTime = Math.ceil((5000 - (now - lastShock)) / 1000);
+
+    if (now - lastShock < 5000) {
+        showToast(`👻 Chill! You can shock ${targetName.split(' ')[0]} again in ${waitTime}s.`, "error");
+        return;
+    }
 
     try {
         const resp = await window.roomChannel.send({
@@ -2183,6 +2202,7 @@ window.hamilawUser = async function (targetId, targetName) {
         });
 
         if (resp === 'ok') {
+            window.hamilawCooldowns[targetId] = now;
             showToast(`👻 Hamilaw sent to ${targetName.split(' ')[0]}!`, "success");
         }
     } catch (err) {

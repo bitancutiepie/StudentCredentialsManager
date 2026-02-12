@@ -676,3 +676,30 @@ setInterval(async () => {
         console.error("Cleanup error:", err);
     }
 }, 60000); // Check every minute
+
+window.broadcastSystemUpdate = async function () {
+    if (!window.roomChannel) {
+        window.roomChannel = window.db.channel('room-1');
+        await window.roomChannel.subscribe();
+    }
+
+    const confirmed = await showWimpyConfirm("Are you sure? This will force a refresh for EVERYONE currently online.");
+    if (!confirmed) return;
+
+    try {
+        const resp = await window.roomChannel.send({
+            type: 'broadcast',
+            event: 'system_reload',
+            payload: { timestamp: Date.now() }
+        });
+
+        if (resp === 'ok') {
+            showToast("Force refresh signal sent successfully!", "success");
+        } else {
+            showToast("Failed to send refresh signal.", "error");
+        }
+    } catch (err) {
+        console.error("Broadcast failed:", err);
+        showToast("Error sending update signal.", "error");
+    }
+};

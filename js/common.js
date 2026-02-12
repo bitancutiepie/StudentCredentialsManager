@@ -581,10 +581,6 @@ window.triggerGlobalShock = function (senderName) {
 
     if (!overlay) return;
 
-    // 2. Add full screen shake
-    document.body.style.animation = 'shake 0.1s infinite';
-    setTimeout(() => { document.body.style.animation = ''; }, 1500);
-
     overlay.classList.remove('hidden');
     overlay.style.display = 'flex'; // Ensure visible
 
@@ -600,9 +596,33 @@ window.triggerGlobalShock = function (senderName) {
 
     console.warn(`!!! HAMILAW SHOCK BY ${senderName} !!!`);
 
+    // 3. Add "Sent By" Label
+    let label = document.getElementById('hamilaw-sender-label');
+    if (!label) {
+        label = document.createElement('div');
+        label.id = 'hamilaw-sender-label';
+        label.style.cssText = `
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #d63031;
+            font-family: 'Permanent Marker', cursive;
+            font-size: 2rem;
+            text-shadow: 3px 3px 0 #000;
+            z-index: 200001;
+            white-space: nowrap;
+            animation: slideUp 0.3s ease-out;
+        `;
+        overlay.appendChild(label);
+    }
+    label.innerHTML = `<i class="fas fa-ghost"></i> SCARE SENT BY: ${senderName.toUpperCase()}`;
+    label.classList.remove('hidden');
+
     setTimeout(() => {
         overlay.classList.add('hidden');
         overlay.style.display = 'none';
+        if (label) label.classList.add('hidden');
 
         // Restore pat.png for index.html jumpscares if needed
         if (img && img.src && img.src.includes('monster.png') && landingOverlay) {
