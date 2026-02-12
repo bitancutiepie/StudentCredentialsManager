@@ -281,6 +281,10 @@
                             class="fas fa-hdd"></i> Storage</button>
                     <button class="sketch-btn" onclick="showAdminTool('admin-promote-form', this)"><i
                             class="fas fa-crown"></i> Privileges</button>
+                    <button id="btn-broadcast-tool" class="sketch-btn hidden"
+                        onclick="showAdminTool('admin-announcement-form', this)"
+                        style="border-color: #6c5ce7; color: #6c5ce7;"><i class="fas fa-bullhorn"></i>
+                        Announcement</button>
                     <button id="btn-revoke-admin" class="sketch-btn hidden"
                         onclick="showAdminTool('admin-revoke-form', this)"
                         style="border-color: #d63031; color: #d63031;"><i class="fas fa-user-slash"></i> Revoke</button>
@@ -470,6 +474,23 @@
                             <i class="fas fa-sync"></i> Scan Buckets
                         </button>
                         <div id="storage-stats-display" style="margin-top: 15px;"></div>
+                    </div>
+
+                    <!-- NEW: Global Announcement (Main Admin Only) -->
+                    <div class="admin-controls" id="admin-announcement-form">
+                        <button onclick="showAdminTool(null)" class="sketch-btn danger"
+                            style="position: absolute; top: 10px; right: 10px; width: auto; margin: 0; padding: 5px 10px; font-size: 0.9rem;">Close</button>
+                        <h3>Admin's Note: Global Announcement <i class="fas fa-bullhorn"></i></h3>
+                        <p style="font-size: 0.9rem; margin-bottom: 10px;">(Send a real-time popup to everyone online)
+                        </p>
+                        <form onsubmit="broadcastAnnouncement(event)" autocomplete="off">
+                            <textarea id="announcement-msg" placeholder="Type your announcement here..." required
+                                style="height: 120px; width: 100%; box-sizing: border-box; border: 2px solid #000; border-radius: 5px; padding: 15px; font-family: 'Patrick Hand'; font-size: 1.2rem; background: #fffdf0;"></textarea>
+                            <button type="submit" id="broadcast-btn" class="sketch-btn"
+                                style="background: #6c5ce7; color: #fff; width: 100%; justify-content:center; margin-top: 10px;">
+                                <i class="fas fa-broadcast-tower"></i> BROADCAST NOW
+                            </button>
+                        </form>
                     </div>
                 </div>
 
@@ -1423,10 +1444,10 @@
                 else if (fType.includes('ppt')) { iconClass = 'fa-file-powerpoint'; iconColor = '#e17055'; }
                 else if (fType.includes('video')) { iconClass = 'fa-file-video'; iconColor = '#6c5ce7'; }
 
-                const deleteBtn = isAdmin ? `<button onclick="event.stopPropagation(); deleteFile(${file.id})" class="sketch-btn danger" style="position:absolute; top:-5px; right:-5px; padding: 4px 8px; font-size: 0.7rem; z-index: 50; border-radius: 6px; transform: rotate(5deg); box-shadow: 2px 2px 0 #000;">DEL</button>` : '';
+                const deleteBtn = isAdmin ? `<button onclick="event.stopPropagation(); deleteFile('${file.id}')" class="sketch-btn danger" style="position:absolute; top:-5px; right:-5px; padding: 4px 8px; font-size: 0.7rem; z-index: 50; border-radius: 6px; transform: rotate(5deg); box-shadow: 2px 2px 0 #000;">DEL</button>` : '';
 
                 return `
-                <div class="file-card-mini" onclick="openFilePreview('${safeUrl}', '${safeTitle}', ${file.id})" style="animation-delay: ${Math.random() * 0.5}s;">
+                <div class="file-card-mini" onclick="openFilePreview('${safeUrl}', '${safeTitle}', '${file.id}')" style="animation-delay: ${Math.random() * 0.5}s;">
                     ${deleteBtn}
                     <div class="file-icon-box" style="border-color: ${iconColor}; color: ${iconColor};">
                         <i class="fas ${iconClass}"></i>
@@ -1441,7 +1462,7 @@
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; border-top: 1px dashed #eee; padding-top: 8px;">
                             <span style="font-size:0.7rem; color:#666;"><i class="fas fa-clock"></i> ${timeAgo ? timeAgo(file.created_at) : createdAt.toLocaleDateString()}</span>
                             <div style="display:flex; gap:10px;">
-                                <button onclick="event.stopPropagation(); viewFileHistory(${file.id}, '${safeTitle}')" class="sketch-icon-btn" title="See who viewed this" style="background:none; border:none; color:#fdcb6e; cursor:pointer; font-size:0.9rem;">
+                                <button onclick="event.stopPropagation(); viewFileHistory('${file.id}', '${safeTitle}')" class="sketch-icon-btn" title="See who viewed this" style="background:none; border:none; color:#fdcb6e; cursor:pointer; font-size:0.9rem;">
                                     <i class="fas fa-users-viewfinder"></i>
                                 </button>
                                 <button onclick="event.stopPropagation(); copyToClipboard('${safeUrl}')" class="sketch-icon-btn" title="Copy Direct Link" style="background:none; border:none; color:#636e72; cursor:pointer; font-size:0.9rem;">
@@ -2213,6 +2234,77 @@
             }
         }
     </script>
+    <!-- RECENT ANNOUNCEMENTS PANEL -->
+    <div id="recent-announcements-panel"
+        style="position: fixed; top: 140px; right: 30px; width: 220px; z-index: 1000; font-family: 'Patrick Hand'; transition: all 0.3s ease;">
+        <div class="sketch-box"
+            style="padding: 20px 15px; margin: 0; width: 100%; max-width: none; transform: rotate(1.5deg); box-shadow: 6px 6px 0 #000; background: #fff; border-width: 3px;">
+            <h3
+                style="margin: 0 0 15px 0; text-align: center; text-decoration: underline wavy; font-size: 1.4rem; color: #000; line-height: 1;">
+                <i class="fas fa-bullhorn" style="color: #d63031;"></i> Bulletin
+            </h3>
+            <div id="announcements-list"
+                style="max-height: 50vh; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding: 5px 8px 5px 5px;"
+                class="custom-scroll">
+                <p style="text-align: center; color: #666; font-style: italic; font-size: 0.9rem;">Reading notes...</p>
+            </div>
+
+            <!-- Tape Graphic (Top) -->
+            <div
+                style="position: absolute; top: -12px; left: 35%; width: 50px; height: 22px; background: rgba(0,0,0,0.08); border-left: 1px dashed rgba(255,255,255,0.4); border-right: 1px dashed rgba(255,255,255,0.4); transform: rotate(-3deg); z-index: 2;">
+            </div>
+            <!-- Pin Graphic (Bottom corner) -->
+            <div style="position: absolute; bottom: 5px; right: 5px; opacity: 0.2; font-size: 0.8rem;"><i
+                    class="fas fa-thumbtack"></i></div>
+        </div>
+
+        <style>
+            @media (max-width: 1300px) {
+                #recent-announcements-panel {
+                    right: 15px;
+                    width: 190px;
+                }
+            }
+
+            @media (max-width: 1150px) {
+                #recent-announcements-panel {
+                    display: none;
+                    /* Hide when it crashes into the binder */
+                }
+            }
+
+            .ann-mini-card {
+                background: #fdfdfd;
+                border: 2px solid #000;
+                padding: 10px;
+                border-radius: 3px;
+                cursor: pointer;
+                transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                position: relative;
+                font-size: 1rem;
+                box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.05);
+            }
+
+            .ann-mini-card:hover {
+                transform: scale(1.05) rotate(-1.5deg);
+                background: #fff;
+                box-shadow: 4px 4px 0 #000;
+                z-index: 5;
+            }
+
+            .ann-mini-card small {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                color: #d63031;
+                font-size: 0.75rem;
+                margin-top: 8px;
+                font-weight: bold;
+                opacity: 0.8;
+            }
+        </style>
+    </div>
+
     <!-- GROUP CHAT MODAL -->
     <div id="groupChatModal" class="hidden">
         <div class="sketch-box"

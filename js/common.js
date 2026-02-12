@@ -250,3 +250,277 @@ function timeAgo(dateString) {
     if (interval > 1) return Math.floor(interval) + "m ago";
     return "Just now";
 }
+
+/**
+ * --- REALTIME ANNOUNCEMENT POPUP (Shared) ---
+ * Displays a premium Wimpy Kid style announcement on screen.
+ */
+window.showAnnouncementPopup = async function (data) {
+    const { id, message, admin_name, admin_avatar } = data;
+
+    // Create overlay if not exists
+    let overlay = document.getElementById('announcement-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'announcement-overlay';
+        overlay.className = 'wimpy-modal-overlay';
+        if (typeof overlay.className === 'undefined' || !overlay.className) {
+            // Fallback styles if class missing
+            overlay.style.position = 'fixed';
+            overlay.style.top = '0';
+            overlay.style.left = '0';
+            overlay.style.width = '100%';
+            overlay.style.height = '100%';
+            overlay.style.backgroundColor = 'rgba(0,0,0,0.85)';
+            overlay.style.display = 'flex';
+            overlay.style.alignItems = 'center';
+            overlay.style.justifyContent = 'center';
+        }
+        overlay.style.zIndex = '20000'; // Above everything
+        overlay.style.display = 'none';
+        document.body.appendChild(overlay);
+    }
+
+    const avatar = admin_avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(admin_name)}&background=random`;
+
+    overlay.innerHTML = `
+        <div class="announcement-pop-card" id="announcement-${id}" style="
+            background: #fff740; 
+            border: 4px solid #000; 
+            padding: 25px; 
+            max-width: 500px; 
+            width: 90%; 
+            position: relative; 
+            transform: rotate(-0.5deg);
+            box-shadow: 12px 12px 0 #000;
+            animation: announcePop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            color: #000;
+            text-align: left;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+        ">
+            <!-- Tape -->
+            <div style="position: absolute; top: -15px; left: 50%; transform: translateX(-50%); width: 100px; height: 35px; background: rgba(255,255,255,0.4); border: 1px dashed rgba(0,0,0,0.1); border-radius: 2px;"></div>
+            
+            <!-- Close Button Top Right -->
+            <button onclick="document.getElementById('announcement-overlay').style.display='none'; document.getElementById('announcement-overlay').innerHTML='';" 
+                    style="position: absolute; top: 10px; right: 10px; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #000;">
+                <i class="fas fa-times"></i>
+            </button>
+
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px; border-bottom: 2px dashed rgba(0,0,0,0.2); padding-bottom: 10px;">
+                <img src="${avatar}" style="width: 50px; height: 50px; border: 3px solid #000; border-radius: 50%; background: #fff; object-fit: cover;">
+                <div>
+                    <h2 style="margin: 0; font-family: 'Permanent Marker', cursive; font-size: 1.5rem; color: #000;">ANNOUNCEMENT!</h2>
+                    <p style="margin: 0; font-style: italic; font-size: 1rem; color: #333; font-family: 'Patrick Hand';">from ${admin_name}</p>
+                </div>
+            </div>
+
+            <!-- Content Area - Scrollable if too long -->
+            <div style="flex: 1; overflow-y: auto; margin-bottom: 15px; padding-right: 5px;" class="custom-scroll">
+                <div style="font-size: 1.3rem; line-height: 1.4; color: #000; margin-bottom: 20px; white-space: pre-wrap; font-family: 'Patrick Hand', cursive;">
+                    ${message}
+                </div>
+
+                <!-- Comment Section Wrapper -->
+                <div style="border-top: 1px solid rgba(0,0,0,0.1); padding-top: 15px;">
+                    <h4 style="margin: 0 0 10px 0; font-family: 'Permanent Marker'; font-size: 1.1rem;"><i class="fas fa-comments"></i> Reactions</h4>
+                    <div id="comment-list-${id}" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;">
+                        <p style="font-style: italic; color: #666; font-family: 'Patrick Hand';">Loading comments...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comment Input -->
+            <div style="display: flex; gap: 5px; background: #fff; padding: 5px; border: 2px solid #000;">
+                <input type="text" id="comment-input-${id}" placeholder="Say something..." 
+                    style="flex: 1; border: none; background: transparent; font-family: 'Patrick Hand'; font-size: 1.1rem; padding: 5px; outline: none;"
+                    onkeydown="if(event.key === 'Enter') postAnnouncementComment('${id}')">
+                <button onclick="postAnnouncementComment('${id}')" style="background: #000; color: #fff; border: none; padding: 5px 12px; font-family: 'Permanent Marker'; cursor: pointer;">
+                    POST
+                </button>
+            </div>
+        </div>
+
+        <style>
+            @keyframes announcePop {
+                0% { transform: scale(0.5) rotate(10deg); opacity: 0; }
+                100% { transform: scale(1) rotate(-0.5deg); opacity: 1; }
+            }
+            #announcement-overlay {
+                display: flex !important;
+                align-items: center;
+                justify-content: center;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background: rgba(0,0,0,0.85);
+                z-index: 2147483647;
+                pointer-events: auto;
+            }
+            .custom-scroll::-webkit-scrollbar { width: 6px; }
+            .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+            .custom-scroll::-webkit-scrollbar-thumb { background: #000; border-radius: 10px; }
+        </style>
+    `;
+
+    overlay.style.display = 'flex';
+
+    // Fetch Existing Comments
+    loadAnnouncementComments(id);
+};
+
+/**
+ * --- LOAD COMMENTS ---
+ */
+window.loadAnnouncementComments = async function (announcementId) {
+    if (!announcementId) {
+        console.warn("No announcementId provided to loadAnnouncementComments");
+        return;
+    }
+
+    console.log("Loading comments for ID:", announcementId, "Type:", typeof announcementId);
+
+    const list = document.getElementById(`comment-list-${announcementId}`);
+    if (!list || !window.db) return;
+
+    try {
+        const { data, error } = await window.db
+            .from('notes')
+            .select('*')
+            .eq('color', 'COMMENT:' + announcementId)
+            .order('created_at', { ascending: true });
+
+        if (error) {
+            console.error("Supabase Error loading comments:", error);
+            throw error;
+        }
+
+        if (!data || data.length === 0) {
+            list.innerHTML = '<p style="font-style: italic; color: #666; font-family: \'Patrick Hand\';">No comments yet. Be the first!</p>';
+        } else {
+            console.log(`Found ${data.length} comments.`);
+            list.innerHTML = data.map(c => {
+                let sender = "Someone";
+                let msg = (c.content || "");
+                if (msg.includes(":::")) {
+                    const parts = msg.split(":::");
+                    sender = parts[0];
+                    msg = parts.slice(1).join(":::"); // Handle msg containing :::
+                }
+                return `
+                    <div style="background: rgba(0,0,0,0.05); padding: 5px 10px; border-radius: 5px; font-family: 'Patrick Hand'; font-size: 1.1rem; margin-bottom: 5px;">
+                        <b style="color: #d63031;">${escapeHTML(sender)}:</b> ${escapeHTML(msg)}
+                    </div>
+                `;
+            }).join('');
+        }
+    } catch (err) {
+        console.error("Failed to load comments exception:", err);
+        list.innerHTML = `<p style="color: red; font-size: 0.8rem;">Error loading comments. Check console.</p>`;
+    }
+};
+
+/**
+ * --- POST COMMENT ---
+ */
+window.postAnnouncementComment = async function (announcementId) {
+    const input = document.getElementById(`comment-input-${announcementId}`);
+    const msg = input.value.trim();
+    if (!msg || !window.db || !window.user) return;
+
+    input.value = '';
+    const sender = window.user.name;
+    const combinedContent = `${sender}:::${msg}`;
+
+    try {
+        // 1. Save to Database
+        const { error } = await window.db.from('notes').insert([{
+            content: combinedContent,
+            color: 'COMMENT:' + announcementId,
+            x_pos: 0,
+            y_pos: 0,
+            rotation: 0,
+            likes: 0
+        }]);
+
+        if (error) throw error;
+
+        // 2. Broadcast to others
+        if (window.roomChannel) {
+            window.roomChannel.send({
+                type: 'broadcast',
+                event: 'comment',
+                payload: {
+                    announcementId: announcementId,
+                    sender: sender,
+                    message: msg
+                }
+            });
+        }
+
+        // 3. Update locally
+        const list = document.getElementById(`comment-list-${announcementId}`);
+        if (list) {
+            if (list.innerText.includes("No comments yet")) list.innerHTML = '';
+            const div = document.createElement('div');
+            div.style.cssText = "background: rgba(0,0,0,0.05); padding: 5px 10px; border-radius: 5px; font-family: 'Patrick Hand'; font-size: 1.1rem;";
+            div.innerHTML = `<b style="color: #d63031;">${escapeHTML(sender)}:</b> ${escapeHTML(msg)}`;
+            list.appendChild(div);
+            list.parentElement.scrollTop = list.parentElement.scrollHeight;
+        }
+
+    } catch (err) {
+        console.error("Comment failed:", err);
+    }
+};
+
+// GLOBAL LISTENER FOR COMMENTS
+// This needs to be hooked up in script.js and dashboard.js
+window.handleIncomingComment = function (payload) {
+    const { announcementId, sender, message } = payload;
+    const list = document.getElementById(`comment-list-${announcementId}`);
+    if (list) {
+        if (list.innerText.includes("No comments yet")) list.innerHTML = '';
+        const div = document.createElement('div');
+        div.style.cssText = "background: rgba(0,0,0,0.05); padding: 5px 10px; border-radius: 5px; font-family: 'Patrick Hand'; font-size: 1.1rem;";
+        div.innerHTML = `<b style="color: #d63031;">${escapeHTML(sender)}:</b> ${escapeHTML(message)}`;
+        list.appendChild(div);
+        // Scroll to bottom if it's the current open popup
+        list.parentElement.scrollTop = list.parentElement.scrollHeight;
+    }
+};
+
+/**
+ * --- RECOVER RECENT ANNOUNCEMENT ON LOAD ---
+ */
+window.checkActiveAnnouncements = async function () {
+    if (!window.db) return;
+    const fiveMinsAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+
+    try {
+        const { data, error } = await window.db
+            .from('notes')
+            .select('*')
+            .eq('color', 'GLOBAL_MSG')
+            .gt('created_at', fiveMinsAgo)
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+        if (error) throw error;
+        if (data && data.length > 0) {
+            const ann = data[0];
+            window.showAnnouncementPopup({
+                id: ann.id,
+                message: ann.content,
+                admin_name: "Admin",
+                admin_avatar: ""
+            });
+        }
+    } catch (err) {
+        console.error("Failed to check active announcements:", err);
+    }
+}

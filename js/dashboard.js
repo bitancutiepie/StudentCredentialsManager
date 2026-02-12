@@ -103,10 +103,12 @@ function checkSession() {
         // document.querySelectorAll('.admin-controls').forEach(el => el.style.display = 'block'); // Removed to allow menu toggling
         document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
 
-        // Show Revoke button only for Main Admin
+        // Show Revoke and Broadcast button only for Main Admin
         if (user.sr_code === 'ADMIN') {
             const revokeBtn = document.getElementById('btn-revoke-admin');
             if (revokeBtn) revokeBtn.classList.remove('hidden');
+            const broadcastBtn = document.getElementById('btn-broadcast-tool');
+            if (broadcastBtn) broadcastBtn.classList.remove('hidden');
         }
     }
 }
@@ -874,27 +876,67 @@ async function initLiveTracking() {
         online_at: new Date().toISOString()
     };
 
-    // 1. Create a channel for 'room-1' (Everyone connects here)
-    window.roomChannel = db.channel('room-1', {
-        config: {
-            presence: {
-                key: user.id, // Use User ID as key so duplicates (2 tabs) update the same entry
+    try {
+        // 1. Create a channel for 'room-1' (Everyone connects here)
+        window.roomChannel = db.channel('room-1', {
+            config: {
+                presence: {
+                    key: user.id, // Use User ID as key so duplicates (2 tabs) update the same entry
+                },
             },
-        },
-    });
-
-    // 2. Subscribe to Presence Events (Sync)
-    window.roomChannel
-        .on('presence', { event: 'sync' }, () => {
-            const newState = window.roomChannel.presenceState();
-            renderActiveUsers(newState);
-        })
-        .subscribe(async (status) => {
-            if (status === 'SUBSCRIBED') {
-                // 3. Track (announce) ourselves to the room
-                await window.roomChannel.track(userPayload);
-            }
         });
+
+        // REALTIME ANNOUNCEMENT LISTENER (Connect to room-1)
+        if (window.roomChannel) {
+            window.roomChannel
+                .on('broadcast', { event: 'announcement' }, (payload) => {
+                    console.log("Announcement received:", payload);
+                    if (window.showAnnouncementPopup) {
+                        window.showAnnouncementPopup(payload.payload);
+                    }
+                    // Refresh Sidebar List
+                    if (window.loadRecentAnnouncementsSidebar) {
+                        window.loadRecentAnnouncementsSidebar();
+                    }
+                })
+                .on('broadcast', { event: 'comment' }, (payload) => {
+                    if (window.handleIncomingComment) {
+                        window.handleIncomingComment(payload.payload);
+                    }
+                })
+                .on('broadcast', { event: 'delete_announcement' }, (payload) => {
+                    console.log("Announcement deletion detected:", payload);
+                    if (window.loadRecentAnnouncementsSidebar) {
+                        window.loadRecentAnnouncementsSidebar();
+                    }
+                });
+        }
+
+        // 2. Subscribe to Presence Events (Sync)
+        window.roomChannel
+            .on('presence', { event: 'sync' }, () => {
+                const newState = window.roomChannel.presenceState();
+                renderActiveUsers(newState);
+            })
+            .subscribe(async (status) => {
+                if (status === 'SUBSCRIBED') {
+                    // 3. Track (announce) ourselves to the room
+                    await window.roomChannel.track(userPayload);
+                }
+            });
+    } catch (error) {
+        console.error("Error setting up Supabase Realtime channel:", error);
+        showToast("Failed to connect to live features. Please refresh.", "error");
+    }
+
+
+    // Check for any active global announcement
+    if (window.checkActiveAnnouncements) {
+        window.checkActiveAnnouncements();
+    }
+
+    // Load sidebar announcements
+    loadRecentAnnouncementsSidebar();
 }
 
 /**
@@ -1983,3 +2025,94 @@ async function showHighlightsModal() {
         console.warn("Highlights popup failed:", err);
     }
 }
+/**
+ * --- SIDEBAR ANNOUNCEMENT LIST ---
+ */
+window.loadRecentAnnouncementsSidebar = async function () {
+    const list = document.getElementById('announcements-list');
+    if (!list || !window.db) return;
+
+    try {
+        const fiveMinsAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+        const { data, error } = await window.db
+            .from('notes')
+            .select('*')
+            .eq('color', 'GLOBAL_MSG')
+            .gt('created_at', fiveMinsAgo)
+            .order('created_at', { ascending: false })
+            .limit(5);
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+            list.innerHTML = '<p style="text-align: center; color: #666; font-style: italic; font-size: 0.9rem;">No recent announcements.</p>';
+        } else {
+            const isAdmin = window.user && window.user.sr_code === 'ADMIN';
+
+            list.innerHTML = data.map(ann => {
+                const timeStr = window.timeAgo ? window.timeAgo(ann.created_at) : new Date(ann.created_at).toLocaleTimeString();
+
+                const deleteBtn = isAdmin ? `
+                    <button onclick="event.stopPropagation(); deleteAnnouncementSidebar('${ann.id}')" 
+                            style="position: absolute; top: -5px; right: -5px; background: #d63031; color: #fff; border: 2px solid #000; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.7rem; z-index: 10; box-shadow: 2px 2px 0 rgba(0,0,0,0.1);">
+                        <i class="fas fa-times"></i>
+                    </button>
+                ` : '';
+
+                return `
+                    <div class="ann-mini-card" style="position: relative;" onclick="window.showAnnouncementPopup({id: '${ann.id}', message: \`${ann.content.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`, admin_name: 'Admin'})">
+                        ${deleteBtn}
+                        <div style="font-weight: bold; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
+                            ${escapeHTML(ann.content)}
+                        </div>
+                        <small><i class="fas fa-clock"></i> ${timeStr}</small>
+                    </div>
+                `;
+            }).join('');
+        }
+    } catch (err) {
+        console.error("Sidebar announcements load failed:", err);
+    }
+};
+
+window.deleteAnnouncementSidebar = async function (id) {
+    if (!window.user || window.user.sr_code !== 'ADMIN') return;
+
+    const confirmMsg = "Do you want to delete this announcement and all its comments?";
+    if (window.showWimpyConfirm) {
+        if (!await window.showWimpyConfirm(confirmMsg)) return;
+    } else {
+        if (!confirm(confirmMsg)) return;
+    }
+
+    try {
+        // 1. Delete main announcement
+        const { error: annError } = await window.db
+            .from('notes')
+            .delete()
+            .eq('id', id);
+
+        if (annError) throw annError;
+
+        // 2. Delete linked comments
+        await window.db
+            .from('notes')
+            .delete()
+            .eq('color', 'COMMENT:' + id);
+
+        // 3. Broadcast Deletion
+        if (window.roomChannel) {
+            window.roomChannel.send({
+                type: 'broadcast',
+                event: 'delete_announcement',
+                payload: { id: id }
+            });
+        }
+
+        showToast("Announcement deleted!");
+        loadRecentAnnouncementsSidebar();
+    } catch (err) {
+        console.error("Failed to delete announcement:", err);
+        showToast("Error deleting announcement", "error");
+    }
+};

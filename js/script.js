@@ -97,6 +97,36 @@ const initApp = async () => {
 
     // Start Jumpscare Timer
     startJumpscareTimer();
+    // Start Jumpscare Timer
+    startJumpscareTimer();
+
+    // REALTIME ANNOUNCEMENT LISTENER (Everyone)
+    if (window.db && window.db.channel) {
+        try {
+            const publicChannel = window.db.channel('room-1');
+            publicChannel.on('broadcast', { event: 'announcement' }, (payload) => {
+                console.log("Announcement detected:", payload);
+                if (window.showAnnouncementPopup) {
+                    window.showAnnouncementPopup(payload.payload);
+                }
+            });
+
+            publicChannel.on('broadcast', { event: 'comment' }, (payload) => {
+                if (window.handleIncomingComment) {
+                    window.handleIncomingComment(payload.payload);
+                }
+            });
+
+            publicChannel.subscribe();
+
+            // Check for active announcements
+            if (window.checkActiveAnnouncements) {
+                window.checkActiveAnnouncements();
+            }
+        } catch (e) {
+            console.warn("Realtime initialization delayed:", e);
+        }
+    }
 };
 
 // --- HELPER: Load Public Content ---

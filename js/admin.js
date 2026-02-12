@@ -17,15 +17,16 @@ window.showAdminTool = function (toolId, btnElement) {
             'admin-storage-view': 'storage',
             'admin-promote-form': 'promote',
             'admin-revoke-form': 'revoke',
-            'admin-blacklist-view': 'blacklist' // <--- Added mapping
+            'admin-blacklist-view': 'blacklist',
+            'admin-announcement-form': 'announcement'
         };
 
         const permKey = toolIdToPerm[toolId];
         if (permKey) {
-            // "promote" and "revoke" are strictly for MAIN ADMIN
-            if (permKey === 'promote' || permKey === 'revoke') {
+            // "promote", "revoke", and "announcement" are strictly for MAIN ADMIN
+            if (permKey === 'promote' || permKey === 'revoke' || permKey === 'announcement') {
                 if (window.user.sr_code !== 'ADMIN') {
-                    showToast("Only the BOSS can manage admins!", "error");
+                    showToast("Only the BOSS can do this!", "error");
                     return;
                 }
             } else if (!hasPermission(permKey)) {
@@ -39,7 +40,7 @@ window.showAdminTool = function (toolId, btnElement) {
     document.querySelectorAll('.filter-bar .sketch-btn').forEach(b => b.classList.remove('active-tool'));
 
     // Hide all admin forms
-    const forms = ['admin-schedule-form', 'admin-assignment-form', 'admin-event-form', 'admin-file-form', 'admin-email-form', 'admin-message-manager', 'admin-gallery-form', 'admin-storage-view', 'admin-promote-form', 'admin-revoke-form', 'admin-todo-form'];
+    const forms = ['admin-schedule-form', 'admin-assignment-form', 'admin-event-form', 'admin-file-form', 'admin-email-form', 'admin-message-manager', 'admin-gallery-form', 'admin-storage-view', 'admin-promote-form', 'admin-revoke-form', 'admin-todo-form', 'admin-announcement-form'];
     let isAlreadyOpen = false;
 
     forms.forEach(id => {
@@ -466,3 +467,92 @@ window.quickAddHomeworkToEmail = function () {
     body.value = text;
     body.focus();
 }
+
+// --- REALTIME ANNOUNCEMENT BROADCAST ---
+window.broadcastAnnouncement = async function (e) {
+    e.preventDefault();
+    if (window.user.sr_code !== 'ADMIN') return showToast("Nice try, but only the BOSS can broadcast!", "error");
+
+    const msgInput = document.getElementById('announcement-msg');
+    const btn = document.getElementById('broadcast-btn');
+    const message = msgInput.value.trim();
+
+    if (!message) return showToast("Announcement is empty!", "error");
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connecting...';
+
+    try {
+        // Ensure channel exists (e.g. if broadcasting from Landing Page)
+        if (!window.roomChannel) {
+            console.log("No active channel found. Initializing room-1 for broadcast...");
+            window.roomChannel = window.db.channel('room-1');
+            await window.roomChannel.subscribe();
+        }
+
+        // 1. SAVE TO DATABASE (so users who login later can see it/comment)
+        const { data: dbData, error: dbError } = await window.db.from('notes').insert([{
+            content: message,
+            color: 'GLOBAL_MSG', // Special marker
+            x_pos: 0, // Not used for this note type
+            y_pos: 0,
+            rotation: 0,
+            likes: 0
+        }]).select();
+
+        if (dbError) throw dbError;
+        const announcementId = dbData[0].id;
+
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Broadcasting...';
+        // 2. Send a broadcast event to 'room-1'
+        const resp = await window.roomChannel.send({
+            type: 'broadcast',
+            event: 'announcement',
+            payload: {
+                id: announcementId,
+                message: message,
+                admin_name: window.user.name,
+                admin_avatar: window.user.avatar_url
+            }
+        });
+
+        if (resp !== 'ok') throw new Error("Broadcast failed. Check connection.");
+
+        showToast("📢 Announcement sent to everyone!");
+        msgInput.value = '';
+
+        // Also show locally
+        if (window.showAnnouncementPopup) {
+            window.showAnnouncementPopup({
+                id: announcementId,
+                message: message,
+                admin_name: window.user.name,
+                admin_avatar: window.user.avatar_url
+            });
+        }
+
+    } catch (err) {
+        console.error(err);
+        showToast(err.message, "error");
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-broadcast-tower"></i> BROADCAST NOW';
+    }
+}
+
+// --- AUTO-CLEANUP ANNOUNCEMENTS (Every 5 Minutes) ---
+// This runs for the admin to keep the DB clean as requested
+setInterval(async () => {
+    if (!window.user || window.user.sr_code !== 'ADMIN' || !window.db) return;
+
+    const fiveMinsAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+
+    // Delete old announcements and comments
+    const { error } = await window.db
+        .from('notes')
+        .delete()
+        .or(`color.eq.GLOBAL_MSG,color.ilike.COMMENT:%`)
+        .lt('created_at', fiveMinsAgo);
+
+    if (!error) console.log("System: Cleaned up old announcements/comments.");
+}, 60000); // Check every minute
