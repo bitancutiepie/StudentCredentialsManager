@@ -46,22 +46,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     await populateSubjectOptions(); // <--- Updates buttons based on your actual schedule
 
     // ADD THIS NEW LINE:
-    if (isAdmin) {
-        await populateEmailDropdown();
-        await fetchAdminGalleryList(); // Load gallery items for admin
-        await populatePromoteDropdown(); // Load users for promotion
-        if (user.sr_code === 'ADMIN') {
-            await populateRevokeDropdown(); // Load admins to revoke
-        }
-
-        // Show Admin Privilege Pop-up
-        if (typeof showAdminLoginNotification === 'function') {
-            showAdminLoginNotification();
-        }
-    } else {
-        // For non-admins, show highlights normally after a delay
-        setTimeout(showHighlightsModal, 2000);
-    }
+    // Show highlights (and combined admin info if admin)
+    setTimeout(showHighlightsModal, 2000);
 
     // Heartbeat: Update last_login every 5 minutes while page is open
     setInterval(() => {
@@ -100,7 +86,6 @@ function checkSession() {
     // Check if Admin
     if (user.sr_code === 'ADMIN' || (user.role && (user.role === 'admin' || user.role.startsWith('admin:')))) {
         isAdmin = true;
-        // document.querySelectorAll('.admin-controls').forEach(el => el.style.display = 'block'); // Removed to allow menu toggling
         document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
 
         // Show Revoke and Broadcast button only for Main Admin
@@ -110,6 +95,12 @@ function checkSession() {
             const broadcastBtn = document.getElementById('btn-broadcast-tool');
             if (broadcastBtn) broadcastBtn.classList.remove('hidden');
         }
+
+        // Populate Admin Data
+        populateEmailDropdown();
+        fetchAdminGalleryList();
+        populatePromoteDropdown();
+        if (user.sr_code === 'ADMIN') populateRevokeDropdown();
     }
 }
 
@@ -1787,107 +1778,6 @@ window.deleteGlobalTodo = async function (id) {
 /**
  * Shows a robust admin privileges pop-up when an admin enters the binder.
  */
-function showAdminLoginNotification() {
-    // 1. Basic check
-    if (!isAdmin || !user) return;
-
-    // 2. Define the tools and their descriptive labels (Matching admin.js mapping)
-    const toolDefinitions = [
-        { id: 'schedule', label: 'Class Schedule Management', icon: 'fa-clock' },
-        { id: 'homework', label: 'Homework & Planner Control', icon: 'fa-thumbtack' },
-        { id: 'event', label: 'Event Calendar Editor', icon: 'fa-calendar-alt' },
-        { id: 'file', label: 'File Cabinet & Resources', icon: 'fa-paperclip' },
-        { id: 'todo', label: 'Global To-Do List Power', icon: 'fa-check-double' },
-        { id: 'email', label: 'System Email Blast (Carrier Pigeon)', icon: 'fa-envelope' },
-        { id: 'messages', label: 'Message & Chat Monitor', icon: 'fa-comments' },
-        { id: 'gallery', label: 'Landing Page Gallery Control', icon: 'fa-images' },
-        { id: 'storage', label: 'Bucket Storage Monitor', icon: 'fa-hdd' },
-        { id: 'promote', label: 'Admin Privilege Management', icon: 'fa-crown' },
-        { id: 'revoke', label: 'Admin Access Revocation', icon: 'fa-user-slash' },
-        { id: 'blacklist', label: 'Student Black List (VIP)', icon: 'fa-user-shield' }
-    ];
-
-    const accessibleTools = [];
-
-    // 4. Filter based on permissions
-    toolDefinitions.forEach(tool => {
-        // Special case for promote/revoke which are strictly main admin
-        if (tool.id === 'promote' || tool.id === 'revoke') {
-            if (user.sr_code === 'ADMIN') accessibleTools.push(tool);
-        } else if (hasPermission(tool.id)) {
-            accessibleTools.push(tool);
-        }
-    });
-
-    if (accessibleTools.length === 0) return;
-
-    // 5. Create Modal Elements
-    const overlay = document.createElement('div');
-    overlay.className = 'wimpy-modal-overlay';
-    overlay.id = 'admin-notif-overlay';
-    overlay.style.zIndex = '10005';
-
-    const box = document.createElement('div');
-    box.className = 'wimpy-modal-box';
-    box.style.maxWidth = '450px';
-    box.style.borderWidth = '4px';
-    box.style.background = '#fdfbf7'; // Paper color from CSS
-    box.style.padding = '30px';
-    box.style.transform = 'rotate(-1deg)';
-
-    // Build Tool List HTML
-    let toolsHtml = accessibleTools.map(t =>
-        `<div style="display:flex; align-items:center; gap:12px; height:40px; line-height:40px; box-sizing:border-box; font-family:'Patrick Hand'; font-size:1.25rem;">
-            <div style="background:#000; color:#fff; border-radius:50%; width:24px; height:24px; display:flex; align-items:center; justify-content:center; font-size:0.8rem; transform:translateY(-2px); flex-shrink:0;">
-                <i class="fas ${t.icon}"></i>
-            </div>
-            <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transform:translateY(-2px);">${t.label}</span>
-        </div>`
-    ).join('');
-
-    box.innerHTML = `
-        <div style="text-align:left; position:relative;">
-            <!-- Subtle Decorative Crown -->
-            <div style="position:absolute; top:-45px; right:-20px; font-size:4rem; color:rgba(255, 247, 64, 0.4); transform:rotate(15deg); z-index:-1;">
-                <i class="fas fa-crown"></i>
-            </div>
-            
-            <h2 style="margin:0 0 5px 0; font-size:2.5rem; line-height:1; font-family:'Patrick Hand';">Hoy admin ka!</h2>
-            <p style="font-size:1.15rem; margin-bottom:15px; color:#555; font-style:italic; font-family:'Patrick Hand';">"Eto ang may access ka, Boss:"</p>
-            
-            <!-- Authentic Lined Notebook Container -->
-            <div style="position:relative; background:#fdfbf7; border:3px solid #000; border-radius:3px; margin-bottom:20px; box-shadow:inset 2px 2px 8px rgba(0,0,0,0.1); overflow:hidden;">
-                <!-- Vertical Red Margin Line -->
-                <div style="position:absolute; left:40px; top:0; bottom:0; width:2px; background:rgba(214, 48, 49, 0.4); z-index:1;"></div>
-                
-                <!-- Lined Content Wrapper -->
-                <div style="background: repeating-linear-gradient(transparent, transparent 39px, #a4b0be 40px); background-size: 100% 40px; padding: 0 10px 0 50px; max-height:300px; overflow-y:auto; position:relative; scrollbar-width: thin;">
-                    ${toolsHtml}
-                </div>
-            </div>
-            
-            <button id="close-admin-notif" class="sketch-btn" style="width:100% !important; background:#000; color:#fff; padding: 12px; font-size: 1.5rem; font-family:'Patrick Hand';">
-                TARA G NA!
-            </button>
-        </div>
-    `;
-
-    overlay.appendChild(box);
-    document.body.appendChild(overlay);
-
-    // 6. Handle Close with Animation
-    document.getElementById('close-admin-notif').onclick = async () => {
-        box.style.transition = 'all 0.4s ease';
-        box.style.opacity = '0';
-        box.style.transform = 'translateY(-20px) rotate(2deg)';
-
-        setTimeout(() => {
-            overlay.remove();
-            // --- QUEUE HIGHLIGHTS AFTER ADMIN POPUP ---
-            setTimeout(showHighlightsModal, 500);
-        }, 400);
-    };
-}
 
 // --- HIGHLIGHTS MODAL (QUICK UPDATES) ---
 async function showHighlightsModal() {
@@ -1970,17 +1860,76 @@ async function showHighlightsModal() {
             `;
         }).join('') : '<p style="text-align:center; padding:20px; color:#666; font-style:italic;">No new files uploaded yet. 📂</p>';
 
+        // 4. Admin-Specific Section
+        let adminHtml = '';
+        if (window.isAdmin) {
+            const toolDefinitions = [
+                { id: 'schedule', label: 'Class Schedule Management', icon: 'fa-clock' },
+                { id: 'homework', label: 'Homework & Planner Control', icon: 'fa-thumbtack' },
+                { id: 'event', label: 'Event Calendar Editor', icon: 'fa-calendar-alt' },
+                { id: 'file', label: 'File Cabinet & Resources', icon: 'fa-paperclip' },
+                { id: 'todo', label: 'Global To-Do List Power', icon: 'fa-check-double' },
+                { id: 'email', label: 'System Email Blast (Carrier Pigeon)', icon: 'fa-envelope' },
+                { id: 'messages', label: 'Message & Chat Monitor', icon: 'fa-comments' },
+                { id: 'gallery', label: 'Landing Page Gallery Control', icon: 'fa-images' },
+                { id: 'storage', label: 'Bucket Storage Monitor', icon: 'fa-hdd' },
+                { id: 'promote', label: 'Admin Privilege Management', icon: 'fa-crown' },
+                { id: 'revoke', label: 'Admin Access Revocation', icon: 'fa-user-slash' },
+                { id: 'blacklist', label: 'Student Black List (VIP)', icon: 'fa-user-shield' }
+            ];
+
+            const accessibleTools = [];
+            toolDefinitions.forEach(tool => {
+                if (tool.id === 'promote' || tool.id === 'revoke') {
+                    if (currentUser.sr_code === 'ADMIN') accessibleTools.push(tool);
+                } else if (window.hasPermission && window.hasPermission(tool.id)) {
+                    accessibleTools.push(tool);
+                }
+            });
+
+            if (accessibleTools.length > 0) {
+                const toolsListHtml = accessibleTools.map(t => `
+                    <div style="display:flex; align-items:center; gap:10px; padding:5px 0; font-family:'Patrick Hand';">
+                        <i class="fas ${t.icon}" style="width:20px; text-align:center;"></i>
+                        <span style="font-size:0.95rem;">${t.label}</span>
+                    </div>
+                `).join('');
+
+                adminHtml = `
+                    <div class="highlights-section" style="background:#fdfbf7; border:2px dashed #000; padding:10px; border-radius:3px; margin-bottom:15px;">
+                        <div class="highlights-section-title" style="color:#6c5ce7; border-bottom-color:#6c5ce7;">
+                            <i class="fas fa-crown"></i> Admin Access
+                        </div>
+                        <div style="max-height:120px; overflow-y:auto; padding-right:5px;" class="custom-scroll">
+                            ${toolsListHtml}
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // 5. Create HTML content
+        const headerTitle = window.isAdmin ? 'Hoy admin ka!' : 'WHAT\'S NEW?';
+        const headerIcon = window.isAdmin ? 'fa-crown' : 'fa-bolt';
+        const headerColor = window.isAdmin ? '#6c5ce7' : '#f1c40f';
+        const headerSub = window.isAdmin ? 'Eto ang may access ka, Boss:' : 'Here\'s your quick recap, ';
+
         box.innerHTML = `
-            <div class="highlights-header">
-                <h2><i class="fas fa-bolt" style="color:#f1c40f;"></i> WHAT'S NEW?</h2>
-                <p style="margin:5px 0 0 0; font-family:'Patrick Hand'; font-size:1.1rem;">Here's your quick recap, <b>${currentUser.name.split(' ')[0]}</b>!</p>
+            <div class="highlights-header" style="${window.isAdmin ? 'background:#fffdf0; border-bottom:3px solid #000;' : ''}">
+                <h2 style="${window.isAdmin ? 'color:#000; font-family:\'Patrick Hand\'; font-size:2.5rem;' : ''}">
+                    <i class="fas ${headerIcon}" style="color:${headerColor};"></i> ${headerTitle}
+                </h2>
+                <p style="margin:5px 0 0 0; font-family:'Patrick Hand'; font-size:1.1rem;">
+                    ${headerSub}${window.isAdmin ? '' : `<b>${currentUser.name.split(' ')[0]}</b>!`}
+                </p>
             </div>
             <div class="highlights-content">
+                ${adminHtml}
                 <div class="highlights-section">
                     <div class="highlights-section-title"><i class="fas fa-thumbtack"></i> Homework Alert</div>
                     ${hwHtml}
                 </div>
-                <div class="highlights-section" style="margin-bottom:10px;">
+                <div class="highlights-section">
                     <div class="highlights-section-title"><i class="fas fa-folder-open"></i> New Resources</div>
                     ${filesHtml}
                 </div>
@@ -2033,23 +1982,31 @@ window.loadRecentAnnouncementsSidebar = async function () {
     if (!list || !window.db) return;
 
     try {
-        const fiveMinsAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+        // Fetch last 5 global messages
         const { data, error } = await window.db
             .from('notes')
             .select('*')
             .eq('color', 'GLOBAL_MSG')
-            .gt('created_at', fiveMinsAgo)
             .order('created_at', { ascending: false })
             .limit(5);
 
         if (error) throw error;
 
-        if (!data || data.length === 0) {
+        // Filter for valid (non-expired) announcements
+        const now = Date.now();
+        const validAnnouncements = (data || []).filter(ann => {
+            const createdAt = new Date(ann.created_at).getTime();
+            const durationMins = parseInt(ann.x_pos) || 10;
+            const expiresAt = createdAt + (durationMins * 60 * 1000);
+            return now < expiresAt;
+        });
+
+        if (validAnnouncements.length === 0) {
             list.innerHTML = '<p style="text-align: center; color: #666; font-style: italic; font-size: 0.9rem;">No recent announcements.</p>';
         } else {
             const isAdmin = window.user && window.user.sr_code === 'ADMIN';
 
-            list.innerHTML = data.map(ann => {
+            list.innerHTML = validAnnouncements.map(ann => {
                 const timeStr = window.timeAgo ? window.timeAgo(ann.created_at) : new Date(ann.created_at).toLocaleTimeString();
 
                 const deleteBtn = isAdmin ? `
@@ -2071,7 +2028,7 @@ window.loadRecentAnnouncementsSidebar = async function () {
             }).join('');
         }
     } catch (err) {
-        console.error("Sidebar announcements load failed:", err);
+        console.error("Bulletin announcements load failed:", err);
     }
 };
 

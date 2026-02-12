@@ -499,26 +499,34 @@ window.handleIncomingComment = function (payload) {
  */
 window.checkActiveAnnouncements = async function () {
     if (!window.db) return;
-    const fiveMinsAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
 
     try {
+        // Fetch the latest global message
         const { data, error } = await window.db
             .from('notes')
             .select('*')
             .eq('color', 'GLOBAL_MSG')
-            .gt('created_at', fiveMinsAgo)
             .order('created_at', { ascending: false })
             .limit(1);
 
         if (error) throw error;
         if (data && data.length > 0) {
             const ann = data[0];
-            window.showAnnouncementPopup({
-                id: ann.id,
-                message: ann.content,
-                admin_name: "Admin",
-                admin_avatar: ""
-            });
+
+            // Check if it's still valid based on its stored duration (x_pos)
+            const createdAt = new Date(ann.created_at).getTime();
+            const durationMins = parseInt(ann.x_pos) || 10;
+            const expiresAt = createdAt + (durationMins * 60 * 1000);
+            const now = Date.now();
+
+            if (now < expiresAt) {
+                window.showAnnouncementPopup({
+                    id: ann.id,
+                    message: ann.content,
+                    admin_name: "Admin",
+                    admin_avatar: ""
+                });
+            }
         }
     } catch (err) {
         console.error("Failed to check active announcements:", err);

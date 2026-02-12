@@ -469,32 +469,114 @@ window.quickAddHomeworkToEmail = function () {
 }
 
 // --- REALTIME ANNOUNCEMENT BROADCAST ---
+// --- REALTIME ANNOUNCEMENT BROADCAST ---
 window.broadcastAnnouncement = async function (e) {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     if (window.user.sr_code !== 'ADMIN') return showToast("Nice try, but only the BOSS can broadcast!", "error");
 
     const msgInput = document.getElementById('announcement-msg');
+    const durInput = document.getElementById('announcement-duration');
     const btn = document.getElementById('broadcast-btn');
-    const message = msgInput.value.trim();
 
+    const message = msgInput ? msgInput.value.trim() : "";
+    const duration = parseInt(durInput ? durInput.value : 10) || 10;
+
+    await window.performBroadcast(message, duration, btn);
+    if (msgInput) msgInput.value = '';
+}
+
+window.quickAddAnnouncement = async function () {
+    if (window.user.sr_code !== 'ADMIN') return;
+
+    // Create Modal Elements
+    const overlay = document.createElement('div');
+    overlay.className = 'wimpy-modal-overlay';
+    overlay.id = 'quick-ann-overlay';
+    overlay.style.zIndex = '10006';
+
+    const box = document.createElement('div');
+    box.className = 'wimpy-modal-box';
+    box.style.maxWidth = '400px';
+    box.style.padding = '25px';
+    box.style.background = '#fff';
+    box.style.transform = 'rotate(0.5deg)';
+
+    box.innerHTML = `
+        <div style="text-align:left; position:relative;">
+            <h2 style="margin:0 0 10px 0; font-family:'Patrick Hand'; font-size:1.8rem;">
+                <i class="fas fa-bullhorn" style="color:#d63031;"></i> Quick Broadcast
+            </h2>
+            <p style="font-family:'Patrick Hand'; color:#666; font-size:1rem; margin-bottom:15px;">
+                Type your message and set the duration:
+            </p>
+            
+            <textarea id="qa-msg" placeholder="What's the news, Boss?" 
+                style="width:100%; height:120px; border:3px solid #000; border-radius:3px; padding:15px; font-family:'Patrick Hand'; font-size:1.2rem; background:#fffdf0; box-sizing:border-box; outline:none; margin-bottom:15px;"></textarea>
+            
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:20px; font-family:'Patrick Hand';">
+                <span>Duration:</span>
+                <select id="qa-dur" style="border:2px solid #000; border-radius:3px; padding:5px; font-family:'Patrick Hand';">
+                    <option value="5">5 Mins</option>
+                    <option value="10" selected>10 Mins</option>
+                    <option value="30">30 Mins</option>
+                    <option value="60">1 Hour</option>
+                </select>
+            </div>
+
+            <div style="display:flex; gap:10px;">
+                <button id="qa-cancel" class="sketch-btn danger" style="flex:1;">CANCEL</button>
+                <button id="qa-send" class="sketch-btn" style="flex:2; background:#000; color:#fff;">BROADCAST NOW</button>
+            </div>
+        </div>
+    `;
+
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    // Focus textarea
+    setTimeout(() => document.getElementById('qa-msg').focus(), 100);
+
+    // Cancel logic
+    document.getElementById('qa-cancel').onclick = () => overlay.remove();
+
+    // Send logic
+    document.getElementById('qa-send').onclick = async () => {
+        const msg = document.getElementById('qa-msg').value.trim();
+        const dur = parseInt(document.getElementById('qa-dur').value);
+        const btn = document.getElementById('qa-send');
+
+        if (!msg) {
+            showToast("Message is empty!", "warning");
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+
+        await window.performBroadcast(msg, dur, btn);
+        overlay.remove();
+    };
+};
+
+window.performBroadcast = async function (message, duration, btn = null) {
     if (!message) return showToast("Announcement is empty!", "error");
 
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connecting...';
+    const originalBtnHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connecting...';
+    }
 
     try {
-        // Ensure channel exists (e.g. if broadcasting from Landing Page)
         if (!window.roomChannel) {
-            console.log("No active channel found. Initializing room-1 for broadcast...");
             window.roomChannel = window.db.channel('room-1');
             await window.roomChannel.subscribe();
         }
 
-        // 1. SAVE TO DATABASE (so users who login later can see it/comment)
         const { data: dbData, error: dbError } = await window.db.from('notes').insert([{
             content: message,
-            color: 'GLOBAL_MSG', // Special marker
-            x_pos: 0, // Not used for this note type
+            color: 'GLOBAL_MSG',
+            x_pos: duration,
             y_pos: 0,
             rotation: 0,
             likes: 0
@@ -503,8 +585,8 @@ window.broadcastAnnouncement = async function (e) {
         if (dbError) throw dbError;
         const announcementId = dbData[0].id;
 
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Broadcasting...';
-        // 2. Send a broadcast event to 'room-1'
+        if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Broadcasting...';
+
         const resp = await window.roomChannel.send({
             type: 'broadcast',
             event: 'announcement',
@@ -519,9 +601,7 @@ window.broadcastAnnouncement = async function (e) {
         if (resp !== 'ok') throw new Error("Broadcast failed. Check connection.");
 
         showToast("📢 Announcement sent to everyone!");
-        msgInput.value = '';
 
-        // Also show locally
         if (window.showAnnouncementPopup) {
             window.showAnnouncementPopup({
                 id: announcementId,
@@ -531,28 +611,68 @@ window.broadcastAnnouncement = async function (e) {
             });
         }
 
+        // Refresh sidebar list if it exists
+        if (window.loadRecentAnnouncementsSidebar) {
+            window.loadRecentAnnouncementsSidebar();
+        }
+
     } catch (err) {
         console.error(err);
         showToast(err.message, "error");
     } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-broadcast-tower"></i> BROADCAST NOW';
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalBtnHtml || '<i class="fas fa-broadcast-tower"></i> BROADCAST NOW';
+        }
     }
 }
 
-// --- AUTO-CLEANUP ANNOUNCEMENTS (Every 5 Minutes) ---
+// --- AUTO-CLEANUP ANNOUNCEMENTS (Smart Expiration) ---
 // This runs for the admin to keep the DB clean as requested
 setInterval(async () => {
     if (!window.user || window.user.sr_code !== 'ADMIN' || !window.db) return;
 
-    const fiveMinsAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    try {
+        // 1. Fetch all active announcements
+        const { data: announcements, error: fetchErr } = await window.db
+            .from('notes')
+            .select('id, created_at, x_pos')
+            .eq('color', 'GLOBAL_MSG');
 
-    // Delete old announcements and comments
-    const { error } = await window.db
-        .from('notes')
-        .delete()
-        .or(`color.eq.GLOBAL_MSG,color.ilike.COMMENT:%`)
-        .lt('created_at', fiveMinsAgo);
+        if (fetchErr) throw fetchErr;
 
-    if (!error) console.log("System: Cleaned up old announcements/comments.");
+        const now = Date.now();
+        const expiredIds = [];
+
+        if (announcements) {
+            announcements.forEach(ann => {
+                const createdAt = new Date(ann.created_at).getTime();
+                const durationMs = (parseInt(ann.x_pos) || 10) * 60 * 1000;
+
+                if (now > (createdAt + durationMs)) {
+                    expiredIds.push(ann.id);
+                }
+            });
+        }
+
+        if (expiredIds.length > 0) {
+            console.log("System: Expiring", expiredIds.length, "announcements.");
+
+            // Delete expired announcements
+            await window.db.from('notes').delete().in('id', expiredIds);
+
+            // Also delete associated comments for these expired announcements
+            const commentColors = expiredIds.map(id => `COMMENT:${id}`);
+            await window.db.from('notes').delete().in('color', commentColors);
+        }
+
+        // 2. Legacy/General Cleanup (Delete anything older than 24 hours just in case)
+        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        await window.db.from('notes').delete()
+            .or(`color.eq.GLOBAL_MSG,color.ilike.COMMENT:%`)
+            .lt('created_at', oneDayAgo);
+
+    } catch (err) {
+        console.error("Cleanup error:", err);
+    }
 }, 60000); // Check every minute

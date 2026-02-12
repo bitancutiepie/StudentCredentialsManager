@@ -756,13 +756,39 @@ h2:hover {
         flex-direction: column;
         align-items: center;
         text-align: center;
-        gap: 10px;
-        margin-bottom: 20px;
+        gap: 12px;
+        margin-bottom: 25px;
+        border-radius: 20px;
+        /* Less rounded for multi-line support */
+        padding: 15px;
+        width: 100%;
+        box-sizing: border-box;
     }
 
     .avatar-stack {
         justify-content: center;
         padding-left: 0;
+        flex-wrap: wrap;
+        gap: 8px;
+        /* Use regular gap for wrapped mobile view */
+        padding: 10px 5px;
+        width: 100%;
+    }
+
+    .live-user-bubble {
+        margin-left: 0 !important;
+        /* Remove negative margin stacking on mobile for cleaner wrapping */
+        width: 38px !important;
+        /* Slightly smaller to fit more in a row */
+        height: 38px !important;
+        border-width: 2px !important;
+    }
+
+    .live-user-bubble::after {
+        width: 10px !important;
+        height: 10px !important;
+        bottom: -1px !important;
+        right: -1px !important;
     }
 
     /* Freedom Wall Mobile Fix */
