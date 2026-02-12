@@ -876,6 +876,32 @@
             <div id="links" class="tab-content hidden">
                 <h2><i class="fas fa-folder-open"></i> Subject Files</h2>
 
+                <!-- NEW: Meet Recordings Section -->
+                <div style="margin: 20px 0 35px 0;">
+                    <div class="class-card"
+                        style="border: 2px dashed #0984e3; background: #ebf5ff; transform: rotate(0.5deg); padding: 25px;">
+                        <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+                            <div
+                                style="background: #0984e3; color: white; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; box-shadow: 4px 4px 0 #000;">
+                                <i class="fas fa-play-circle"></i>
+                            </div>
+                            <div style="flex: 1; min-width: 200px;">
+                                <h3
+                                    style="margin: 0; font-family: 'Permanent Marker'; color: #2d3436; font-size: 1.6rem;">
+                                    Meet Recordings</h3>
+                                <p
+                                    style="margin: 5px 0 0 0; font-family: 'Patrick Hand'; font-size: 1.2rem; color: #57606f;">
+                                    (Credits Kay Shawn Yash)</p>
+                            </div>
+                            <a href="https://drive.google.com/drive/folders/1HBE1RM3iIiw-ys0pE7S0l_l1CU_xulE3?fbclid=IwY2xjawP6m6xleHRuA2FlbQIxMABicmlkETF5ckY0cHdXQ3ZoM1hRV1Zmc3J0YwZhcHBfaWQQMjIyMDM5MTc4ODIwMDg5MgABHgEEUqF1FqtJW5Q-J0AZMU99t-y-OL7JelozWIO2Q_ip8kDMC9sgxAySmC7g_aem_2Ftc7ByRrGHVIrh21d0CZQ"
+                                target="_blank" class="sketch-btn"
+                                style="background: #0984e3; color: #fff; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; justify-content: center;">
+                                <i class="fab fa-google-drive"></i> OPEN DRIVE
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Insert above <h3 id="file-filter-label"> -->
                 <div style="position: relative; margin-bottom: 15px;">
                     <input type="text" id="file-search" placeholder="🔍 Search filename..." onkeyup="searchFiles()"
@@ -1370,6 +1396,47 @@
             </button>
             <button onclick="document.getElementById('calendarPromptModal').classList.add('hidden')"
                 class="sketch-btn danger" style="width:100%; justify-content:center;">Cancel</button>
+        </div>
+    </div>
+
+    <!-- SSC Payment Modal -->
+    <div id="sscPaymentModal" class="highlights-overlay hidden" style="z-index: 20002;">
+        <div class="highlights-box" style="transform: rotate(1deg); max-width: 400px; background: #fffdf0;">
+            <div class="highlights-header" style="background: #ff7675;">
+                <h2 style="color: white; transform: rotate(-1deg);"><i class="fas fa-credit-card"></i> SSC MEMBERSHIP
+                </h2>
+            </div>
+            <div class="highlights-content" style="text-align: center; padding: 25px;">
+                <img src="assets/images/payment.png"
+                    style="width: 100%; border: 3px solid #000; border-radius: 5px; margin-bottom: 15px; box-shadow: 4px 4px 0 rgba(0,0,0,0.1);">
+                <p
+                    style="font-size: 1.4rem; font-weight: bold; margin-bottom: 5px; font-family: 'Permanent Marker'; color: #2d3436;">
+                    SSC Membership Fee</p>
+                <p
+                    style="font-size: 2.2rem; color: #d63031; font-weight: bold; margin-bottom: 15px; font-family: 'Permanent Marker';">
+                    ₱45.00</p>
+                <p style="font-size: 1.1rem; color: #636e72; margin-bottom: 20px; font-family: 'Patrick Hand';">
+                    Magbabayad ka o mukhang bayag?</p>
+
+                <label class="custom-checkbox-container"
+                    style="font-size: 1.1rem; justify-content: center; margin-bottom: 20px; font-family: 'Patrick Hand';">
+                    <input type="checkbox" id="ssc-paid-checkbox">
+                    <div class="todo-checkbox small">
+                        <div class="charcoal-x"><svg viewBox="0 0 100 100" style="width:100%; height:100%;">
+                                <path d="M 20,20 L 80,80" fill="none" stroke="#000" stroke-width="12"
+                                    stroke-linecap="round" />
+                                <path d="M 80,20 L 20,80" fill="none" stroke="#000" stroke-width="12"
+                                    stroke-linecap="round" />
+                            </svg></div>
+                    </div>
+                    <span>Already Paid? (Hide forever)</span>
+                </label>
+
+                <button onclick="closeSSCPaymentModal()" class="sketch-btn"
+                    style="width: 100%; background: #000; color: #fff; font-size: 1.2rem; justify-content: center;">
+                    <i class="fas fa-times-circle"></i> REMIND ME LATER
+                </button>
+            </div>
         </div>
     </div>
 

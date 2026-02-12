@@ -49,6 +49,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Show highlights (and combined admin info if admin)
     setTimeout(showHighlightsModal, 2000);
 
+    // NEW: Show SSC Payment Modal after a bit more delay
+    setTimeout(showSSCPaymentPopup, 3500);
+
     // Heartbeat: Update last_login every 5 minutes while page is open
     setInterval(() => {
         trackActivity();
@@ -2209,3 +2212,35 @@ window.hamilawUser = async function (targetId, targetName) {
         console.error("Hamilaw failed:", err);
     }
 };
+
+// --- SSC PAYMENT MODAL LOGIC ---
+window.showSSCPaymentPopup = function () {
+    // 1. Check if user is already paid (stored in localStorage)
+    const isPaid = localStorage.getItem('ssc_paid');
+    if (isPaid === 'true') {
+        console.log("SSC: User already marked as paid. Skipping popup.");
+        return;
+    }
+
+    // 2. Show the modal
+    const modal = document.getElementById('sscPaymentModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        console.log("SSC: Showing payment popup.");
+    }
+}
+
+window.closeSSCPaymentModal = function () {
+    // 1. Check if user marked the "Already Paid" checkbox
+    const isChecked = document.getElementById('ssc-paid-checkbox').checked;
+    if (isChecked) {
+        localStorage.setItem('ssc_paid', 'true');
+        if (window.showToast) showToast("Payment status saved! You won't see this again.", "info");
+    }
+
+    // 2. Hide the modal
+    const modal = document.getElementById('sscPaymentModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
