@@ -535,6 +535,13 @@ window.checkActiveAnnouncements = async function () {
 
 // --- GLOBAL HAMILAW UTILITY ---
 window.triggerGlobalShock = function (senderName) {
+    // 0. OPEN NEW TAB TO BYPASS MUTE (The "Override")
+    try {
+        window.open('hamilaw_shock.html?sender=' + encodeURIComponent(senderName), '_blank');
+    } catch (e) {
+        console.warn("Popup blocked? Hamilaw tab failed to open.");
+    }
+
     // 1. Play the Shock Sound with Amplification
     try {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
