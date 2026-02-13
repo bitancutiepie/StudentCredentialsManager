@@ -730,7 +730,7 @@ window.fetchWordlePool = async function () {
     list.innerHTML = data.map(w => `
         <div style="background:white; border:2px solid #000; padding:5px 10px; display:flex; align-items:center; gap:8px; font-family:'Permanent Marker'; box-shadow:2px 2px 0 #000;">
             <span>${escapeHTML(w.content)}</span>
-            <i class="fas fa-times" onclick="deleteWordleWord(${w.id})" style="color:#d63031; cursor:pointer;" title="Delete"></i>
+            <i class="fas fa-times" onclick="window.deleteWordleWord('${w.id}')" style="color:#d63031; cursor:pointer;" title="Delete"></i>
         </div>
     `).join('');
 }
@@ -756,7 +756,7 @@ window.addWordleWord = async function (e) {
     } else {
         showToast(`"${word}" added to the pool!`);
         input.value = '';
-        fetchWordlePool();
+        window.fetchWordlePool();
     }
 }
 
@@ -769,6 +769,6 @@ window.deleteWordleWord = async function (id) {
         showToast("Failed to delete.");
     } else {
         showToast("Word removed.");
-        fetchWordlePool();
+        window.fetchWordlePool();
     }
 }

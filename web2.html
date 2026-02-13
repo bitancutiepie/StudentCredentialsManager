@@ -997,16 +997,69 @@
             <!-- ================= GAMES TAB ================= -->
             <div id="games" class="tab-content hidden">
                 <div style="text-align: center; margin-bottom: 30px;">
-                    <h2
+                    <h2 id="game-title"
                         style="font-family: 'Permanent Marker'; font-size: 2.5rem; transform: rotate(-2deg); display: inline-block; background: #f1c40f; padding: 5px 20px; border: 3px solid #000; box-shadow: 5px 5px 0 #000;">
                         <i class="fas fa-gamepad"></i> WORDLE
                     </h2>
-                    <p style="font-family: 'Patrick Hand'; font-size: 1.5rem; margin-top: 10px;">Ano kaya ba?</p>
+
+                    <div style="margin-top: 20px; display: flex; justify-content: center; gap: 10px;">
+                        <button class="sketch-btn active" onclick="switchGame('wordle', this)"
+                            style="width: auto;">Wordle</button>
+                        <button class="sketch-btn" onclick="switchGame('minesweeper', this)"
+                            style="width: auto; background: #e74c3c; color: #fff;">Minesweeper</button>
+                    </div>
                 </div>
 
-                <div id="wordle-game-container" class="wordle-container">
-                    <!-- Wordle board and keyboard will be injected here -->
-                    <div class="loader">Loading Wordle...</div>
+                <!-- Wordle Game -->
+                <div id="wordle-game-section">
+                    <p style="text-align: center; font-family: 'Patrick Hand'; font-size: 1.5rem; margin-top: 10px;">Ano
+                        kaya ba?</p>
+                    <div id="wordle-game-container" class="wordle-container">
+                        <!-- Wordle board and keyboard will be injected here -->
+                        <div class="loader">Loading Wordle...</div>
+                    </div>
+                </div>
+
+                <!-- Minesweeper Game -->
+                <div id="minesweeper-game-section" class="hidden">
+                    <p style="text-align: center; font-family: 'Patrick Hand'; font-size: 1.5rem; margin-top: 10px;">
+                        Ingat ka, baka sumabog!</p>
+
+                    <!-- Difficulty & Stats Selector -->
+                    <div
+                        style="text-align: center; margin-bottom: 15px; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <label style="font-family: 'Patrick Hand'; font-size: 1.2rem;">LEVEL:</label>
+                            <select id="ms-difficulty" onchange="initMinesweeper()"
+                                style="font-family: 'Patrick Hand'; font-size: 1.1rem; padding: 5px 15px; border: 2px solid #000; background: #fff; cursor: pointer; border-radius: 5px; box-shadow: 2px 2px 0 #000;">
+                                <option value="easy">Beginner (10x10)</option>
+                                <option value="medium">Intermediate (15x15)</option>
+                                <option value="hard">Expert (20x20)</option>
+                            </select>
+                        </div>
+
+                        <div id="ms-best-time-container"
+                            style="font-family: 'Permanent Marker'; font-size: 1rem; color: #6c5ce7; background: #fffdf0; padding: 5px 15px; border: 2px solid #000; transform: rotate(-1deg); box-shadow: 3px 3px 0 #000;">
+                            <i class="fas fa-crown"></i> BEST: <span id="ms-best-time">--:--</span>
+                        </div>
+                    </div>
+
+                    <div id="minesweeper-container" class="minesweeper-container">
+                        <div class="minesweeper-header">
+                            <div class="ms-stat" title="Mines Remaining">
+                                <i class="fas fa-bomb"></i>
+                                <span id="ms-mine-count">000</span>
+                            </div>
+                            <button id="ms-reset-btn" class="ms-face-btn">
+                                <i class="fas fa-smile"></i>
+                            </button>
+                            <div class="ms-stat" title="Time Elapsed">
+                                <i class="fas fa-clock"></i>
+                                <span id="ms-timer">000</span>
+                            </div>
+                        </div>
+                        <div id="minesweeper-board" class="minesweeper-board"></div>
+                    </div>
                 </div>
 
                 <!-- Wordle Pool Manager (Main Admin Only) -->
@@ -1499,6 +1552,7 @@
     <script src="js/admin.js"></script>
     <script src="js/pdf-scanner.js"></script>
     <script src="js/wordle.js"></script>
+    <script src="js/minesweeper.js"></script>
 
     <!-- PREVIEWER FEATURE & FILE LOGIC (Added Inline) -->
     <script>

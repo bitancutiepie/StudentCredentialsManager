@@ -52,6 +52,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // NEW: Show SSC Payment Modal after a bit more delay
     setTimeout(showSSCPaymentPopup, 3500);
 
+    // NEW: Valentine's Day Surprise (Auto-check)
+    checkValentinesDay();
+
     // Heartbeat: Update last_login every 5 minutes while page is open
     setInterval(() => {
         trackActivity();
@@ -231,6 +234,11 @@ window.switchTab = function (tabId, event) {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
 
+    // Global cleanup for games
+    if (tabId !== 'games' && window.cleanupMinesweeper) {
+        window.cleanupMinesweeper();
+    }
+
     const selectedTab = document.getElementById(tabId);
     if (selectedTab) {
         selectedTab.classList.remove('hidden');
@@ -238,6 +246,30 @@ window.switchTab = function (tabId, event) {
     }
 
     if (targetBtn) targetBtn.classList.add('active');
+}
+
+window.switchGame = function (game, btn) {
+    const title = document.getElementById('game-title');
+    const wordleSection = document.getElementById('wordle-game-section');
+    const msSection = document.getElementById('minesweeper-game-section');
+
+    // Update buttons
+    btn.parentElement.querySelectorAll('.sketch-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    if (game === 'wordle') {
+        title.innerHTML = '<i class="fas fa-gamepad"></i> WORDLE';
+        title.style.background = '#f1c40f';
+        wordleSection.classList.remove('hidden');
+        msSection.classList.add('hidden');
+        if (window.initWimpyWordle) window.initWimpyWordle();
+    } else if (game === 'minesweeper') {
+        title.innerHTML = '<i class="fas fa-bomb"></i> MINESWEEPER';
+        title.style.background = '#e74c3c';
+        wordleSection.classList.add('hidden');
+        msSection.classList.remove('hidden');
+        if (window.initMinesweeper) window.initMinesweeper();
+    }
 }
 
 // --- SCHEDULE LOGIC ---
@@ -2242,5 +2274,120 @@ window.closeSSCPaymentModal = function () {
     const modal = document.getElementById('sscPaymentModal');
     if (modal) {
         modal.classList.add('hidden');
+    }
+}
+
+// --- VALENTINE'S DAY SURPRISE ---
+function checkValentinesDay() {
+    const now = new Date();
+    // Check if Feb 14 (Month is 0-indexed: Jan=0, Feb=1)
+    if (now.getMonth() === 1 && now.getDate() === 14) {
+        console.log("It's Valentine's Day! <3");
+
+        // Inject Font if not present
+        if (!document.querySelector('link[href*="Pacifico"]')) {
+            const fontLink = document.createElement('link');
+            fontLink.href = 'https://fonts.googleapis.com/css2?family=Pacifico&display=swap';
+            fontLink.rel = 'stylesheet';
+            document.head.appendChild(fontLink);
+        }
+
+        // Create Overlay
+        const overlay = document.createElement('div');
+        overlay.id = 'valentines-overlay';
+        Object.assign(overlay.style, {
+            position: 'fixed',
+            top: '0',
+            left: '0',
+            width: '100%',
+            height: '100%',
+            background: 'rgba(0, 0, 0, 0.9)', // Dark transparent background
+            zIndex: '99999',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            cursor: 'pointer',
+            opacity: '0',
+            transition: 'opacity 0.6s ease',
+            backdropFilter: 'blur(5px)' // Nice blur effect
+        });
+
+        // HTML Content & Styles
+        overlay.innerHTML = `
+            <style>
+                @keyframes heartbeat {
+                    0% { transform: scale(1); }
+                    15% { transform: scale(1.3); }
+                    30% { transform: scale(1); }
+                    45% { transform: scale(1.15); }
+                    60% { transform: scale(1); }
+                }
+                @keyframes floatUp {
+                    0% { transform: translateY(110vh) scale(0.5); opacity: 0; }
+                    20% { opacity: 0.8; }
+                    80% { opacity: 0.8; }
+                    100% { transform: translateY(-10vh) scale(1.2); opacity: 0; }
+                }
+                .heart-particle {
+                    position: absolute;
+                    color: #e84393;
+                    top: 100vh;
+                    font-size: 2rem;
+                    pointer-events: none;
+                    animation: floatUp 5s linear infinite;
+                    text-shadow: 0 0 10px rgba(232, 67, 147, 0.5);
+                }
+                .v-text {
+                     text-shadow: 5px 5px 0 #c0392b, 8px 8px 0 #000;
+                }
+            </style>
+            
+            <div style="text-align: center; animation: heartbeat 2s infinite; z-index: 10; position: relative;">
+                <h1 class="v-text" style="font-family: 'Pacifico', cursive; font-size: clamp(3rem, 10vw, 7rem); line-height: 1.1; color: #ff7675; margin: 0; transform: rotate(-5deg);">
+                    Happy<br>Valentine's<br>Day!
+                </h1>
+                <p style="font-family: 'Permanent Marker', cursive; font-size: clamp(1.2rem, 4vw, 2rem); color: #fff; margin-top: 20px; letter-spacing: 2px;">
+                    from: <span style="color: #fdcb6e; text-decoration: underline wavy #ff7675; text-underline-offset: 5px;">ADMIN-JV</span>
+                </p>
+            </div>
+        `;
+
+        // Add Floating Hearts (More of them!)
+        for (let i = 0; i < 40; i++) {
+            const heart = document.createElement('div');
+            const hearts = ['❤', '💖', '💘', '💝', '💓'];
+            heart.innerText = hearts[Math.floor(Math.random() * hearts.length)];
+            heart.className = 'heart-particle';
+
+            // Randomize Props
+            heart.style.left = Math.random() * 100 + 'vw';
+            heart.style.fontSize = (Math.random() * 2 + 1.5) + 'rem';
+            heart.style.animationDuration = (Math.random() * 4 + 3) + 's'; // 3-7s duration
+            heart.style.animationDelay = (Math.random() * 5) + 's'; // Stagger start
+
+            overlay.appendChild(heart);
+        }
+
+        // Close on click
+        overlay.onclick = () => {
+            overlay.style.opacity = '0';
+            setTimeout(() => overlay.remove(), 600);
+        };
+
+        document.body.appendChild(overlay);
+
+        // Fade In
+        setTimeout(() => {
+            overlay.style.opacity = '1';
+        }, 100);
+
+        // Auto dismiss after 10 seconds (enough time to read)
+        setTimeout(() => {
+            if (document.body.contains(overlay)) {
+                overlay.style.opacity = '0';
+                setTimeout(() => overlay.remove(), 600);
+            }
+        }, 10000);
     }
 }
