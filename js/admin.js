@@ -703,3 +703,72 @@ window.broadcastSystemUpdate = async function () {
         showToast("Error sending update signal.", "error");
     }
 };
+
+// --- WORDLE POOL MANAGER ---
+window.fetchWordlePool = async function () {
+    const list = document.getElementById('admin-wordle-list');
+    if (!list) return;
+
+    list.innerHTML = '<div class="loader">Unfolding paper...</div>';
+
+    const { data, error } = await window.db
+        .from('notes')
+        .select('*')
+        .eq('color', 'WORDLE_WORD')
+        .order('content');
+
+    if (error) {
+        list.innerHTML = '<p>Error loading word pool.</p>';
+        return;
+    }
+
+    if (!data || data.length === 0) {
+        list.innerHTML = '<p style="width:100%; text-align:center; font-style:italic;">No custom words yet. Using defaults.</p>';
+        return;
+    }
+
+    list.innerHTML = data.map(w => `
+        <div style="background:white; border:2px solid #000; padding:5px 10px; display:flex; align-items:center; gap:8px; font-family:'Permanent Marker'; box-shadow:2px 2px 0 #000;">
+            <span>${escapeHTML(w.content)}</span>
+            <i class="fas fa-times" onclick="deleteWordleWord(${w.id})" style="color:#d63031; cursor:pointer;" title="Delete"></i>
+        </div>
+    `).join('');
+}
+
+window.addWordleWord = async function (e) {
+    e.preventDefault();
+    const input = document.getElementById('w-new-word');
+    const word = input.value.trim().toUpperCase();
+
+    if (word.length !== 5) return showToast("Word must be exactly 5 letters!");
+
+    const { error } = await window.db.from('notes').insert([{
+        content: word,
+        color: 'WORDLE_WORD',
+        x_pos: 0,
+        y_pos: 0,
+        rotation: 0,
+        likes: 0
+    }]);
+
+    if (error) {
+        showToast("Failed to add word: " + error.message);
+    } else {
+        showToast(`"${word}" added to the pool!`);
+        input.value = '';
+        fetchWordlePool();
+    }
+}
+
+window.deleteWordleWord = async function (id) {
+    if (!await showWimpyConfirm("Delete this word from the pool?")) return;
+
+    const { error } = await window.db.from('notes').delete().eq('id', id);
+
+    if (error) {
+        showToast("Failed to delete.");
+    } else {
+        showToast("Word removed.");
+        fetchWordlePool();
+    }
+}

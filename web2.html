@@ -36,6 +36,7 @@
 
     <link rel="stylesheet" href="css/common.css">
     <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="css/games.css">
     <style>
         /* Group Chat Styles */
         .gc-message {
@@ -242,6 +243,8 @@
             <button class="tab-btn" onclick="switchTab('calendar', event)">Events</button>
             <button class="tab-btn" onclick="switchTab('links', event)">Files</button>
             <button class="tab-btn" onclick="switchTab('help', event)">Help Guide</button>
+            <button class="tab-btn" onclick="switchTab('games', event)" style="background: #f1c40f;"><i
+                    class="fas fa-gamepad"></i> Games</button>
             <button class="tab-btn admin-only hidden" onclick="switchTab('admin-tools', event)"
                 style="background: #2d3436; color: #fff; transform: rotate(-2deg);">Admin Tools</button>
         </div>
@@ -635,182 +638,186 @@
                             </button>
                         </form>
                     </div>
-                </div>
 
-                <!-- NEW: Promote User -->
-                <div class="admin-controls" id="admin-promote-form">
-                    <button onclick="showAdminTool(null)" class="sketch-btn danger"
-                        style="position: absolute; top: 10px; right: 10px; width: auto; margin: 0; padding: 5px 10px; font-size: 0.9rem;">Close</button>
-                    <h3>Admin's Note: Grant Privileges <i class="fas fa-crown"></i></h3>
-                    <p style="font-size: 0.9rem; margin-bottom: 10px;">(Give a user Admin access)</p>
+                    <!-- Admin wordle was here -->
 
-                    <form onsubmit="promoteUser(event)" autocomplete="off">
-                        <select id="promote-user-select"
-                            style="width: 100%; padding: 10px; margin-bottom: 20px; border: none; border-bottom: 2px solid #333; font-family: 'Patrick Hand'; font-size: 1.2rem; background: transparent;">
-                            <option value="" disabled selected>Loading users...</option>
-                        </select>
+                    <!-- NEW: Promote User -->
+                    <div class="admin-controls" id="admin-promote-form">
+                        <button onclick="showAdminTool(null)" class="sketch-btn danger"
+                            style="position: absolute; top: 10px; right: 10px; width: auto; margin: 0; padding: 5px 10px; font-size: 0.9rem;">Close</button>
+                        <h3>Admin's Note: Grant Privileges <i class="fas fa-crown"></i></h3>
+                        <p style="font-size: 0.9rem; margin-bottom: 10px;">(Give a user Admin access)</p>
 
-                        <div style="text-align: left; margin-bottom: 20px;">
-                            <label style="font-weight: bold; display: block; margin-bottom: 10px;">Select Accessible
-                                Tools:</label>
-                            <div
-                                style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-family: 'Patrick Hand';">
-                                <!-- Helper to generating these easier -->
-                                <label class="custom-checkbox-container">
-                                    <input type="checkbox" class="tool-perm" value="schedule" checked>
-                                    <div class="todo-checkbox small">
-                                        <div class="charcoal-x"><svg viewBox="0 0 100 100"
-                                                style="width:100%; height:100%;">
-                                                <path d="M 20,20 L 80,80" fill="none" stroke="#000" stroke-width="12"
-                                                    stroke-linecap="round" />
-                                                <path d="M 80,20 L 20,80" fill="none" stroke="#000" stroke-width="12"
-                                                    stroke-linecap="round" />
-                                            </svg></div>
-                                    </div>
-                                    <span>Class Sched</span>
-                                </label>
-                                <label class="custom-checkbox-container">
-                                    <input type="checkbox" class="tool-perm" value="homework" checked>
-                                    <div class="todo-checkbox small">
-                                        <div class="charcoal-x"><svg viewBox="0 0 100 100"
-                                                style="width:100%; height:100%;">
-                                                <path d="M 20,20 L 80,80" fill="none" stroke="#000" stroke-width="12"
-                                                    stroke-linecap="round" />
-                                                <path d="M 80,20 L 20,80" fill="none" stroke="#000" stroke-width="12"
-                                                    stroke-linecap="round" />
-                                            </svg></div>
-                                    </div>
-                                    <span>Homework</span>
-                                </label>
-                                <label class="custom-checkbox-container">
-                                    <input type="checkbox" class="tool-perm" value="event" checked>
-                                    <div class="todo-checkbox small">
-                                        <div class="charcoal-x"><svg viewBox="0 0 100 100"
-                                                style="width:100%; height:100%;">
-                                                <path d="M 20,20 L 80,80" fill="none" stroke="#000" stroke-width="12"
-                                                    stroke-linecap="round" />
-                                                <path d="M 80,20 L 20,80" fill="none" stroke="#000" stroke-width="12"
-                                                    stroke-linecap="round" />
-                                            </svg></div>
-                                    </div>
-                                    <span>Events</span>
-                                </label>
-                                <label class="custom-checkbox-container">
-                                    <input type="checkbox" class="tool-perm" value="file" checked>
-                                    <div class="todo-checkbox small">
-                                        <div class="charcoal-x"><svg viewBox="0 0 100 100"
-                                                style="width:100%; height:100%;">
-                                                <path d="M 20,20 L 80,80" fill="none" stroke="#000" stroke-width="12"
-                                                    stroke-linecap="round" />
-                                                <path d="M 80,20 L 20,80" fill="none" stroke="#000" stroke-width="12"
-                                                    stroke-linecap="round" />
-                                            </svg></div>
-                                    </div>
-                                    <span>Files</span>
-                                </label>
-                                <label class="custom-checkbox-container">
-                                    <input type="checkbox" class="tool-perm" value="todo" checked>
-                                    <div class="todo-checkbox small">
-                                        <div class="charcoal-x"><svg viewBox="0 0 100 100"
-                                                style="width:100%; height:100%;">
-                                                <path d="M 20,20 L 80,80" fill="none" stroke="#000" stroke-width="12"
-                                                    stroke-linecap="round" />
-                                                <path d="M 80,20 L 20,80" fill="none" stroke="#000" stroke-width="12"
-                                                    stroke-linecap="round" />
-                                            </svg></div>
-                                    </div>
-                                    <span>To-Do</span>
-                                </label>
-                                <label class="custom-checkbox-container">
-                                    <input type="checkbox" class="tool-perm" value="email" checked>
-                                    <div class="todo-checkbox small">
-                                        <div class="charcoal-x"><svg viewBox="0 0 100 100"
-                                                style="width:100%; height:100%;">
-                                                <path d="M 20,20 L 80,80" fill="none" stroke="#000" stroke-width="12"
-                                                    stroke-linecap="round" />
-                                                <path d="M 80,20 L 20,80" fill="none" stroke="#000" stroke-width="12"
-                                                    stroke-linecap="round" />
-                                            </svg></div>
-                                    </div>
-                                    <span>Email</span>
-                                </label>
-                                <label class="custom-checkbox-container">
-                                    <input type="checkbox" class="tool-perm" value="messages" checked>
-                                    <div class="todo-checkbox small">
-                                        <div class="charcoal-x"><svg viewBox="0 0 100 100"
-                                                style="width:100%; height:100%;">
-                                                <path d="M 20,20 L 80,80" fill="none" stroke="#000" stroke-width="12"
-                                                    stroke-linecap="round" />
-                                                <path d="M 80,20 L 20,80" fill="none" stroke="#000" stroke-width="12"
-                                                    stroke-linecap="round" />
-                                            </svg></div>
-                                    </div>
-                                    <span>Messages</span>
-                                </label>
-                                <label class="custom-checkbox-container">
-                                    <input type="checkbox" class="tool-perm" value="gallery" checked>
-                                    <div class="todo-checkbox small">
-                                        <div class="charcoal-x"><svg viewBox="0 0 100 100"
-                                                style="width:100%; height:100%;">
-                                                <path d="M 20,20 L 80,80" fill="none" stroke="#000" stroke-width="12"
-                                                    stroke-linecap="round" />
-                                                <path d="M 80,20 L 20,80" fill="none" stroke="#000" stroke-width="12"
-                                                    stroke-linecap="round" />
-                                            </svg></div>
-                                    </div>
-                                    <span>Gallery</span>
-                                </label>
-                                <label class="custom-checkbox-container">
-                                    <input type="checkbox" class="tool-perm" value="storage" checked>
-                                    <div class="todo-checkbox small">
-                                        <div class="charcoal-x"><svg viewBox="0 0 100 100"
-                                                style="width:100%; height:100%;">
-                                                <path d="M 20,20 L 80,80" fill="none" stroke="#000" stroke-width="12"
-                                                    stroke-linecap="round" />
-                                                <path d="M 80,20 L 20,80" fill="none" stroke="#000" stroke-width="12"
-                                                    stroke-linecap="round" />
-                                            </svg></div>
-                                    </div>
-                                    <span>Storage</span>
-                                </label>
-                                <label class="custom-checkbox-container">
-                                    <input type="checkbox" class="tool-perm" value="blacklist">
-                                    <div class="todo-checkbox small">
-                                        <div class="charcoal-x"><svg viewBox="0 0 100 100"
-                                                style="width:100%; height:100%;">
-                                                <path d="M 20,20 L 80,80" fill="none" stroke="#000" stroke-width="12"
-                                                    stroke-linecap="round" />
-                                                <path d="M 80,20 L 20,80" fill="none" stroke="#000" stroke-width="12"
-                                                    stroke-linecap="round" />
-                                            </svg></div>
-                                    </div>
-                                    <span>Black List</span>
-                                </label>
+                        <form onsubmit="promoteUser(event)" autocomplete="off">
+                            <select id="promote-user-select"
+                                style="width: 100%; padding: 10px; margin-bottom: 20px; border: none; border-bottom: 2px solid #333; font-family: 'Patrick Hand'; font-size: 1.2rem; background: transparent;">
+                                <option value="" disabled selected>Loading users...</option>
+                            </select>
+
+                            <div style="text-align: left; margin-bottom: 20px;">
+                                <label style="font-weight: bold; display: block; margin-bottom: 10px;">Select Accessible
+                                    Tools:</label>
+                                <div
+                                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-family: 'Patrick Hand';">
+                                    <!-- Helper to generating these easier -->
+                                    <label class="custom-checkbox-container">
+                                        <input type="checkbox" class="tool-perm" value="schedule" checked>
+                                        <div class="todo-checkbox small">
+                                            <div class="charcoal-x"><svg viewBox="0 0 100 100"
+                                                    style="width:100%; height:100%;">
+                                                    <path d="M 20,20 L 80,80" fill="none" stroke="#000"
+                                                        stroke-width="12" stroke-linecap="round" />
+                                                    <path d="M 80,20 L 20,80" fill="none" stroke="#000"
+                                                        stroke-width="12" stroke-linecap="round" />
+                                                </svg></div>
+                                        </div>
+                                        <span>Class Sched</span>
+                                    </label>
+                                    <label class="custom-checkbox-container">
+                                        <input type="checkbox" class="tool-perm" value="homework" checked>
+                                        <div class="todo-checkbox small">
+                                            <div class="charcoal-x"><svg viewBox="0 0 100 100"
+                                                    style="width:100%; height:100%;">
+                                                    <path d="M 20,20 L 80,80" fill="none" stroke="#000"
+                                                        stroke-width="12" stroke-linecap="round" />
+                                                    <path d="M 80,20 L 20,80" fill="none" stroke="#000"
+                                                        stroke-width="12" stroke-linecap="round" />
+                                                </svg></div>
+                                        </div>
+                                        <span>Homework</span>
+                                    </label>
+                                    <label class="custom-checkbox-container">
+                                        <input type="checkbox" class="tool-perm" value="event" checked>
+                                        <div class="todo-checkbox small">
+                                            <div class="charcoal-x"><svg viewBox="0 0 100 100"
+                                                    style="width:100%; height:100%;">
+                                                    <path d="M 20,20 L 80,80" fill="none" stroke="#000"
+                                                        stroke-width="12" stroke-linecap="round" />
+                                                    <path d="M 80,20 L 20,80" fill="none" stroke="#000"
+                                                        stroke-width="12" stroke-linecap="round" />
+                                                </svg></div>
+                                        </div>
+                                        <span>Events</span>
+                                    </label>
+                                    <label class="custom-checkbox-container">
+                                        <input type="checkbox" class="tool-perm" value="file" checked>
+                                        <div class="todo-checkbox small">
+                                            <div class="charcoal-x"><svg viewBox="0 0 100 100"
+                                                    style="width:100%; height:100%;">
+                                                    <path d="M 20,20 L 80,80" fill="none" stroke="#000"
+                                                        stroke-width="12" stroke-linecap="round" />
+                                                    <path d="M 80,20 L 20,80" fill="none" stroke="#000"
+                                                        stroke-width="12" stroke-linecap="round" />
+                                                </svg></div>
+                                        </div>
+                                        <span>Files</span>
+                                    </label>
+                                    <label class="custom-checkbox-container">
+                                        <input type="checkbox" class="tool-perm" value="todo" checked>
+                                        <div class="todo-checkbox small">
+                                            <div class="charcoal-x"><svg viewBox="0 0 100 100"
+                                                    style="width:100%; height:100%;">
+                                                    <path d="M 20,20 L 80,80" fill="none" stroke="#000"
+                                                        stroke-width="12" stroke-linecap="round" />
+                                                    <path d="M 80,20 L 20,80" fill="none" stroke="#000"
+                                                        stroke-width="12" stroke-linecap="round" />
+                                                </svg></div>
+                                        </div>
+                                        <span>To-Do</span>
+                                    </label>
+                                    <label class="custom-checkbox-container">
+                                        <input type="checkbox" class="tool-perm" value="email" checked>
+                                        <div class="todo-checkbox small">
+                                            <div class="charcoal-x"><svg viewBox="0 0 100 100"
+                                                    style="width:100%; height:100%;">
+                                                    <path d="M 20,20 L 80,80" fill="none" stroke="#000"
+                                                        stroke-width="12" stroke-linecap="round" />
+                                                    <path d="M 80,20 L 20,80" fill="none" stroke="#000"
+                                                        stroke-width="12" stroke-linecap="round" />
+                                                </svg></div>
+                                        </div>
+                                        <span>Email</span>
+                                    </label>
+                                    <label class="custom-checkbox-container">
+                                        <input type="checkbox" class="tool-perm" value="messages" checked>
+                                        <div class="todo-checkbox small">
+                                            <div class="charcoal-x"><svg viewBox="0 0 100 100"
+                                                    style="width:100%; height:100%;">
+                                                    <path d="M 20,20 L 80,80" fill="none" stroke="#000"
+                                                        stroke-width="12" stroke-linecap="round" />
+                                                    <path d="M 80,20 L 20,80" fill="none" stroke="#000"
+                                                        stroke-width="12" stroke-linecap="round" />
+                                                </svg></div>
+                                        </div>
+                                        <span>Messages</span>
+                                    </label>
+                                    <label class="custom-checkbox-container">
+                                        <input type="checkbox" class="tool-perm" value="gallery" checked>
+                                        <div class="todo-checkbox small">
+                                            <div class="charcoal-x"><svg viewBox="0 0 100 100"
+                                                    style="width:100%; height:100%;">
+                                                    <path d="M 20,20 L 80,80" fill="none" stroke="#000"
+                                                        stroke-width="12" stroke-linecap="round" />
+                                                    <path d="M 80,20 L 20,80" fill="none" stroke="#000"
+                                                        stroke-width="12" stroke-linecap="round" />
+                                                </svg></div>
+                                        </div>
+                                        <span>Gallery</span>
+                                    </label>
+                                    <label class="custom-checkbox-container">
+                                        <input type="checkbox" class="tool-perm" value="storage" checked>
+                                        <div class="todo-checkbox small">
+                                            <div class="charcoal-x"><svg viewBox="0 0 100 100"
+                                                    style="width:100%; height:100%;">
+                                                    <path d="M 20,20 L 80,80" fill="none" stroke="#000"
+                                                        stroke-width="12" stroke-linecap="round" />
+                                                    <path d="M 80,20 L 20,80" fill="none" stroke="#000"
+                                                        stroke-width="12" stroke-linecap="round" />
+                                                </svg></div>
+                                        </div>
+                                        <span>Storage</span>
+                                    </label>
+                                    <label class="custom-checkbox-container">
+                                        <input type="checkbox" class="tool-perm" value="blacklist">
+                                        <div class="todo-checkbox small">
+                                            <div class="charcoal-x"><svg viewBox="0 0 100 100"
+                                                    style="width:100%; height:100%;">
+                                                    <path d="M 20,20 L 80,80" fill="none" stroke="#000"
+                                                        stroke-width="12" stroke-linecap="round" />
+                                                    <path d="M 80,20 L 20,80" fill="none" stroke="#000"
+                                                        stroke-width="12" stroke-linecap="round" />
+                                                </svg></div>
+                                        </div>
+                                        <span>Black List</span>
+                                    </label>
+                                </div>
                             </div>
-                        </div>
 
-                        <button type="submit" class="sketch-btn" style="background: #000; color: #fff; width: 100%;"><i
-                                class="fas fa-check-circle"></i> Make Admin</button>
-                    </form>
-                </div>
+                            <button type="submit" class="sketch-btn"
+                                style="background: #000; color: #fff; width: 100%;"><i class="fas fa-check-circle"></i>
+                                Make Admin</button>
+                        </form>
+                    </div>
 
-                <!-- NEW: Revoke Admin (Main Admin Only) -->
-                <div class="admin-controls" id="admin-revoke-form">
-                    <button onclick="showAdminTool(null)" class="sketch-btn danger"
-                        style="position: absolute; top: 10px; right: 10px; width: auto; margin: 0; padding: 5px 10px; font-size: 0.9rem;">Close</button>
-                    <h3>Admin's Note: Revoke Access <i class="fas fa-user-slash"></i></h3>
-                    <p style="font-size: 0.9rem; margin-bottom: 10px;">(Demote an Admin back to Student)</p>
+                    <!-- NEW: Revoke Admin (Main Admin Only) -->
+                    <div class="admin-controls" id="admin-revoke-form">
+                        <button onclick="showAdminTool(null)" class="sketch-btn danger"
+                            style="position: absolute; top: 10px; right: 10px; width: auto; margin: 0; padding: 5px 10px; font-size: 0.9rem;">Close</button>
+                        <h3>Admin's Note: Revoke Access <i class="fas fa-user-slash"></i></h3>
+                        <p style="font-size: 0.9rem; margin-bottom: 10px;">(Demote an Admin back to Student)</p>
 
-                    <form onsubmit="revokeAdmin(event)" autocomplete="off">
-                        <select id="revoke-user-select"
-                            style="width: 100%; padding: 10px; margin-bottom: 10px; border: none; border-bottom: 2px solid #333; font-family: 'Patrick Hand'; font-size: 1.2rem; background: transparent;">
-                            <option value="" disabled selected>Loading admins...</option>
-                        </select>
-                        <button type="submit" class="sketch-btn danger" style="width: 100%; justify-content: center;"><i
-                                class="fas fa-ban"></i> Revoke Access</button>
-                    </form>
-                </div>
-            </div>
+                        <form onsubmit="revokeAdmin(event)" autocomplete="off">
+                            <select id="revoke-user-select"
+                                style="width: 100%; padding: 10px; margin-bottom: 10px; border: none; border-bottom: 2px solid #333; font-family: 'Patrick Hand'; font-size: 1.2rem; background: transparent;">
+                                <option value="" disabled selected>Loading admins...</option>
+                            </select>
+                            <button type="submit" class="sketch-btn danger"
+                                style="width: 100%; justify-content: center;"><i class="fas fa-ban"></i> Revoke
+                                Access</button>
+                        </form>
+                    </div>
+                </div> <!-- End Grid Container -->
+            </div> <!-- End Admin Tools -->
 
             <!-- ================= SCHEDULE TAB ================= -->
             <div id="schedule" class="tab-content">
@@ -983,6 +990,51 @@
                         <h3><i class="fas fa-user-secret"></i> Secret Requests</h3>
                         <p>Found a bug? Want to suggest a feature? Use the <b>"Secret Request"</b> card in the Files tab
                             to send an anonymous note to the admin.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= GAMES TAB ================= -->
+            <div id="games" class="tab-content hidden">
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <h2
+                        style="font-family: 'Permanent Marker'; font-size: 2.5rem; transform: rotate(-2deg); display: inline-block; background: #f1c40f; padding: 5px 20px; border: 3px solid #000; box-shadow: 5px 5px 0 #000;">
+                        <i class="fas fa-gamepad"></i> WORDLE
+                    </h2>
+                    <p style="font-family: 'Patrick Hand'; font-size: 1.5rem; margin-top: 10px;">Ano kaya ba?</p>
+                </div>
+
+                <div id="wordle-game-container" class="wordle-container">
+                    <!-- Wordle board and keyboard will be injected here -->
+                    <div class="loader">Loading Wordle...</div>
+                </div>
+
+                <!-- Wordle Pool Manager (Main Admin Only) -->
+                <div id="wordle-pool-section" class="admin-only hidden"
+                    style="margin-top: 50px; border-top: 3px dashed #000; padding-top: 30px;">
+                    <div
+                        style="background: #fff; border: 3px solid #000; padding: 20px; box-shadow: 6px 6px 0 #000; max-width: 600px; margin: 0 auto;">
+                        <h3 style="font-family: 'Permanent Marker'; margin-top: 0;"><i class="fas fa-spell-check"></i>
+                            WORD
+                            POOL MANAGER</h3>
+                        <p style="font-family: 'Patrick Hand'; font-size: 1.1rem; color: #666; margin-bottom: 15px;">
+                            (Add/Remove words for everyone's Wordle game)</p>
+
+                        <form onsubmit="addWordleWord(event)" autocomplete="off" style="margin-bottom: 20px;">
+                            <div style="display: flex; gap: 10px;">
+                                <input type="text" id="w-new-word" placeholder="NEW WORD" maxlength="5" required
+                                    style="text-transform: uppercase; font-family: 'Permanent Marker'; font-size: 1.2rem; flex: 1; border: 2px solid #000; padding: 10px;">
+                                <button type="submit" class="sketch-btn"
+                                    style="background: #000; color: #fff; width: auto; padding: 10px 20px;">
+                                    <i class="fas fa-plus"></i> ADD
+                                </button>
+                            </div>
+                        </form>
+
+                        <div id="admin-wordle-list"
+                            style="max-height: 200px; overflow-y: auto; border: 2px solid #000; padding: 15px; background: #fffdf0; display: flex; flex-wrap: wrap; gap: 8px;">
+                            <div class="loader">Checking list...</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1446,6 +1498,7 @@
     <script src="js/messaging.js"></script>
     <script src="js/admin.js"></script>
     <script src="js/pdf-scanner.js"></script>
+    <script src="js/wordle.js"></script>
 
     <!-- PREVIEWER FEATURE & FILE LOGIC (Added Inline) -->
     <script>
