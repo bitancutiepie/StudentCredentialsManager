@@ -252,6 +252,7 @@ window.switchGame = function (game, btn) {
     const title = document.getElementById('game-title');
     const wordleSection = document.getElementById('wordle-game-section');
     const msSection = document.getElementById('minesweeper-game-section');
+    const battleSection = document.getElementById('battle-game-section');
 
     // Update buttons
     btn.parentElement.querySelectorAll('.sketch-btn').forEach(b => b.classList.remove('active'));
@@ -260,15 +261,27 @@ window.switchGame = function (game, btn) {
     if (game === 'wordle') {
         title.innerHTML = '<i class="fas fa-gamepad"></i> WORDLE';
         title.style.background = '#f1c40f';
+        title.style.color = '#000';
         wordleSection.classList.remove('hidden');
         msSection.classList.add('hidden');
+        if (battleSection) battleSection.classList.add('hidden');
         if (window.initWimpyWordle) window.initWimpyWordle();
     } else if (game === 'minesweeper') {
         title.innerHTML = '<i class="fas fa-bomb"></i> MINESWEEPER';
         title.style.background = '#e74c3c';
+        title.style.color = '#000';
         wordleSection.classList.add('hidden');
         msSection.classList.remove('hidden');
+        if (battleSection) battleSection.classList.add('hidden');
         if (window.initMinesweeper) window.initMinesweeper();
+    } else if (game === 'battle') {
+        title.innerHTML = '⚔️ CREATURE BATTLE';
+        title.style.background = '#6c5ce7';
+        title.style.color = '#fff';
+        wordleSection.classList.add('hidden');
+        msSection.classList.add('hidden');
+        if (battleSection) battleSection.classList.remove('hidden');
+        if (window.initCreatureBattle) window.initCreatureBattle();
     }
 }
 
@@ -947,6 +960,22 @@ async function initLiveTracking() {
                 .on('broadcast', { event: 'system_reload' }, () => {
                     showToast("📦 System Update: Refreshing in 3s...", "info");
                     setTimeout(() => location.reload(true), 3000);
+                })
+                // --- CREATURE BATTLE EVENTS ---
+                .on('broadcast', { event: 'battle_invite' }, (payload) => {
+                    if (window.handleBattleEvent) window.handleBattleEvent('battle_invite', payload.payload);
+                })
+                .on('broadcast', { event: 'battle_accept' }, (payload) => {
+                    if (window.handleBattleEvent) window.handleBattleEvent('battle_accept', payload.payload);
+                })
+                .on('broadcast', { event: 'battle_decline' }, (payload) => {
+                    if (window.handleBattleEvent) window.handleBattleEvent('battle_decline', payload.payload);
+                })
+                .on('broadcast', { event: 'battle_choice' }, (payload) => {
+                    if (window.handleBattleEvent) window.handleBattleEvent('battle_choice', payload.payload);
+                })
+                .on('broadcast', { event: 'battle_cancel' }, (payload) => {
+                    if (window.handleBattleEvent) window.handleBattleEvent('battle_cancel', payload.payload);
                 });
         }
 

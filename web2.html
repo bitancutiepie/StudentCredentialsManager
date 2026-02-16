@@ -1002,11 +1002,13 @@
                         <i class="fas fa-gamepad"></i> WORDLE
                     </h2>
 
-                    <div style="margin-top: 20px; display: flex; justify-content: center; gap: 10px;">
+                    <div style="margin-top: 20px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
                         <button class="sketch-btn active" onclick="switchGame('wordle', this)"
                             style="width: auto;">Wordle</button>
                         <button class="sketch-btn" onclick="switchGame('minesweeper', this)"
                             style="width: auto; background: #e74c3c; color: #fff;">Minesweeper</button>
+                        <button class="sketch-btn" onclick="switchGame('battle', this)"
+                            style="width: auto; background: #6c5ce7; color: #fff;">⚔️ Battle</button>
                     </div>
                 </div>
 
@@ -1059,6 +1061,15 @@
                             </div>
                         </div>
                         <div id="minesweeper-board" class="minesweeper-board"></div>
+                    </div>
+                </div>
+
+                <!-- Creature Battle Game -->
+                <div id="battle-game-section" class="hidden">
+                    <p style="text-align: center; font-family: 'Patrick Hand'; font-size: 1.5rem; margin-top: 10px;">
+                        Sino ang pinakamatapang?</p>
+                    <div id="battle-game-container">
+                        <div class="loader">Summoning creatures...</div>
                     </div>
                 </div>
 
@@ -1553,6 +1564,7 @@
     <script src="js/pdf-scanner.js"></script>
     <script src="js/wordle.js"></script>
     <script src="js/minesweeper.js"></script>
+    <script src="js/creature-battle.js"></script>
 
     <!-- PREVIEWER FEATURE & FILE LOGIC (Added Inline) -->
     <script>
