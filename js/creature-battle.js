@@ -231,12 +231,29 @@
         var from_name = data.from_name;
         var from_avatar = data.from_avatar;
 
-        if (battleState !== 'idle') {
+        // ALLOW invites if idle OR if looking at results (Rematch flow)
+        if (battleState !== 'idle' && battleState !== 'result') {
             window.roomChannel.send({
                 type: 'broadcast',
                 event: 'battle_decline',
                 payload: { battle_id: battle_id, from_id: window.user.id, to_id: from_id, reason: 'busy' }
             });
+            return;
+        }
+
+        // TREND: If same opponent sends invite while we are at results, show it as a rematch request
+        if (battleState === 'result' && from_id === opponentId) {
+            pendingInviteFrom = data;
+            var statusEl = document.getElementById('rematch-status-text');
+            if (statusEl) {
+                statusEl.innerHTML = '<div style="margin: 10px 0; padding: 5px; background: rgba(108, 92, 231, 0.1); border-radius: 5px; color: #6c5ce7; font-weight: bold; animation: pulse 1.5s infinite;">' + escapeHTML(from_name) + ' wants a rematch!</div>';
+            }
+            var retryBtn = document.getElementById('battle-play-again-btn');
+            if (retryBtn) {
+                retryBtn.innerHTML = '<i class="fas fa-play"></i> ACCEPT REMATCH';
+                retryBtn.style.background = '#6c5ce7';
+                retryBtn.onclick = function () { window.acceptBattleInvite(); };
+            }
             return;
         }
 
@@ -589,7 +606,8 @@
             resultArea.innerHTML = '<div class="battle-result-splash" style="background: ' + cfg.bg + '; border-color: ' + cfg.color + ';">' +
                 '<h2 class="battle-result-text" style="color: ' + cfg.color + ';">' + cfg.text + '</h2>' +
                 '<p style="font-family: Patrick Hand; font-size: 1.2rem; color: #555;">' + cfg.desc + '</p>' +
-                '<button class="sketch-btn" onclick="window.battlePlayAgain()" style="background: ' + cfg.color + '; color: #fff; width: auto; margin-top: 15px; font-size: 1.1rem; padding: 10px 30px;"><i class="fas fa-redo"></i> PLAY AGAIN</button>' +
+                '<div id="rematch-status-text"></div>' +
+                '<button id="battle-play-again-btn" class="sketch-btn" onclick="window.battlePlayAgain()" style="background: ' + cfg.color + '; color: #fff; width: auto; margin-top: 15px; font-size: 1.1rem; padding: 10px 30px;"><i class="fas fa-redo"></i> PLAY AGAIN</button>' +
                 '<button class="sketch-btn" onclick="window.battleBackToLobby()" style="width: auto; margin-top: 10px; font-size: 1rem; padding: 8px 20px;">Back to Lobby</button>' +
                 '</div>';
         }
