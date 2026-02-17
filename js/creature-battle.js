@@ -100,6 +100,19 @@
                     </button>
                 </div>
 
+                <!-- Leaderboard Section -->
+                <div id="battle-leaderboard-section" class="battle-leaderboard-section">
+                    <div class="lb-header" onclick="window.toggleLeaderboard()">
+                        <h3><i class="fas fa-trophy"></i> LEADERBOARD</h3>
+                        <i class="fas fa-chevron-down" id="lb-toggle-icon"></i>
+                    </div>
+                    <div id="battle-leaderboard-content" class="lb-content">
+                        <div style="text-align: center; padding: 20px; color: #999; font-family: 'Patrick Hand';">
+                            <i class="fas fa-spinner fa-spin"></i> Loading...
+                        </div>
+                    </div>
+                </div>
+
                 <div class="battle-creature-showcase">
                     ${Object.entries(CREATURES).map(([key, c]) => `
                         <div class="tcg-card" data-creature="${key}">
@@ -125,6 +138,159 @@
                 </div>
             </div>
         `;
+
+        // Load leaderboard data
+        loadLeaderboard();
+    }
+
+    // ==================== LEADERBOARD TOGGLE ====================
+    window.toggleLeaderboard = function () {
+        var content = document.getElementById('battle-leaderboard-content');
+        var icon = document.getElementById('lb-toggle-icon');
+        if (!content) return;
+        content.classList.toggle('lb-collapsed');
+        if (icon) {
+            icon.classList.toggle('fa-chevron-down');
+            icon.classList.toggle('fa-chevron-up');
+        }
+    };
+
+    // ==================== LEADERBOARD ====================
+    async function loadLeaderboard() {
+        if (!window.db) return;
+
+        try {
+            var { data, error } = await window.db
+                .from('students')
+                .select('id, name, avatar_url, battle_wins, battle_losses')
+                .or('battle_wins.gt.0,battle_losses.gt.0');
+
+            if (error) {
+                console.error('Leaderboard fetch error:', error);
+                renderLeaderboard([]);
+                return;
+            }
+
+            // Calculate score and sort
+            var ranked = (data || []).map(function (s) {
+                var wins = s.battle_wins || 0;
+                var losses = s.battle_losses || 0;
+                var total = wins + losses;
+                var winRate = total > 0 ? wins / total : 0;
+                return {
+                    id: s.id,
+                    name: s.name,
+                    avatar: s.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(s.name) + '&background=random',
+                    wins: wins,
+                    losses: losses,
+                    score: (wins * 3) - losses,
+                    winRate: winRate,
+                    total: total
+                };
+            });
+
+            ranked.sort(function (a, b) {
+                if (b.score !== a.score) return b.score - a.score;
+                return b.wins - a.wins;
+            });
+
+            renderLeaderboard(ranked);
+        } catch (err) {
+            console.error('Leaderboard error:', err);
+            renderLeaderboard([]);
+        }
+    }
+
+    function getStars(winRate) {
+        if (winRate >= 0.8) return 3;
+        if (winRate >= 0.5) return 2;
+        if (winRate > 0) return 1;
+        return 0;
+    }
+
+    function renderLeaderboard(ranked) {
+        var container = document.getElementById('battle-leaderboard-content');
+        if (!container) return;
+
+        if (!ranked || ranked.length === 0) {
+            container.innerHTML = '<div style="text-align: center; padding: 30px; font-family: Patrick Hand; color: #999; font-size: 1.2rem;"><i class="fas fa-ghost" style="font-size: 2rem; margin-bottom: 10px; display: block;"></i>No battles yet. Be the first to fight!</div>';
+            return;
+        }
+
+        var topPlayer = ranked[0];
+        var topStars = getStars(topPlayer.winRate);
+        var starHTML = '';
+        for (var s = 0; s < topStars; s++) starHTML += '<i class="fas fa-star"></i>';
+
+        var html = '<div class="lb-layout">';
+
+        // Top player card
+        html += '<div class="lb-top-player">';
+        html += '<div class="lb-top-rank-badge">1<sup>st</sup> Rank</div>';
+        html += '<div class="lb-top-avatar-wrap"><img src="' + topPlayer.avatar + '" alt="' + escapeHTML(topPlayer.name) + '" class="lb-top-avatar"></div>';
+        html += '<div class="lb-top-stars">' + (starHTML || '<i class="far fa-star"></i>') + '</div>';
+        html += '<div class="lb-top-name">' + escapeHTML(topPlayer.name) + '</div>';
+        html += '<div class="lb-top-score">' + topPlayer.score + '</div>';
+        html += '<div class="lb-top-score-label">Points</div>';
+        html += '<div class="lb-top-stats"><span class="lb-wl-win"><i class="fas fa-check"></i> ' + topPlayer.wins + 'W</span> <span class="lb-wl-lose"><i class="fas fa-times"></i> ' + topPlayer.losses + 'L</span></div>';
+        html += '</div>';
+
+        // Ranked list
+        html += '<div class="lb-list">';
+        for (var i = 0; i < ranked.length; i++) {
+            var p = ranked[i];
+            var rank = i + 1;
+            var pStars = getStars(p.winRate);
+            var pStarHTML = '';
+            for (var j = 0; j < pStars; j++) pStarHTML += '<i class="fas fa-star"></i>';
+            if (pStars === 0) pStarHTML = '<i class="far fa-star"></i>';
+
+            var rankClass = 'lb-rank-default';
+            if (rank === 1) rankClass = 'lb-rank-gold';
+            else if (rank === 2) rankClass = 'lb-rank-silver';
+            else if (rank === 3) rankClass = 'lb-rank-bronze';
+
+            var isMe = window.user && p.id === window.user.id;
+
+            html += '<div class="lb-row' + (isMe ? ' lb-row-me' : '') + '">';
+            html += '<div class="lb-rank ' + rankClass + '">' + rank + '<sup>' + getOrdinal(rank) + '</sup></div>';
+            html += '<img src="' + p.avatar + '" alt="' + escapeHTML(p.name) + '" class="lb-row-avatar">';
+            html += '<div class="lb-row-info"><div class="lb-row-name">' + escapeHTML(p.name) + '</div><div class="lb-row-wl"><span class="lb-wl-win">' + p.wins + 'W</span> / <span class="lb-wl-lose">' + p.losses + 'L</span></div></div>';
+            html += '<div class="lb-row-stars">' + pStarHTML + '</div>';
+            html += '<div class="lb-row-score"><span>Score</span><strong>' + p.score + '</strong></div>';
+            html += '</div>';
+        }
+        html += '</div>';
+        html += '</div>';
+
+        container.innerHTML = html;
+    }
+
+    function getOrdinal(n) {
+        if (n === 1) return 'st';
+        if (n === 2) return 'nd';
+        if (n === 3) return 'rd';
+        return 'th';
+    }
+
+    // ==================== RECORD BATTLE RESULT ====================
+    async function recordBattleResult(result) {
+        if (!window.db || !window.user) return;
+        if (result === 'draw') return; // Draws don't affect stats
+
+        try {
+            if (result === 'win') {
+                // Increment my wins
+                var { data: me } = await window.db.from('students').select('battle_wins').eq('id', window.user.id).single();
+                await window.db.from('students').update({ battle_wins: ((me && me.battle_wins) || 0) + 1 }).eq('id', window.user.id);
+            } else if (result === 'lose') {
+                // Increment my losses
+                var { data: me2 } = await window.db.from('students').select('battle_losses').eq('id', window.user.id).single();
+                await window.db.from('students').update({ battle_losses: ((me2 && me2.battle_losses) || 0) + 1 }).eq('id', window.user.id);
+            }
+        } catch (err) {
+            console.error('Failed to record battle result:', err);
+        }
     }
 
     // ==================== OPPONENT SELECT ====================
@@ -565,6 +731,10 @@
     function showBattleResult() {
         battleState = 'result';
         var result = determineBattleResult();
+
+        // Record result to Supabase
+        recordBattleResult(result);
+
         var resultArea = document.getElementById('battle-result-area');
         var countdownEl = document.getElementById('battle-countdown');
         var arena = document.getElementById('battle-arena-main');
