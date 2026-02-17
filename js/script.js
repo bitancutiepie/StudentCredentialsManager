@@ -1513,7 +1513,7 @@ async function postNote() {
     else { showToast('Note posted!'); noteInput.value = ''; fetchNotes(); }
 }
 window.fetchNotes = async function () {
-    const { data, error } = await supabaseClient.from('notes').select('*').not('color', 'in', '("CHAT_HIDDEN", "FILE_VIEW")');
+    const { data, error } = await supabaseClient.from('notes').select('*').neq('color', 'CHAT_HIDDEN').neq('color', 'FILE_VIEW').neq('color', 'WORDLE_WORD');
     if (error) return;
 
     // Check if Admin (for delete capability)

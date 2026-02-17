@@ -915,16 +915,14 @@
                         style="border: 2px solid #000; border-radius: 20px; padding: 8px 15px; background: #fff;">
                 </div>
 
-                <!-- Subject Filter Bar (Empty - JS will fill this) -->
-                <div class="filter-bar" id="link-filters" style="margin-bottom: 25px;">
-                    <!-- JavaScript will automatically put buttons here based on your Schedule -->
-                    <button class="sketch-btn" onclick="filterFiles('All')">All</button>
-                    <button class="sketch-btn" onclick="filterFiles('General')">General</button>
+                <!-- Subject Folder Grid (Kid-Friendly Filter) -->
+                <div id="subject-folder-grid" class="subject-folder-grid">
+                    <!-- JavaScript will populate colorful folder cards here -->
                 </div>
 
                 <!-- The Dynamic File List -->
                 <div style="margin-bottom: 30px; min-height: 200px;">
-                    <h3 id="file-filter-label" style="color: #666; font-size: 1.2rem;">Showing: All Files</h3>
+                    <h3 id="file-filter-label" style="color: #666; font-size: 1.2rem;">📂 Showing: All Files</h3>
                     <div id="file-list" class="file-grid">
                         <div class="loader">Opening filing cabinet...</div>
                     </div>
@@ -1669,7 +1667,7 @@
             overlay.id = 'viewer-log-modal';
             overlay.innerHTML = `
                 <div class="wimpy-modal-box" style="max-width:400px; text-align:left;">
-                    <h2 style="margin-top:0;"><i class="fas fa-users-viewfinder"></i> Recently Seen By</h2>
+                    <h2 style="margin-top:0;"><i class="fas fa-eye"></i> Unique Viewers</h2>
                     <p style="font-size:0.9rem; color:#666; margin-top:-10px; font-family:'Patrick Hand';">File: ${title}</p>
                     <div id="viewer-list" style="max-height:300px; overflow-y:auto; margin:15px 0;">
                         <div class="loader">Checking the paper trail...</div>
@@ -1681,22 +1679,35 @@
 
             try {
                 // Fetch from notes table where color is FILE_VIEW
+                // Increased limit to 200 to get a better history scope before filtering
                 const { data: logs, error } = await window.db
                     .from('notes')
                     .select('content, created_at')
                     .eq('color', 'FILE_VIEW')
                     .order('created_at', { ascending: false })
-                    .limit(50); // Fetch more to filter
+                    .limit(200);
 
                 if (error) throw error;
 
-                // Filter for this specific file in JS
-                const fileViewers = (logs || [])
-                    .map(log => {
-                        try { return JSON.parse(log.content); } catch (e) { return null; }
-                    })
-                    .filter(v => v && v.fid == fileId)
-                    .slice(0, 10); // Show last 10 unique views or just last 10 views
+                // Filter for this specific file AND Unique Users
+                const uniqueViewers = new Map();
+
+                (logs || []).forEach(log => {
+                    try {
+                        const v = JSON.parse(log.content);
+                        if (v && v.fid == fileId) {
+                            // Since we ordered by created_at DESC, the first occurrence is the latest
+                            if (!uniqueViewers.has(v.u)) {
+                                uniqueViewers.set(v.u, {
+                                    ...v,
+                                    t: log.created_at // Use server timestamp for accuracy
+                                });
+                            }
+                        }
+                    } catch (e) { }
+                });
+
+                const fileViewers = Array.from(uniqueViewers.values());
 
                 const listEl = document.getElementById('viewer-list');
                 if (!fileViewers || fileViewers.length === 0) {
@@ -1713,7 +1724,7 @@
                             <img src="${avatar}" style="width:35px; height:35px; border-radius:50%; border:1px solid #000;">
                             <div style="flex:1;">
                                 <div style="font-family:'Patrick Hand'; font-size:1.1rem; font-weight:bold;">${typeof escapeHTML === 'function' ? escapeHTML(v.u) : v.u}</div>
-                                <div style="font-size:0.75rem; color:#d63031;">${timeDisp}</div>
+                                <div style="font-size:0.75rem; color:#d63031;">Last seen: ${timeDisp}</div>
                             </div>
                         </div>
                     `;
@@ -1721,7 +1732,8 @@
 
             } catch (err) {
                 console.error("Failed to load viewers:", err);
-                document.getElementById('viewer-list').innerHTML = '<p>Error loading log.</p>';
+                const listEl = document.getElementById('viewer-list');
+                if (listEl) listEl.innerHTML = '<p>Error loading log.</p>';
             }
         }
 
@@ -1739,6 +1751,7 @@
 
             globalFiles = data || [];
             renderFileList(globalFiles);
+            if (window.updateFolderCounts) updateFolderCounts();
         }
 
         window.renderFileList = function (files) {
@@ -1773,35 +1786,31 @@
                 else if (fType.includes('ppt')) { iconClass = 'fa-file-powerpoint'; iconColor = '#e17055'; }
                 else if (fType.includes('video')) { iconClass = 'fa-file-video'; iconColor = '#6c5ce7'; }
 
-                const deleteBtn = isAdmin ? `<button onclick="event.stopPropagation(); deleteFile('${file.id}')" class="sketch-btn danger" style="position:absolute; top:-5px; right:-5px; padding: 4px 8px; font-size: 0.7rem; z-index: 50; border-radius: 6px; transform: rotate(5deg); box-shadow: 2px 2px 0 #000;">DEL</button>` : '';
+                const deleteBtn = isAdmin ? `<button onclick="event.stopPropagation(); deleteFile('${file.id}')" class="sketch-icon-btn" title="Delete File" style="margin-right:auto;"><i class="fas fa-trash" style="color:#d63031;"></i></button>` : '';
 
                 return `
-                <div class="file-card-mini" onclick="openFilePreview('${safeUrl}', '${safeTitle}', '${file.id}')" style="animation-delay: ${Math.random() * 0.5}s;">
-                    ${deleteBtn}
-                    <div class="file-icon-box" style="border-color: ${iconColor}; color: ${iconColor};">
-                        <i class="fas ${iconClass}"></i>
-                    </div>
-                    <div class="file-info-main">
-                        <div class="file-subject-label" style="display:flex; align-items:center; gap:5px;">
-                            <span style="color:${iconColor}; font-weight:bold; font-size: 0.7rem;">${subject}</span>
+                <div class="file-card-mini" onclick="openFilePreview('${safeUrl}', '${safeTitle}', '${file.id}')" style="animation-delay: ${Math.random() * 0.3}s;">
+                    <div class="file-card-top" style="background:${iconColor}15; border-bottom: 2px dashed ${iconColor}40; padding:8px 12px; margin:-12px -12px 10px -12px; border-radius:9px 9px 0 0; display:flex; align-items:center; justify-content:space-between;">
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <i class="fas ${iconClass}" style="color:${iconColor}; font-size:0.85rem;"></i>
+                            <span style="color:${iconColor}; font-weight:bold; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.5px;">${subject}</span>
                             ${badgeHtml}
                         </div>
-                        <div class="file-title-text" style="font-weight:bold; font-size:1rem; line-height:1.2; margin-top:2px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">${displayTitle}</div>
-                        
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; border-top: 1px dashed #eee; padding-top: 8px;">
-                            <span style="font-size:0.7rem; color:#666;"><i class="fas fa-clock"></i> ${timeAgo ? timeAgo(file.created_at) : createdAt.toLocaleDateString()}</span>
-                            <div style="display:flex; gap:10px;">
-                                <button onclick="event.stopPropagation(); viewFileHistory('${file.id}', '${safeTitle}')" class="sketch-icon-btn" title="See who viewed this" style="background:none; border:none; color:#fdcb6e; cursor:pointer; font-size:0.9rem;">
-                                    <i class="fas fa-users-viewfinder"></i>
-                                </button>
-                                <button onclick="event.stopPropagation(); copyToClipboard('${safeUrl}')" class="sketch-icon-btn" title="Copy Direct Link" style="background:none; border:none; color:#636e72; cursor:pointer; font-size:0.9rem;">
-                                    <i class="fas fa-link"></i>
-                                </button>
-                                <button class="sketch-icon-btn" title="Preview" style="background:none; border:none; color:#0984e3; cursor:pointer; font-size:0.9rem;">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                            </div>
+                        <span style="font-size:0.7rem; color:#999;"><i class="fas fa-clock"></i> ${timeAgo ? timeAgo(file.created_at) : createdAt.toLocaleDateString()}</span>
+                    </div>
+                    <div class="file-card-body" style="display:flex; align-items:flex-start; gap:12px;">
+                        <div class="file-icon-box" style="border-color: ${iconColor}; color: ${iconColor};">
+                            <i class="fas ${iconClass}"></i>
                         </div>
+                        <div class="file-info-main">
+                            <div class="file-title-text">${displayTitle}</div>
+                        </div>
+                    </div>
+                    <div class="file-card-footer">
+                        ${deleteBtn}
+                        <button onclick="event.stopPropagation(); viewFileHistory('${file.id}', '${safeTitle}')" class="sketch-icon-btn" title="See who viewed this"><i class="fas fa-eye" style="color:#fdcb6e;"></i></button>
+                        <button onclick="event.stopPropagation(); copyToClipboard('${safeUrl}')" class="sketch-icon-btn" title="Copy Link"><i class="fas fa-link" style="color:#636e72;"></i></button>
+                        <button class="sketch-icon-btn" title="Open File"><i class="fas fa-external-link-alt" style="color:#0984e3;"></i></button>
                     </div>
                 </div>`;
             }).join('');
@@ -1809,10 +1818,37 @@
 
         // Override Search/Filter
         window.searchFiles = function () { const q = document.getElementById('file-search').value.toLowerCase(); renderFileList(globalFiles.filter(f => f.title.toLowerCase().includes(q) || f.subject.toLowerCase().includes(q))); }
-        window.filterFiles = function (s) {
+        window.filterFiles = function (s, folderEl) {
+            // 1. Toggle active state on folder cards
+            document.querySelectorAll('.subject-folder').forEach(f => f.classList.remove('active'));
+            if (folderEl) folderEl.classList.add('active');
+
+            // 2. Update label
             const displayName = (s === 'All' || s === 'General') ? s : (window.subjectMapping ? window.subjectMapping[s] || s : s);
-            document.getElementById('file-filter-label').innerText = 'Showing: ' + displayName;
+            document.getElementById('file-filter-label').innerText = '📂 Showing: ' + displayName;
+
+            // 3. Filter & render
             renderFileList(s === 'All' ? globalFiles : globalFiles.filter(f => f.subject === s));
+        }
+
+        // Update folder count badges after files load
+        window.updateFolderCounts = function () {
+            if (!globalFiles) return;
+            // All files count
+            const allEl = document.getElementById('fc-all');
+            if (allEl) allEl.textContent = globalFiles.length + ' files';
+
+            // General count
+            const genEl = document.getElementById('fc-General');
+            if (genEl) genEl.textContent = globalFiles.filter(f => f.subject === 'General').length + ' files';
+
+            // Per-subject counts
+            if (window.subjectMapping) {
+                Object.keys(window.subjectMapping).forEach(code => {
+                    const el = document.getElementById('fc-' + code);
+                    if (el) el.textContent = globalFiles.filter(f => f.subject === code).length + ' files';
+                });
+            }
         }
 
         // Override deleteFile to use the inline refresh logic

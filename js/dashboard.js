@@ -1146,22 +1146,81 @@ async function populateSubjectOptions() {
     window.subjectMapping = subjectMap; // Store globally for other scripts
     const subjects = Object.keys(subjectMap).sort();
 
-    // 3. Populate Filter Bar (In Files Tab)
-    const filterContainer = document.getElementById('link-filters');
-    if (filterContainer) {
-        // Start with All and General
+    // 3. Populate Folder Grid (Kid-Friendly Filter in Files Tab)
+    const folderGrid = document.getElementById('subject-folder-grid');
+    if (folderGrid) {
+        // Direct subject code → icon map (based on actual schedule)
+        const subjectIconMap = {
+            'GEd 106': 'fa-comments',         // Purposive Communication
+            'GEd 101': 'fa-brain',             // Understanding the Self
+            'ES 101': 'fa-leaf',              // Environmental Sciences
+            'IT 222': 'fa-database',          // Advanced Database Management System
+            'IT 221': 'fa-server',            // Information Management
+            'IT 223': 'fa-network-wired',     // Computer Networking 2
+            'MATH 408': 'fa-chart-bar',         // Data Analysis
+            'PATHFit 4': 'fa-basketball-ball',  // Team Sports
+        };
+
+        // Smart fallback for any future/unknown subjects
+        function getSubjectIcon(name, code) {
+            if (subjectIconMap[code]) return subjectIconMap[code];
+            const text = (name + ' ' + code).toLowerCase();
+            if (text.match(/math|calc|algebra|geometry|trig|stat/)) return 'fa-calculator';
+            if (text.match(/environ|eco.*sci|earth/)) return 'fa-leaf';
+            if (text.match(/database|dbms|sql/)) return 'fa-database';
+            if (text.match(/network|net\b/)) return 'fa-network-wired';
+            if (text.match(/sci|physics|chem|bio|lab/)) return 'fa-flask';
+            if (text.match(/eng|lit|read|writ|grammar|commun/)) return 'fa-comments';
+            if (text.match(/fil|filipino|tagalog|wika/)) return 'fa-language';
+            if (text.match(/hist|kasaysayan|araling|soc/)) return 'fa-landmark';
+            if (text.match(/comp|it |ict|tech|prog|code|cs /)) return 'fa-laptop-code';
+            if (text.match(/pe |sport|phys.*ed|mapeh|health|pathfit|basket|volley/)) return 'fa-basketball-ball';
+            if (text.match(/self|psych|understand/)) return 'fa-brain';
+            if (text.match(/art|draw|paint/)) return 'fa-palette';
+            if (text.match(/music|mus /)) return 'fa-music';
+            if (text.match(/val|esp|eduk|ethics|moral/)) return 'fa-heart';
+            if (text.match(/research|thesis/)) return 'fa-microscope';
+            if (text.match(/econ|business|entre|abm/)) return 'fa-chart-line';
+            return 'fa-folder';
+        }
+
+        // Color palette for subjects
+        const folderColors = ['#d63031', '#0984e3', '#00b894', '#e17055', '#6c5ce7', '#fdcb6e', '#00cec9', '#a29bfe', '#fd79a8', '#636e72'];
+
+        // Build folder cards
         let html = `
-            <button class="sketch-btn" onclick="filterFiles('All')">All</button>
-            <button class="sketch-btn" onclick="filterFiles('General')">General</button>
+            <div class="subject-folder active" style="--folder-color: #2d3436;" onclick="filterFiles('All', this)">
+                <div style="position:absolute; top:0; left:0; right:0; height:6px; background:#2d3436; border-radius:9px 9px 0 0;"></div>
+                <span class="folder-emoji"><i class="fas fa-layer-group"></i></span>
+                <span class="folder-name">All Files</span>
+                <span class="folder-count" id="fc-all">...</span>
+            </div>
+            <div class="subject-folder" style="--folder-color: #636e72;" onclick="filterFiles('General', this)">
+                <div style="position:absolute; top:0; left:0; right:0; height:6px; background:#636e72; border-radius:9px 9px 0 0;"></div>
+                <span class="folder-emoji"><i class="fas fa-folder"></i></span>
+                <span class="folder-name">General</span>
+                <span class="folder-count" id="fc-General">...</span>
+            </div>
         `;
 
-        // Add a button for each subject using its Name, but filter by Code
-        subjects.forEach(code => {
+        subjects.forEach((code, i) => {
+            const color = folderColors[i % folderColors.length];
             const displayName = subjectMap[code];
-            html += `<button class="sketch-btn" onclick="filterFiles('${code}')">${displayName}</button>`;
+            const iconClass = getSubjectIcon(displayName, code);
+            html += `
+                <div class="subject-folder" style="--folder-color: ${color};" onclick="filterFiles('${code}', this)">
+                    <div style="position:absolute; top:0; left:0; right:0; height:6px; background:${color}; border-radius:9px 9px 0 0;"></div>
+                    <span class="folder-emoji" style="color:${color};"><i class="fas ${iconClass}"></i></span>
+                    <span class="folder-name" title="${displayName}">${displayName}</span>
+                    <span class="folder-count" id="fc-${code}">...</span>
+                </div>
+            `;
         });
 
-        filterContainer.innerHTML = html;
+        folderGrid.innerHTML = html;
+
+        // Update counts now if files are already loaded
+        if (window.updateFolderCounts) window.updateFolderCounts();
     }
 
     // 4. Populate Upload Dropdown (In Admin Form)
@@ -1335,7 +1394,7 @@ async function fetchNotes() {
     const noteLayer = document.getElementById('freedom-wall-board');
     if (!noteLayer) return;
 
-    const { data, error } = await db.from('notes').select('*').not('color', 'in', '("CHAT_HIDDEN", "FILE_VIEW")');
+    const { data, error } = await db.from('notes').select('*').neq('color', 'CHAT_HIDDEN').neq('color', 'FILE_VIEW').neq('color', 'WORDLE_WORD');
     if (error) return;
 
     noteLayer.innerHTML = '';
