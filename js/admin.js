@@ -18,7 +18,8 @@ window.showAdminTool = function (toolId, btnElement) {
             'admin-promote-form': 'promote',
             'admin-revoke-form': 'revoke',
             'admin-blacklist-view': 'blacklist',
-            'admin-announcement-form': 'announcement'
+            'admin-announcement-form': 'announcement',
+            'admin-birthday-view': 'birthday'
         };
 
         const permKey = toolIdToPerm[toolId];
@@ -40,7 +41,7 @@ window.showAdminTool = function (toolId, btnElement) {
     document.querySelectorAll('.filter-bar .sketch-btn').forEach(b => b.classList.remove('active-tool'));
 
     // Hide all admin forms
-    const forms = ['admin-schedule-form', 'admin-assignment-form', 'admin-event-form', 'admin-file-form', 'admin-email-form', 'admin-message-manager', 'admin-gallery-form', 'admin-storage-view', 'admin-promote-form', 'admin-revoke-form', 'admin-todo-form', 'admin-announcement-form'];
+    const forms = ['admin-schedule-form', 'admin-assignment-form', 'admin-event-form', 'admin-file-form', 'admin-email-form', 'admin-message-manager', 'admin-gallery-form', 'admin-storage-view', 'admin-promote-form', 'admin-revoke-form', 'admin-todo-form', 'admin-announcement-form', 'admin-birthday-view'];
     let isAlreadyOpen = false;
 
     forms.forEach(id => {
@@ -67,6 +68,7 @@ window.showAdminTool = function (toolId, btnElement) {
         if (toolId === 'admin-email-form' && window.populateEmailDropdown) window.populateEmailDropdown();
         if (toolId === 'admin-promote-form') window.populatePromoteDropdown();
         if (toolId === 'admin-revoke-form') window.populateRevokeDropdown();
+        if (toolId === 'admin-birthday-view' && window.fetchBirthdays) window.fetchBirthdays();
     } else {
         // If closing or clicking active, show hint
         if (hint) hint.style.display = 'block';
@@ -772,3 +774,103 @@ window.deleteWordleWord = async function (id) {
         window.fetchWordlePool();
     }
 }
+
+// --- BIRTHDAY VIEWER ---
+window.fetchBirthdays = async function () {
+    const display = document.getElementById('birthday-list-display');
+    if (!display) return;
+
+    display.innerHTML = '<div class="loader">Loading birthdays...</div>';
+
+    const { data, error } = await window.db
+        .from('students')
+        .select('name, avatar_url, birthday, sr_code')
+        .neq('sr_code', 'ADMIN')
+        .not('birthday', 'is', null)
+        .neq('birthday', '')
+        .order('name');
+
+    if (error) {
+        display.innerHTML = '<p>Error loading birthdays.</p>';
+        return;
+    }
+
+    if (!data || data.length === 0) {
+        display.innerHTML = '<p style="text-align:center; font-style:italic; color:#999;">No birthdays recorded yet. Students will be prompted on login.</p>';
+        return;
+    }
+
+    // Calculate days until next birthday for each student
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const enriched = data.map(s => {
+        const parts = s.birthday.split('-');
+        const bMonth = parseInt(parts[1]);
+        const bDay = parseInt(parts[2]);
+
+        let nextBday = new Date(today.getFullYear(), bMonth - 1, bDay);
+        if (nextBday < today) {
+            nextBday = new Date(today.getFullYear() + 1, bMonth - 1, bDay);
+        }
+
+        const diffTime = nextBday - today;
+        const daysUntil = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        return { ...s, daysUntil, nextBday, bMonth, bDay };
+    });
+
+    // Sort by nearest upcoming birthday
+    enriched.sort((a, b) => a.daysUntil - b.daysUntil);
+
+    const monthNames = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+    let html = '';
+    enriched.forEach(s => {
+        const dateStr = monthNames[s.bMonth] + ' ' + s.bDay;
+        const avatarUrl = s.avatar_url || 'assets/images/default-avatar.png';
+
+        let badge = '';
+        let borderColor = '#6c5ce7';
+        if (s.daysUntil === 0) {
+            badge = '<span style="background:#00b894; color:#fff; padding:2px 8px; border-radius:10px; font-size:0.85rem; font-weight:bold;">🎉 TODAY!</span>';
+            borderColor = '#00b894';
+        } else if (s.daysUntil <= 7) {
+            badge = `<span style="background:#fdcb6e; color:#2d3436; padding:2px 8px; border-radius:10px; font-size:0.85rem;">${s.daysUntil} day${s.daysUntil > 1 ? 's' : ''} away</span>`;
+            borderColor = '#fdcb6e';
+        } else if (s.daysUntil <= 30) {
+            badge = `<span style="background:#74b9ff; color:#2d3436; padding:2px 8px; border-radius:10px; font-size:0.85rem;">${s.daysUntil} days away</span>`;
+            borderColor = '#74b9ff';
+        } else {
+            badge = `<span style="color:#a4b0be; font-size:0.85rem;">${s.daysUntil} days away</span>`;
+        }
+
+        html += `
+            <div class="class-card" style="display:flex; align-items:center; gap:12px; padding:12px; margin-bottom:8px; border-left:5px solid ${borderColor};">
+                <img src="${avatarUrl}" alt="avatar" style="width:40px; height:40px; border-radius:50%; object-fit:cover; border:2px solid #000;">
+                <div style="flex:1;">
+                    <div style="font-weight:bold; font-size:1.1rem;">${escapeHTML(s.name)}</div>
+                    <div style="font-size:0.95rem; color:#636e72;">🎂 ${dateStr}</div>
+                </div>
+                <div>${badge}</div>
+            </div>
+        `;
+    });
+
+    // Summary header
+    const todayCount = enriched.filter(s => s.daysUntil === 0).length;
+    const weekCount = enriched.filter(s => s.daysUntil > 0 && s.daysUntil <= 7).length;
+    const summaryHtml = `
+        <div class="class-card" style="margin-bottom:15px; border:2px solid #000; background:#fff740; transform:rotate(-0.5deg); padding:15px;">
+            <h3 style="margin:0 0 5px 0;">🎂 Birthday Tracker</h3>
+            <div style="display:flex; gap:15px; font-size:1rem;">
+                <span><b>${data.length}</b> total birthdays</span>
+                ${todayCount > 0 ? `<span style="color:#00b894;"><b>${todayCount}</b> TODAY! 🎉</span>` : ''}
+                ${weekCount > 0 ? `<span style="color:#e17055;"><b>${weekCount}</b> this week</span>` : ''}
+            </div>
+        </div>
+    `;
+
+    display.innerHTML = summaryHtml + html;
+}
+

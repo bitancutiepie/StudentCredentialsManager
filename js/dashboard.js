@@ -45,9 +45,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     await initLiveClassChecker();
     await populateSubjectOptions(); // <--- Updates buttons based on your actual schedule
 
-    // ADD THIS NEW LINE:
-    // Show highlights (and combined admin info if admin)
-    setTimeout(showHighlightsModal, 2000);
+    // Show birthday collector first (if needed), THEN highlights
+    setTimeout(async () => {
+        const currentUser = window.user || user;
+        // Skip birthday check for ADMIN account
+        if (currentUser && currentUser.sr_code !== 'ADMIN' && !currentUser.birthday) {
+            await showBirthdayCollector();
+        }
+        showHighlightsModal();
+    }, 2000);
 
     // NEW: Show SSC Payment Modal after a bit more delay
     setTimeout(showSSCPaymentPopup, 3500);
@@ -118,7 +124,7 @@ async function refreshUserProfile() {
     // Fetch fresh status from DB to ensure it's up to date
     const { data, error } = await db
         .from('students')
-        .select('enrollment_status, role, avatar_url')
+        .select('enrollment_status, role, avatar_url, birthday')
         .eq('id', user.id)
         .single();
 
@@ -126,6 +132,7 @@ async function refreshUserProfile() {
         user.enrollment_status = data.enrollment_status || 'Not Enrolled';
         user.role = data.role;
         user.avatar_url = data.avatar_url;
+        user.birthday = data.birthday || null;
 
         // Update Local variable and Window global
         isAdmin = (user.sr_code === 'ADMIN' || (user.role && (user.role === 'admin' || user.role.startsWith('admin:'))));
@@ -2676,3 +2683,105 @@ function checkValentinesDay() {
         }, 10000);
     }
 }
+
+// --- BIRTHDAY COLLECTOR POPUP ---
+function showBirthdayCollector() {
+    return new Promise((resolve) => {
+        const currentUser = window.user || user;
+        if (!currentUser || !db) { resolve(); return; }
+        if (currentUser.birthday) { resolve(); return; }
+        if (currentUser.sr_code === 'ADMIN') { resolve(); return; }
+
+        const overlay = document.createElement('div');
+        overlay.className = 'wimpy-modal-overlay';
+        overlay.id = 'birthday-popup';
+        overlay.style.zIndex = '10010';
+        overlay.style.display = 'flex';
+        overlay.style.alignItems = 'center';
+        overlay.style.justifyContent = 'center';
+
+        const box = document.createElement('div');
+        box.className = 'wimpy-modal-box';
+        box.style.maxWidth = '420px';
+        box.style.padding = '30px';
+        box.style.background = '#fff';
+        box.style.textAlign = 'center';
+
+        box.innerHTML = `
+            <div style="margin-bottom: 20px;">
+                <div style="font-size: 3rem; margin-bottom: 10px;">🎂</div>
+                <h2 style="margin: 0; font-family: 'Permanent Marker', cursive; font-size: 1.8rem; color: #000;">
+                    WHEN'S YOUR BIRTHDAY?
+                </h2>
+                <p style="font-family: 'Patrick Hand', cursive; font-size: 1.1rem; color: #636e72; margin-top: 8px;">
+                    Hey <b>${currentUser.name.split(' ')[0]}</b>! We need your birthday para may surprise. 🎉
+                </p>
+            </div>
+            <div style="margin-bottom: 25px;">
+                <input type="date" id="birthday-input"
+                    style="width: 100%; padding: 12px; font-family: 'Patrick Hand', cursive; font-size: 1.3rem; border: 3px solid #000; border-radius: 5px; background: #fffdf0; box-sizing: border-box; outline: none; text-align: center;"
+                    max="${new Date().toISOString().split('T')[0]}"
+                    required>
+                <p id="birthday-error" style="color: #d63031; font-family: 'Patrick Hand'; font-size: 1rem; margin: 8px 0 0 0; display: none;">
+                    <i class="fas fa-exclamation-triangle"></i> Lagay mo birthday mo para makapasok ka!
+                </p>
+            </div>
+            <button id="birthday-save-btn" class="sketch-btn" style="background: #000; color: #fff; width: 100%; font-size: 1.2rem; transform: rotate(-1deg); padding: 12px;">
+                <i class="fas fa-check"></i> SAVE BIRTHDAY
+            </button>
+            <p style="font-family: 'Patrick Hand'; font-size: 0.85rem; color: #a4b0be; margin-top: 12px;">
+                You can't skip this step. It's mandatory! 📋
+            </p>
+        `;
+
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+
+        document.getElementById('birthday-save-btn').onclick = async () => {
+            const input = document.getElementById('birthday-input');
+            const errorEl = document.getElementById('birthday-error');
+            const val = input.value;
+
+            if (!val) {
+                errorEl.style.display = 'block';
+                input.style.borderColor = '#d63031';
+                return;
+            }
+
+            const btn = document.getElementById('birthday-save-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+            try {
+                const { error } = await db
+                    .from('students')
+                    .update({ birthday: val })
+                    .eq('id', currentUser.id);
+
+                if (error) throw error;
+
+                // Update local user object and storage
+                currentUser.birthday = val;
+                if (window.user) window.user.birthday = val;
+                localStorage.setItem('wimpy_user', JSON.stringify(currentUser));
+
+                showToast('🎂 Birthday saved! Salamat!');
+
+                // Animate out
+                box.style.transform = 'scale(0.8) rotate(3deg)';
+                box.style.opacity = '0';
+                box.style.transition = 'all 0.3s ease-out';
+                setTimeout(() => {
+                    overlay.remove();
+                    resolve();
+                }, 300);
+            } catch (err) {
+                console.error('Birthday save error:', err);
+                showToast('Error saving birthday: ' + err.message, 'error');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-check"></i> SAVE BIRTHDAY';
+            }
+        };
+    });
+}
+
