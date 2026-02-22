@@ -30,6 +30,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     checkSession();
     startClock();
     await refreshUserProfile(); // NEW: Fetch fresh data immediately
+
+    // BIRTHDAY IS TOP PRIORITY — Show immediately if missing (blocks everything)
+    const currentUser = window.user || user;
+    if (currentUser && currentUser.sr_code !== 'ADMIN' && !currentUser.birthday) {
+        await showBirthdayCollector();
+    }
+
     await initLiveTracking(); // ADDED: Initialize live tracking here
     await initMessaging(); // ADDED: Initialize messaging
 
@@ -45,15 +52,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     await initLiveClassChecker();
     await populateSubjectOptions(); // <--- Updates buttons based on your actual schedule
 
-    // Show birthday collector first (if needed), THEN highlights
-    setTimeout(async () => {
-        const currentUser = window.user || user;
-        // Skip birthday check for ADMIN account
-        if (currentUser && currentUser.sr_code !== 'ADMIN' && !currentUser.birthday) {
-            await showBirthdayCollector();
-        }
-        showHighlightsModal();
-    }, 2000);
+    // Show highlights (and combined admin info if admin)
+    setTimeout(showHighlightsModal, 2000);
 
     // NEW: Show SSC Payment Modal after a bit more delay
     setTimeout(showSSCPaymentPopup, 3500);
