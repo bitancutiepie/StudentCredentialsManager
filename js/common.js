@@ -19,8 +19,18 @@ if (typeof window.supabase !== 'undefined') {
  * Centralized student data fetching that includes enrollment receipts.
  * @returns {Promise<Array>} - Array of students with enrollment_receipt_url
  */
-async function getStudentsWithDetails() {
+let _studentsCache = null;
+let _studentsCacheTime = 0;
+const STUDENTS_CACHE_TTL = 120000; // 2 minutes
+
+async function getStudentsWithDetails(forceRefresh = false) {
     if (!window.db) return [];
+
+    // Return cached data if still fresh
+    const now = Date.now();
+    if (!forceRefresh && _studentsCache && (now - _studentsCacheTime) < STUDENTS_CACHE_TTL) {
+        return _studentsCache;
+    }
 
     // 1. Fetch Students
     const { data: students, error } = await window.db
@@ -41,11 +51,14 @@ async function getStudentsWithDetails() {
     const receiptMap = {};
     if (receipts) receipts.forEach(r => receiptMap[r.subject] = r.file_url);
 
-    // 3. Map together
-    return students.map(s => ({
+    // 3. Map together & cache
+    _studentsCache = students.map(s => ({
         ...s,
         enrollment_receipt_url: receiptMap[`Receipt-${s.id}`] || null
     }));
+    _studentsCacheTime = now;
+
+    return _studentsCache;
 }
 
 /**

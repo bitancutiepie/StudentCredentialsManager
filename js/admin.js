@@ -677,7 +677,7 @@ setInterval(async () => {
     } catch (err) {
         console.error("Cleanup error:", err);
     }
-}, 60000); // Check every minute
+}, 300000); // Check every 5 minutes (was 60s — reduced for egress savings)
 
 window.broadcastSystemUpdate = async function () {
     if (!window.roomChannel) {

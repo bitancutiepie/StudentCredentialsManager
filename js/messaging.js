@@ -109,7 +109,7 @@ async function loadChatHistory(partnerId) {
 
     const { data, error } = await window.db
         .from('messages')
-        .select('*')
+        .select('id, sender_id, receiver_id, content, created_at')
         .or(`and(sender_id.eq.${user.id},receiver_id.eq.${partnerId}),and(sender_id.eq.${partnerId},receiver_id.eq.${user.id})`)
         .order('created_at', { ascending: true });
 
@@ -199,7 +199,7 @@ async function checkUnreadCount() {
     const user = window.user;
     if (!user) return;
 
-    const { count } = await window.db.from('messages').select('*', { count: 'exact', head: true }).eq('receiver_id', user.id).eq('is_read', false);
+    const { count } = await window.db.from('messages').select('id', { count: 'exact', head: true }).eq('receiver_id', user.id).eq('is_read', false);
     const badge = document.getElementById('msg-badge');
     if (badge) {
         badge.innerText = count;
@@ -234,7 +234,7 @@ window.refreshInboxList = async function (showLoader = true) {
     // 1. Fetch all messages involving user
     const { data: msgs, error } = await window.db
         .from('messages')
-        .select('*')
+        .select('id, sender_id, receiver_id, content, created_at, is_read')
         .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
         .order('created_at', { ascending: false });
 
@@ -323,7 +323,7 @@ window.fetchAdminMessages = async function () {
     // 2. Fetch Messages
     const { data: msgs, error } = await window.db
         .from('messages')
-        .select('*')
+        .select('id, sender_id, receiver_id, content, created_at')
         .order('created_at', { ascending: false })
         .limit(500);
 
@@ -393,7 +393,7 @@ window.viewAdminConversation = async function (id1, id2) {
     // Fetch Messages
     const { data: msgs, error } = await window.db
         .from('messages')
-        .select('*')
+        .select('id, sender_id, receiver_id, content, created_at')
         .or(`and(sender_id.eq.${id1},receiver_id.eq.${id2}),and(sender_id.eq.${id2},receiver_id.eq.${id1})`)
         .order('created_at', { ascending: true });
 
