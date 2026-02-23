@@ -2334,3 +2334,306 @@ h2:hover {
 #blast-option-container {
     animation: urgentPulse 2s infinite;
 }
+
+/* ===== BIRTHDAY CALENDAR GRID ===== */
+.bday-calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.bday-month-card {
+    background: #fff;
+    border: 2.5px solid #000;
+    border-radius: 12px;
+    padding: 0;
+    position: relative;
+    min-height: 140px;
+    transition: all 0.3s ease;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.bday-month-card:hover {
+    transform: scale(1.03) rotate(-0.5deg);
+    box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.2);
+    z-index: 5;
+}
+
+.bday-month-card.current-month {
+    border-color: #6c5ce7;
+    box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.15);
+}
+
+.bday-month-header {
+    font-family: 'Permanent Marker', cursive;
+    font-size: 1.15rem;
+    text-align: center;
+    padding: 10px 8px 8px;
+    border-bottom: 2px solid #000;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    letter-spacing: 0.5px;
+}
+
+.bday-month-card:nth-child(odd) .bday-month-header {
+    background: #ffeaa7;
+}
+
+.bday-month-card:nth-child(even) .bday-month-header {
+    background: #fab1a0;
+}
+
+.bday-month-card:nth-child(3n) .bday-month-header {
+    background: #81ecec;
+}
+
+.bday-month-card:nth-child(4n+1) .bday-month-header {
+    background: #a29bfe;
+}
+
+.bday-month-body {
+    padding: 8px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    overflow-y: auto;
+    max-height: 200px;
+}
+
+.bday-month-body::-webkit-scrollbar {
+    width: 4px;
+}
+
+.bday-month-body::-webkit-scrollbar-thumb {
+    background: #ddd;
+    border-radius: 4px;
+}
+
+.bday-month-empty {
+    text-align: center;
+    color: #b2bec3;
+    font-style: italic;
+    font-size: 0.85rem;
+    padding: 15px 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+}
+
+.bday-student-entry {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 4px 6px;
+    border-radius: 6px;
+    transition: background 0.2s;
+    font-size: 0.9rem;
+}
+
+.bday-student-entry:hover {
+    background: rgba(108, 92, 231, 0.08);
+}
+
+.bday-student-entry.is-today {
+    background: rgba(0, 184, 148, 0.12);
+    border: 1.5px dashed #00b894;
+    animation: bdayGlow 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes bdayGlow {
+    from {
+        box-shadow: 0 0 3px rgba(0, 184, 148, 0.3);
+    }
+
+    to {
+        box-shadow: 0 0 10px rgba(0, 184, 148, 0.6);
+    }
+}
+
+.bday-student-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1.5px solid #000;
+    flex-shrink: 0;
+}
+
+.bday-student-name {
+    flex: 1;
+    font-family: 'Patrick Hand', cursive;
+    font-size: 0.9rem;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.bday-student-day {
+    font-family: 'Permanent Marker', cursive;
+    font-size: 0.85rem;
+    color: #6c5ce7;
+    flex-shrink: 0;
+    min-width: 20px;
+    text-align: right;
+}
+
+.bday-today-tag {
+    background: #00b894;
+    color: #fff;
+    font-size: 0.7rem;
+    padding: 1px 6px;
+    border-radius: 8px;
+    font-weight: bold;
+    white-space: nowrap;
+    animation: bdayPulse 1s infinite;
+}
+
+@keyframes bdayPulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+.bday-summary-bar {
+    background: #fff740;
+    border: 2.5px solid #000;
+    padding: 12px 18px;
+    margin-bottom: 15px;
+    transform: rotate(-0.5deg);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.bday-summary-bar h3 {
+    margin: 0;
+    font-family: 'Permanent Marker', cursive;
+    font-size: 1.3rem;
+}
+
+.bday-summary-stats {
+    display: flex;
+    gap: 15px;
+    font-size: 1rem;
+    font-family: 'Patrick Hand', cursive;
+}
+
+/* Doodle decorations on month cards */
+.bday-month-card::after {
+    content: '';
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    font-size: 1.2rem;
+    opacity: 0.08;
+    pointer-events: none;
+}
+
+.bday-month-card:nth-child(1)::after {
+    content: '🎁';
+}
+
+.bday-month-card:nth-child(2)::after {
+    content: '💝';
+}
+
+.bday-month-card:nth-child(3)::after {
+    content: '🎈';
+}
+
+.bday-month-card:nth-child(4)::after {
+    content: '🎀';
+}
+
+.bday-month-card:nth-child(5)::after {
+    content: '🎉';
+}
+
+.bday-month-card:nth-child(6)::after {
+    content: '🎂';
+}
+
+.bday-month-card:nth-child(7)::after {
+    content: '🎊';
+}
+
+.bday-month-card:nth-child(8)::after {
+    content: '🧁';
+}
+
+.bday-month-card:nth-child(9)::after {
+    content: '🎁';
+}
+
+.bday-month-card:nth-child(10)::after {
+    content: '🎃';
+}
+
+.bday-month-card:nth-child(11)::after {
+    content: '🎈';
+}
+
+.bday-month-card:nth-child(12)::after {
+    content: '🎄';
+}
+
+.bday-month-count {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    background: #2d3436;
+    color: #fff;
+    font-size: 0.7rem;
+    font-family: 'Permanent Marker', cursive;
+    padding: 1px 6px;
+    border-radius: 10px;
+    min-width: 18px;
+    text-align: center;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .bday-calendar-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 650px) {
+    .bday-calendar-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+
+    .bday-month-header {
+        font-size: 1rem;
+        padding: 8px 5px 6px;
+    }
+
+    .bday-summary-bar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 400px) {
+    .bday-calendar-grid {
+        grid-template-columns: 1fr;
+    }
+}

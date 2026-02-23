@@ -775,7 +775,7 @@ window.deleteWordleWord = async function (id) {
     }
 }
 
-// --- BIRTHDAY VIEWER ---
+// --- BIRTHDAY VIEWER (Calendar Grid) ---
 window.fetchBirthdays = async function () {
     const display = document.getElementById('birthday-list-display');
     if (!display) return;
@@ -800,77 +800,94 @@ window.fetchBirthdays = async function () {
         return;
     }
 
-    // Calculate days until next birthday for each student
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    const currentMonth = today.getMonth() + 1; // 1-indexed
+    const currentDay = today.getDate();
 
-    const enriched = data.map(s => {
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const monthIcons = ['❄️', '💝', '🌸', '🌧️', '🎉', '☀️', '🌊', '🎒', '🍂', '🎃', '🦃', '🎄'];
+
+    // Group students by birth month (1-12)
+    const monthBuckets = {};
+    for (let m = 1; m <= 12; m++) monthBuckets[m] = [];
+
+    let todayCount = 0;
+    let weekCount = 0;
+
+    data.forEach(s => {
         const parts = s.birthday.split('-');
         const bMonth = parseInt(parts[1]);
         const bDay = parseInt(parts[2]);
+        const isToday = (bMonth === currentMonth && bDay === currentDay);
 
+        if (isToday) todayCount++;
+
+        // Calculate days until next birthday for "this week" count
         let nextBday = new Date(today.getFullYear(), bMonth - 1, bDay);
-        if (nextBday < today) {
-            nextBday = new Date(today.getFullYear() + 1, bMonth - 1, bDay);
-        }
+        if (nextBday < today) nextBday = new Date(today.getFullYear() + 1, bMonth - 1, bDay);
+        const daysUntil = Math.ceil((nextBday - today) / (1000 * 60 * 60 * 24));
+        if (daysUntil > 0 && daysUntil <= 7) weekCount++;
 
-        const diffTime = nextBday - today;
-        const daysUntil = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-        return { ...s, daysUntil, nextBday, bMonth, bDay };
+        monthBuckets[bMonth].push({ ...s, bDay, isToday, daysUntil });
     });
 
-    // Sort by nearest upcoming birthday
-    enriched.sort((a, b) => a.daysUntil - b.daysUntil);
+    // Sort each month bucket by day
+    for (let m = 1; m <= 12; m++) {
+        monthBuckets[m].sort((a, b) => a.bDay - b.bDay);
+    }
 
-    const monthNames = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-
-    let html = '';
-    enriched.forEach(s => {
-        const dateStr = monthNames[s.bMonth] + ' ' + s.bDay;
-        const avatarUrl = s.avatar_url || 'assets/images/default-avatar.png';
-
-        let badge = '';
-        let borderColor = '#6c5ce7';
-        if (s.daysUntil === 0) {
-            badge = '<span style="background:#00b894; color:#fff; padding:2px 8px; border-radius:10px; font-size:0.85rem; font-weight:bold;">🎉 TODAY!</span>';
-            borderColor = '#00b894';
-        } else if (s.daysUntil <= 7) {
-            badge = `<span style="background:#fdcb6e; color:#2d3436; padding:2px 8px; border-radius:10px; font-size:0.85rem;">${s.daysUntil} day${s.daysUntil > 1 ? 's' : ''} away</span>`;
-            borderColor = '#fdcb6e';
-        } else if (s.daysUntil <= 30) {
-            badge = `<span style="background:#74b9ff; color:#2d3436; padding:2px 8px; border-radius:10px; font-size:0.85rem;">${s.daysUntil} days away</span>`;
-            borderColor = '#74b9ff';
-        } else {
-            badge = `<span style="color:#a4b0be; font-size:0.85rem;">${s.daysUntil} days away</span>`;
-        }
-
-        html += `
-            <div class="class-card" style="display:flex; align-items:center; gap:12px; padding:12px; margin-bottom:8px; border-left:5px solid ${borderColor};">
-                <img src="${avatarUrl}" alt="avatar" style="width:40px; height:40px; border-radius:50%; object-fit:cover; border:2px solid #000;">
-                <div style="flex:1;">
-                    <div style="font-weight:bold; font-size:1.1rem;">${escapeHTML(s.name)}</div>
-                    <div style="font-size:0.95rem; color:#636e72;">🎂 ${dateStr}</div>
-                </div>
-                <div>${badge}</div>
-            </div>
-        `;
-    });
-
-    // Summary header
-    const todayCount = enriched.filter(s => s.daysUntil === 0).length;
-    const weekCount = enriched.filter(s => s.daysUntil > 0 && s.daysUntil <= 7).length;
-    const summaryHtml = `
-        <div class="class-card" style="margin-bottom:15px; border:2px solid #000; background:#fff740; transform:rotate(-0.5deg); padding:15px;">
-            <h3 style="margin:0 0 5px 0;">🎂 Birthday Tracker</h3>
-            <div style="display:flex; gap:15px; font-size:1rem;">
-                <span><b>${data.length}</b> total birthdays</span>
+    // Build summary bar
+    let summaryHtml = `
+        <div class="bday-summary-bar">
+            <h3>🎂 Birthday Calendar</h3>
+            <div class="bday-summary-stats">
+                <span><b>${data.length}</b> total</span>
                 ${todayCount > 0 ? `<span style="color:#00b894;"><b>${todayCount}</b> TODAY! 🎉</span>` : ''}
                 ${weekCount > 0 ? `<span style="color:#e17055;"><b>${weekCount}</b> this week</span>` : ''}
             </div>
         </div>
     `;
 
-    display.innerHTML = summaryHtml + html;
+    // Build month cards grid
+    let gridHtml = '<div class="bday-calendar-grid">';
+
+    for (let m = 1; m <= 12; m++) {
+        const students = monthBuckets[m];
+        const isCurrent = (m === currentMonth);
+
+        gridHtml += `<div class="bday-month-card ${isCurrent ? 'current-month' : ''}">`;
+        gridHtml += `<div class="bday-month-header">${monthIcons[m - 1]} ${monthNames[m - 1]}</div>`;
+
+        if (students.length > 0) {
+            gridHtml += `<span class="bday-month-count">${students.length}</span>`;
+        }
+
+        gridHtml += '<div class="bday-month-body">';
+
+        if (students.length === 0) {
+            gridHtml += '<div class="bday-month-empty">No birthdays</div>';
+        } else {
+            students.forEach(s => {
+                const avatarUrl = s.avatar_url || 'assets/images/default-avatar.png';
+                const todayTag = s.isToday ? '<span class="bday-today-tag">🎉 TODAY!</span>' : '';
+
+                gridHtml += `
+                    <div class="bday-student-entry ${s.isToday ? 'is-today' : ''}" title="${escapeHTML(s.name)} — ${monthNames[m - 1]} ${s.bDay}${s.isToday ? ' (TODAY!)' : ''}">
+                        <img class="bday-student-avatar" src="${avatarUrl}" alt="${escapeHTML(s.name)}">
+                        <span class="bday-student-name">${escapeHTML(s.name)}</span>
+                        ${todayTag}
+                        <span class="bday-student-day">${s.bDay}</span>
+                    </div>
+                `;
+            });
+        }
+
+        gridHtml += '</div></div>'; // close month-body and month-card
+    }
+
+    gridHtml += '</div>'; // close grid
+
+    display.innerHTML = summaryHtml + gridHtml;
 }
 
