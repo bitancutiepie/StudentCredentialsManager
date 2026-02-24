@@ -37,6 +37,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         await showBirthdayCollector();
     }
 
+    // PRELIMS BANNER — Show after birthday (one-time popup)
+    if (currentUser) {
+        await showPrelimsBanner();
+    }
+
     await initLiveTracking(); // ADDED: Initialize live tracking here
     await initMessaging(); // ADDED: Initialize messaging
 
@@ -2785,3 +2790,141 @@ function showBirthdayCollector() {
     });
 }
 
+// --- PRELIMS BANNER POPUP (with Confetti) ---
+function showPrelimsBanner() {
+    return new Promise((resolve) => {
+        const currentUser = window.user || user;
+        if (!currentUser) { resolve(); return; }
+
+        // Only show once (uncomment after testing)
+        // const storageKey = `prelims_banner_seen_${currentUser.id}`;
+        // if (localStorage.getItem(storageKey)) { resolve(); return; }
+        const storageKey = `prelims_banner_seen_${currentUser.id}`;
+
+        // --- Confetti Canvas ---
+        const confettiCanvas = document.createElement('canvas');
+        confettiCanvas.id = 'prelims-confetti-canvas';
+        confettiCanvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:10020;pointer-events:none;';
+        document.body.appendChild(confettiCanvas);
+        confettiCanvas.width = window.innerWidth;
+        confettiCanvas.height = window.innerHeight;
+        const ctx = confettiCanvas.getContext('2d');
+
+        const confettiColors = ['#6c5ce7', '#fd79a8', '#00b894', '#fdcb6e', '#e17055', '#0984e3', '#d63031', '#e84393', '#00cec9', '#ffeaa7'];
+        const confettiPieces = [];
+        for (let i = 0; i < 150; i++) {
+            confettiPieces.push({
+                x: Math.random() * confettiCanvas.width,
+                y: Math.random() * confettiCanvas.height - confettiCanvas.height,
+                w: Math.random() * 10 + 5,
+                h: Math.random() * 6 + 3,
+                color: confettiColors[Math.floor(Math.random() * confettiColors.length)],
+                rotation: Math.random() * 360,
+                rotSpeed: (Math.random() - 0.5) * 10,
+                vx: (Math.random() - 0.5) * 3,
+                vy: Math.random() * 3 + 2,
+                opacity: 1
+            });
+        }
+
+        let confettiRunning = true;
+        function animateConfetti() {
+            if (!confettiRunning) return;
+            ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+            let allDone = true;
+            confettiPieces.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.rotation += p.rotSpeed;
+                p.vy += 0.05;
+                if (p.y > confettiCanvas.height + 20) {
+                    p.opacity -= 0.02;
+                }
+                if (p.opacity > 0) allDone = false;
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate((p.rotation * Math.PI) / 180);
+                ctx.globalAlpha = Math.max(0, p.opacity);
+                ctx.fillStyle = p.color;
+                ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+                ctx.restore();
+            });
+            if (allDone) {
+                confettiRunning = false;
+                confettiCanvas.remove();
+            } else {
+                requestAnimationFrame(animateConfetti);
+            }
+        }
+        requestAnimationFrame(animateConfetti);
+
+        // --- Modal Overlay ---
+        const overlay = document.createElement('div');
+        overlay.className = 'wimpy-modal-overlay';
+        overlay.id = 'prelims-banner-popup';
+        overlay.style.cssText = 'z-index:10015;display:flex;align-items:center;justify-content:center;';
+
+        const box = document.createElement('div');
+        box.className = 'wimpy-modal-box';
+        box.style.cssText = 'max-width:480px;padding:0;background:#fff;text-align:center;overflow:hidden;border-radius:12px;border:3px solid #000;box-shadow:6px 6px 0 rgba(0,0,0,0.15);animation:popBounce 0.5s cubic-bezier(.68,-.55,.27,1.55);visibility:visible;opacity:1;';
+
+        box.innerHTML = `
+            <div style="position:relative;">
+                <img src="assets/images/prelimsbanner.jpg" alt="Prelims Banner"
+                     style="width:100%;display:block;border-bottom:3px solid #000;">
+                <div style="position:absolute;top:10px;right:10px;background:rgba(0,0,0,0.6);color:#fff;padding:3px 10px;border-radius:20px;font-size:0.75rem;font-family:'Patrick Hand',cursive;">🎉 PRELIMS</div>
+            </div>
+            <div style="padding:20px 25px 25px;">
+                <h2 style="margin:0 0 5px;font-family:'Permanent Marker',cursive;font-size:1.6rem;color:#6c5ce7;text-shadow:2px 2px 0 rgba(108,92,231,0.1);">
+                    🎓 PRELIMS TIME!
+                </h2>
+                <p style="font-family:'Patrick Hand',cursive;font-size:1.1rem;color:#636e72;margin:8px 0 18px;line-height:1.4;">
+                    Good luck sa prelims, classmates! Kaya natin 'to! 💪📚
+                </p>
+                <div style="background:linear-gradient(135deg,#dfe6e9,#ffeaa7);border:2px solid #000;border-radius:8px;padding:10px 15px;margin-bottom:18px;display:inline-block;transform:rotate(-1deg);">
+                    <p style="margin:0;font-family:'Patrick Hand',cursive;font-size:0.95rem;color:#2d3436;">
+                        <i class="fas fa-palette" style="color:#e17055;"></i> Banner designed by
+                    </p>
+                    <p style="margin:4px 0 0;font-family:'Permanent Marker',cursive;font-size:1.3rem;color:#2d3436;letter-spacing:1px;">
+                        ✨ ADRIAN BALBUENA ✨
+                    </p>
+                </div>
+                <br>
+                <button id="prelims-banner-close-btn" class="sketch-btn" style="background:#6c5ce7;color:#fff;width:100%;font-size:1.15rem;padding:12px;transform:rotate(-0.5deg);border-color:#5a4bd1;">
+                    <i class="fas fa-fire"></i> LET'S GO!
+                </button>
+            </div>
+        `;
+
+        // Inject keyframe if not present
+        if (!document.getElementById('prelims-pop-keyframe')) {
+            const style = document.createElement('style');
+            style.id = 'prelims-pop-keyframe';
+            style.textContent = `
+                @keyframes popBounce {
+                    0% { transform: scale(0.3) rotate(-5deg); opacity:0; }
+                    60% { transform: scale(1.05) rotate(1deg); opacity:1; }
+                    80% { transform: scale(0.97) rotate(-0.5deg); }
+                    100% { transform: scale(1) rotate(0deg); }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+
+        document.getElementById('prelims-banner-close-btn').onclick = () => {
+            localStorage.setItem(storageKey, '1');
+            box.style.transform = 'scale(0.8) rotate(3deg)';
+            box.style.opacity = '0';
+            box.style.transition = 'all 0.3s ease-out';
+            confettiRunning = false;
+            setTimeout(() => {
+                overlay.remove();
+                if (confettiCanvas.parentNode) confettiCanvas.remove();
+                resolve();
+            }, 300);
+        };
+    });
+}
