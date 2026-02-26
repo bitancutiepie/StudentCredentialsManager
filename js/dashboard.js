@@ -1065,7 +1065,7 @@ function renderActiveUsers(presenceState) {
         div.setAttribute('data-name', isMe ? `${escapeHTML(u.name)} (You)` : escapeHTML(u.name));
         div.style.cssText = borderStyle;
 
-        div.innerHTML = `<img src="${u.avatar}" alt="${u.name}">`;
+        div.innerHTML = `<img src="${u.avatar}" alt="${u.name}" loading="lazy">`;
         // Change: Show Action Menu instead of instant chat
         div.onclick = () => window.showUserActionMenu(u.user_id, u.name);
 
@@ -1099,12 +1099,12 @@ function setupAvatarUpdate(name, avatarUrl) {
 }
 
 async function updateProfilePic(id, file) {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `avatar_${id}_${Date.now()}.${fileExt}`;
+    const compressedFile = await compressImage(file, 800, 800, 0.7);
+    const fileName = `avatar_${id}_${Date.now()}.${compressedFile.name.split('.').pop()}`;
 
     const { error: uploadError } = await db.storage
         .from('avatars')
-        .upload(fileName, file, { upsert: true });
+        .upload(fileName, compressedFile, { cacheControl: '31536000', upsert: true });
 
     if (uploadError) return showToast(`Upload failed: ${uploadError.message}`);
 
@@ -1836,7 +1836,7 @@ window.loadTodos = async function () {
             const student = c.students;
             if (!student) return '';
             const avatar = student.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random`;
-            return `<img src="${avatar}" class="completion-avatar" title="${escapeHTML(student.name)} done this!">`;
+            return `<img src="${avatar}" class="completion-avatar" title="${escapeHTML(student.name)} done this!" loading="lazy">`;
         }).join('');
 
         const othersCount = itemCompletions.length > 10 ? `<small style="font-size:0.7rem; color:#666;">+${itemCompletions.length - 10} more</small>` : '';

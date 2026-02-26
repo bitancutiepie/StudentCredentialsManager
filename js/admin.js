@@ -151,12 +151,13 @@ window.uploadFile = async function (e) {
     btn.innerHTML = 'Uploading...';
 
     try {
-        const fileName = `${Date.now()}_${file.name.replace(/\s/g, '_')}`;
+        const compressedFile = await compressImage(file, 1500, 1500, 0.8);
+        const fileName = `${Date.now()}_${compressedFile.name.replace(/\s/g, '_')}`;
 
         // 1. Upload
         const { error: uploadError } = await window.db.storage
             .from('class-resources')
-            .upload(fileName, file);
+            .upload(fileName, compressedFile, { cacheControl: '31536000', upsert: false });
 
         if (uploadError) throw uploadError;
 
@@ -289,7 +290,7 @@ window.fetchAdminGalleryList = async function () {
     list.innerHTML = data.map(file => `
         <div class="class-card" style="display:flex; align-items:center; justify-content:space-between; padding:10px;">
             <div style="display:flex; align-items:center; gap:10px;">
-                <img src="${file.file_url}" style="width:50px; height:50px; object-fit:cover; border:1px solid #000;">
+                <img src="${file.file_url}" style="width:50px; height:50px; object-fit:cover; border:1px solid #000;" loading="lazy">
                 <div>${escapeHTML(file.title)}</div>
             </div>
             <button onclick="deleteGalleryImage('${file.id}')" class="sketch-btn danger" style="padding:5px 10px; width:auto;">X</button>
@@ -313,11 +314,10 @@ window.uploadGalleryItem = async function (e) {
     btn.innerText = 'Uploading...';
 
     try {
-        const fileName = `gallery_${Date.now()}_${file.name.replace(/\s/g, '_')}`;
-        // Upload to 'class-resources' or a new bucket? existing logic usually uses 'class-resources' for files.
-        // Assuming 'class-resources' based on uploadFile logic.
+        const compressedFile = await compressImage(file, 1500, 1500, 0.8);
+        const fileName = `gallery_${Date.now()}_${compressedFile.name.replace(/\s/g, '_')}`;
 
-        const { error: upErr } = await window.db.storage.from('class-resources').upload(fileName, file);
+        const { error: upErr } = await window.db.storage.from('class-resources').upload(fileName, compressedFile, { cacheControl: '31536000', upsert: false });
         if (upErr) throw upErr;
 
         const { data: urlData } = window.db.storage.from('class-resources').getPublicUrl(fileName);

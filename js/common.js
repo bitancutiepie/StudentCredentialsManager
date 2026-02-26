@@ -215,6 +215,74 @@ function copyToClipboard(text) {
 }
 
 /**
+ * Compresses an image file using the Canvas API before uploading.
+ * @param {File} file - The original image file.
+ * @param {number} maxWidth - Maximum width (default: 800).
+ * @param {number} maxHeight - Maximum height (default: 800).
+ * @param {number} quality - JPEG compression quality 0-1 (default: 0.7).
+ * @returns {Promise<File>} - The compressed File object.
+ */
+function compressImage(file, maxWidth = 800, maxHeight = 800, quality = 0.7) {
+    return new Promise((resolve, reject) => {
+        // Only process images (skip SVGs, PDFs, etc.)
+        if (!file.type.match(/image.*/) || file.type === 'image/svg+xml') {
+            resolve(file);
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = event => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+                let width = img.width;
+                let height = img.height;
+
+                // Calculate aspect ratio
+                if (width > height) {
+                    if (width > maxWidth) {
+                        height = Math.round((height * maxWidth) / width);
+                        width = maxWidth;
+                    }
+                } else {
+                    if (height > maxHeight) {
+                        width = Math.round((width * maxHeight) / height);
+                        height = maxHeight;
+                    }
+                }
+
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Convert canvas back to a Blob/File, forcing JPEG for better compression
+                canvas.toBlob((blob) => {
+                    if (!blob) {
+                        reject(new Error('Canvas to Blob failed'));
+                        return;
+                    }
+                    // Create new File object with original name but new extension if it was PNG/etc.
+                    const newFileName = file.name.replace(/\.[^/.]+$/, "") + ".jpg";
+                    const compressedFile = new File([blob], newFileName, {
+                        type: 'image/jpeg',
+                        lastModified: Date.now()
+                    });
+                    
+                    console.log(`Compressed: ${(file.size / 1024).toFixed(2)}KB -> ${(compressedFile.size / 1024).toFixed(2)}KB`);
+                    resolve(compressedFile);
+                }, 'image/jpeg', quality);
+            };
+            img.onerror = (error) => reject(error);
+        };
+        reader.onerror = (error) => reject(error);
+    });
+}
+
+/**
  * Updates the student's last_login timestamp in the database.
  * Throttled to once every 2 minutes per session.
  */

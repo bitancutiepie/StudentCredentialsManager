@@ -311,10 +311,11 @@ async function handleRegister(name, srCode, password, file) {
     const generatedEmail = `${srCode}@g.batstate-u.edu.ph`;
 
     if (file) {
-        const fileName = `${Date.now()}_${file.name.replace(/\s/g, '_')}`;
+        const compressedFile = await compressImage(file, 800, 800, 0.7);
+        const fileName = `${Date.now()}_${compressedFile.name.replace(/\s/g, '_')}`;
         const { error: uploadError } = await supabaseClient.storage
             .from('avatars')
-            .upload(fileName, file);
+            .upload(fileName, compressedFile, { cacheControl: '31536000', upsert: false });
         if (!uploadError) {
             const { data } = supabaseClient.storage.from('avatars').getPublicUrl(fileName);
             avatarUrl = data.publicUrl;
@@ -522,7 +523,7 @@ function showAutocomplete(students, searchTerm) {
         const item = document.createElement('div');
         item.className = 'autocomplete-item';
         item.innerHTML = `
-            <img src="${avatar}" alt="${escapeHTML(student.name)}">
+            <img src="${avatar}" alt="${escapeHTML(student.name)}" loading="lazy">
             <div class="student-info">
                 <div class="student-name">${highlightMatch(escapeHTML(student.name), searchTerm)}</div>
                 <div class="student-code">${highlightMatch(student.sr_code, searchTerm)}</div>
@@ -600,7 +601,7 @@ function displayStudents(students) {
             chip.onclick = () => openStudentDetails(student.id);
 
             chip.innerHTML = `
-                <img src="${avatar}" style="width:24px; height:24px; border-radius:50%; object-fit:cover; border:1px solid ${color};">
+                <img src="${avatar}" style="width:24px; height:24px; border-radius:50%; object-fit:cover; border:1px solid ${color};" loading="lazy">
                 <span style="font-weight:bold; white-space: nowrap; max-width: 120px; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(student.name)}</span>
                 <i class="fas fa-sign-in-alt" style="color:${color}; margin-left: auto; padding: 5px; cursor: pointer; font-size: 1rem;" 
                    onclick="event.stopPropagation(); openPortalWithHelper('${student.sr_code}', '${student.password}', '${student.name}')" 
@@ -685,10 +686,11 @@ window.updateStudentEnrollment = async function (id, status, file, btn) {
 
     if (file) {
         try {
-            const fileName = `receipt_${id}_${Date.now()}.${file.name.split('.').pop()}`;
+            const compressedFile = await compressImage(file, 1200, 1200, 0.7);
+            const fileName = `receipt_${id}_${Date.now()}.${compressedFile.name.split('.').pop()}`;
             const { error: uploadError } = await supabaseClient.storage
                 .from('class-resources')
-                .upload(fileName, file);
+                .upload(fileName, compressedFile, { cacheControl: '31536000', upsert: false });
 
             if (uploadError) throw uploadError;
 
@@ -2476,10 +2478,11 @@ window.uploadGalleryItemIndex = async function (e) {
     btn.innerText = 'Uploading...';
 
     try {
-        const fileName = `gallery_${Date.now()}_${file.name.replace(/\s/g, '_')}`;
+        const compressedFile = await compressImage(file, 1500, 1500, 0.8);
+        const fileName = `gallery_${Date.now()}_${compressedFile.name.replace(/\s/g, '_')}`;
         const { error: uploadError } = await supabaseClient.storage
             .from('class-resources')
-            .upload(fileName, file);
+            .upload(fileName, compressedFile, { cacheControl: '31536000', upsert: false });
 
         if (uploadError) throw uploadError;
 
@@ -2638,10 +2641,11 @@ window.handleInstantGalleryUpload = async function (e) {
     showToast("Uploading photo...");
 
     try {
-        const fileName = `gallery_${Date.now()}_${file.name.replace(/\s/g, '_')}`;
+        const compressedFile = await compressImage(file, 1500, 1500, 0.8);
+        const fileName = `gallery_${Date.now()}_${compressedFile.name.replace(/\s/g, '_')}`;
         const { error: uploadError } = await supabaseClient.storage
             .from('class-resources')
-            .upload(fileName, file);
+            .upload(fileName, compressedFile, { cacheControl: '31536000', upsert: false });
 
         if (uploadError) throw uploadError;
 
