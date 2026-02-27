@@ -2080,21 +2080,6 @@ async function showHighlightsModal() {
                     <div class="highlights-section-title"><i class="fas fa-folder-open"></i> New Resources</div>
                     ${filesHtml}
                 </div>
-                <div class="highlights-section" style="background: #f0ebff; border: 2px dashed #6c5ce7; border-radius: 5px; padding: 12px; text-align: center;">
-                    <div class="highlights-section-title" style="color: #6c5ce7; border-bottom-color: #6c5ce7;"><i class="fas fa-calendar-check"></i> Prelims Schedule</div>
-                    <img src="assets/images/prelims_sched.jpg" 
-                        style="width: 100%; max-width: 300px; border: 3px solid #000; border-radius: 5px; margin: 10px auto; box-shadow: 4px 4px 0 rgba(0,0,0,0.1); cursor: pointer; display: block;"
-                        onclick="openPrelimsSchedViewer()" title="Tap to view full size">
-                    <p style="font-size: 1rem; color: #636e72; margin: 8px 0; font-family: 'Patrick Hand';">Aral na! Check mo prelims sched mo dito.</p>
-                    <div style="display: flex; gap: 8px; justify-content: center;">
-                        <button onclick="openPrelimsSchedViewer()" class="sketch-btn" style="background: #6c5ce7; color: #fff; font-size: 1rem; width: auto; padding: 8px 16px; margin: 0;">
-                            <i class="fas fa-image"></i> SCHEDULE
-                        </button>
-                        <button onclick="openPrelimsCoverage(); document.getElementById('highlights-popup').remove();" class="sketch-btn" style="background: #00b894; color: #fff; font-size: 1rem; width: auto; padding: 8px 16px; margin: 0;">
-                            <i class="fas fa-book-open"></i> COVERAGE
-                        </button>
-                    </div>
-                </div>
             </div>
             <div class="highlights-footer">
                 <button class="sketch-btn" id="close-highlights" style="background:#000; color:#fff; width:100%; font-size:1.2rem; transform:rotate(-1deg);">
@@ -2392,187 +2377,6 @@ window.closeSSCPaymentModal = function () {
     }
 }
 
-// --- PRELIMS CHOICE & COVERAGE MODAL LOGIC ---
-window.openPrelimsChoice = function () {
-    const modal = document.getElementById('prelimsChoiceModal');
-    if (modal) modal.classList.remove('hidden');
-}
-
-window.closePrelimsChoice = function () {
-    const modal = document.getElementById('prelimsChoiceModal');
-    if (modal) modal.classList.add('hidden');
-}
-
-window.openPrelimsCoverage = function () {
-    const modal = document.getElementById('prelimsCoverageModal');
-    if (modal) modal.classList.remove('hidden');
-}
-
-window.closePrelimsCoverage = function () {
-    const modal = document.getElementById('prelimsCoverageModal');
-    if (modal) modal.classList.add('hidden');
-}
-
-// --- PRELIMS SCHEDULE VIEWER (Pinch-to-Zoom & Pan) ---
-let prelimsZoomLevel = 1;
-let prelimsPanX = 0;
-let prelimsPanY = 0;
-let prelimsIsDragging = false;
-let prelimsLastX = 0;
-let prelimsLastY = 0;
-let prelimsInitialDistance = 0;
-let prelimsInitialZoom = 1;
-
-window.openPrelimsSchedViewer = function () {
-    // Close the highlights popup if open
-    const highlightsPopup = document.getElementById('highlights-popup');
-    if (highlightsPopup) highlightsPopup.remove();
-
-    const viewer = document.getElementById('prelimsSchedViewer');
-    if (viewer) {
-        viewer.classList.remove('hidden');
-        prelimsZoomLevel = 1;
-        prelimsPanX = 0;
-        prelimsPanY = 0;
-        updatePrelimsTransform();
-        initPrelimsGestures();
-    }
-}
-
-window.closePrelimsSchedViewer = function () {
-    const viewer = document.getElementById('prelimsSchedViewer');
-    if (viewer) {
-        viewer.classList.add('hidden');
-        prelimsZoomLevel = 1;
-        prelimsPanX = 0;
-        prelimsPanY = 0;
-    }
-}
-
-window.prelimsZoom = function (action) {
-    if (action === 'in') {
-        prelimsZoomLevel = Math.min(prelimsZoomLevel + 0.5, 5);
-    } else if (action === 'out') {
-        prelimsZoomLevel = Math.max(prelimsZoomLevel - 0.5, 0.5);
-    } else if (action === 'reset') {
-        prelimsZoomLevel = 1;
-        prelimsPanX = 0;
-        prelimsPanY = 0;
-    }
-    updatePrelimsTransform();
-}
-
-function updatePrelimsTransform() {
-    const img = document.getElementById('prelims-zoom-img');
-    if (img) {
-        img.style.transform = `translate(${prelimsPanX}px, ${prelimsPanY}px) scale(${prelimsZoomLevel})`;
-    }
-}
-
-function initPrelimsGestures() {
-    const container = document.getElementById('prelims-zoom-container');
-    const img = document.getElementById('prelims-zoom-img');
-    if (!container || !img) return;
-
-    // Remove old listeners by replacing node
-    const newContainer = container.cloneNode(true);
-    container.parentNode.replaceChild(newContainer, container);
-
-    const newImg = newContainer.querySelector('#prelims-zoom-img');
-
-    // Mouse/Touch Drag (Pan)
-    newContainer.addEventListener('pointerdown', function (e) {
-        if (e.pointerType === 'touch' && e.isPrimary === false) return; // Skip multi-touch for drag
-        prelimsIsDragging = true;
-        prelimsLastX = e.clientX;
-        prelimsLastY = e.clientY;
-        newImg.style.cursor = 'grabbing';
-        newImg.style.transition = 'none';
-    });
-
-    newContainer.addEventListener('pointermove', function (e) {
-        if (!prelimsIsDragging) return;
-        const dx = e.clientX - prelimsLastX;
-        const dy = e.clientY - prelimsLastY;
-        prelimsPanX += dx;
-        prelimsPanY += dy;
-        prelimsLastX = e.clientX;
-        prelimsLastY = e.clientY;
-        updatePrelimsTransform();
-    });
-
-    newContainer.addEventListener('pointerup', function () {
-        prelimsIsDragging = false;
-        newImg.style.cursor = 'grab';
-        newImg.style.transition = 'transform 0.1s ease-out';
-    });
-
-    newContainer.addEventListener('pointerleave', function () {
-        prelimsIsDragging = false;
-        newImg.style.cursor = 'grab';
-        newImg.style.transition = 'transform 0.1s ease-out';
-    });
-
-    // Pinch-to-Zoom (Touch)
-    let activeTouches = {};
-    newContainer.addEventListener('touchstart', function (e) {
-        for (let t of e.changedTouches) activeTouches[t.identifier] = t;
-        if (Object.keys(activeTouches).length === 2) {
-            e.preventDefault();
-            const touches = Object.values(activeTouches);
-            prelimsInitialDistance = Math.hypot(
-                touches[0].clientX - touches[1].clientX,
-                touches[0].clientY - touches[1].clientY
-            );
-            prelimsInitialZoom = prelimsZoomLevel;
-        }
-    }, { passive: false });
-
-    newContainer.addEventListener('touchmove', function (e) {
-        for (let t of e.changedTouches) activeTouches[t.identifier] = t;
-        if (Object.keys(activeTouches).length === 2) {
-            e.preventDefault();
-            const touches = Object.values(activeTouches);
-            const currentDistance = Math.hypot(
-                touches[0].clientX - touches[1].clientX,
-                touches[0].clientY - touches[1].clientY
-            );
-            const ratio = currentDistance / prelimsInitialDistance;
-            prelimsZoomLevel = Math.min(Math.max(prelimsInitialZoom * ratio, 0.5), 5);
-            updatePrelimsTransform();
-        }
-    }, { passive: false });
-
-    newContainer.addEventListener('touchend', function (e) {
-        for (let t of e.changedTouches) delete activeTouches[t.identifier];
-    });
-
-    // Mouse Wheel Zoom
-    newContainer.addEventListener('wheel', function (e) {
-        e.preventDefault();
-        const delta = e.deltaY > 0 ? -0.15 : 0.15;
-        prelimsZoomLevel = Math.min(Math.max(prelimsZoomLevel + delta, 0.5), 5);
-        updatePrelimsTransform();
-    }, { passive: false });
-
-    // Double-tap/click to toggle zoom
-    let lastTap = 0;
-    newContainer.addEventListener('click', function (e) {
-        const now = Date.now();
-        if (now - lastTap < 300) {
-            // Double tap
-            if (prelimsZoomLevel > 1.2) {
-                prelimsZoomLevel = 1;
-                prelimsPanX = 0;
-                prelimsPanY = 0;
-            } else {
-                prelimsZoomLevel = 2.5;
-            }
-            updatePrelimsTransform();
-        }
-        lastTap = now;
-    });
-}
 
 // --- VALENTINE'S DAY SURPRISE ---
 function checkValentinesDay() {
@@ -2797,9 +2601,9 @@ function showPrelimsBanner() {
         if (!currentUser) { resolve(); return; }
 
         // Only show once (uncomment after testing)
-        // const storageKey = `prelims_banner_seen_${currentUser.id}`;
+        // const storageKey = `prelims_done_banner_seen_${currentUser.id}`;
         // if (localStorage.getItem(storageKey)) { resolve(); return; }
-        const storageKey = `prelims_banner_seen_${currentUser.id}`;
+        const storageKey = `prelims_done_banner_seen_${currentUser.id}`;
 
         // --- Confetti Canvas ---
         const confettiCanvas = document.createElement('canvas');
@@ -2869,27 +2673,16 @@ function showPrelimsBanner() {
         box.style.cssText = 'max-width:480px;padding:0;background:#fff;text-align:center;overflow:hidden;border-radius:12px;border:3px solid #000;box-shadow:6px 6px 0 rgba(0,0,0,0.15);animation:popBounce 0.5s cubic-bezier(.68,-.55,.27,1.55);visibility:visible;opacity:1;';
 
         box.innerHTML = `
-            <div style="position:relative;">
-                <img src="assets/images/prelimsbanner.jpg" alt="Prelims Banner"
-                     style="width:100%;display:block;border-bottom:3px solid #000;">
-                <div style="position:absolute;top:10px;right:10px;background:rgba(0,0,0,0.6);color:#fff;padding:3px 10px;border-radius:20px;font-size:0.75rem;font-family:'Patrick Hand',cursive;">🎉 PRELIMS</div>
-            </div>
-            <div style="padding:20px 25px 25px;">
-                <h2 style="margin:0 0 5px;font-family:'Permanent Marker',cursive;font-size:1.6rem;color:#6c5ce7;text-shadow:2px 2px 0 rgba(108,92,231,0.1);">
-                    🎓 PRELIMS TIME!
-                </h2>
-                <p style="font-family:'Patrick Hand',cursive;font-size:1.1rem;color:#636e72;margin:8px 0 18px;line-height:1.4;">
-                    Good luck sa prelims, classmates! Kaya natin 'to! 💪📚
-                </p>
-                <div style="background:linear-gradient(135deg,#dfe6e9,#ffeaa7);border:2px solid #000;border-radius:8px;padding:10px 15px;margin-bottom:18px;display:inline-block;transform:rotate(-1deg);">
-                    <p style="margin:0;font-family:'Patrick Hand',cursive;font-size:0.95rem;color:#2d3436;">
-                        <i class="fas fa-palette" style="color:#e17055;"></i> Banner designed by
-                    </p>
-                    <p style="margin:4px 0 0;font-family:'Permanent Marker',cursive;font-size:1.3rem;color:#2d3436;letter-spacing:1px;">
-                        ✨ ADRIAN BALBUENA ✨
-                    </p>
+            <div style="padding:30px 25px 25px; display: flex; flex-direction: column; align-items: center;">
+                <div style="font-size: 4rem; color: #00b894; margin-bottom: 15px;">
+                    <i class="fas fa-medal"></i>
                 </div>
-                <br>
+                <h2 style="margin:0 0 10px;font-family:'Permanent Marker',cursive;font-size:1.8rem;color:#6c5ce7;text-shadow:2px 2px 0 rgba(108,92,231,0.1);">
+                    CONGRATS IT-2206! 🎓
+                </h2>
+                <p style="font-family:'Patrick Hand',cursive;font-size:1.2rem;color:#2d3436;margin:0 0 20px;line-height:1.4; font-weight: bold;">
+                    Prelims are finally over! Great job everyone! 🎉
+                </p>
                 <button id="prelims-banner-close-btn" class="sketch-btn" style="background:#6c5ce7;color:#fff;width:100%;font-size:1.15rem;padding:12px;transform:rotate(-0.5deg);border-color:#5a4bd1;">
                     <i class="fas fa-fire"></i> LET'S GO!
                 </button>
