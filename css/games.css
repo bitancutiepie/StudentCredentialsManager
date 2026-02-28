@@ -1708,3 +1708,633 @@
         font-size: 0.85rem;
     }
 }
+
+
+/* ============================================
+   TOURNAMENT BRACKET SYSTEM
+   ============================================ */
+
+/* --- Active Tournament Banner --- */
+.tourney-banner {
+    background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+    border: 3px solid #000;
+    border-radius: 6px 12px 8px 10px / 10px 8px 12px 6px;
+    padding: 15px 20px;
+    margin: 15px auto 20px;
+    max-width: 500px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.2);
+    animation: tourneyBannerPulse 2s ease-in-out infinite;
+    cursor: pointer;
+}
+
+.tourney-banner:hover {
+    transform: translateY(-2px);
+    box-shadow: 7px 7px 0 rgba(0, 0, 0, 0.25);
+}
+
+.tourney-banner-icon {
+    font-size: 2rem;
+    animation: trophySpin 3s ease-in-out infinite;
+}
+
+@keyframes trophySpin {
+
+    0%,
+    100% {
+        transform: rotate(-5deg) scale(1);
+    }
+
+    50% {
+        transform: rotate(5deg) scale(1.1);
+    }
+}
+
+.tourney-banner-text {
+    flex: 1;
+    color: #fff;
+}
+
+.tourney-banner-text h4 {
+    margin: 0;
+    font-family: 'Permanent Marker', cursive;
+    font-size: 1.2rem;
+}
+
+.tourney-banner-text p {
+    margin: 3px 0 0;
+    font-family: 'Patrick Hand', cursive;
+    font-size: 0.95rem;
+    opacity: 0.9;
+}
+
+@keyframes tourneyBannerPulse {
+
+    0%,
+    100% {
+        box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.2);
+    }
+
+    50% {
+        box-shadow: 5px 5px 15px rgba(108, 92, 231, 0.4);
+    }
+}
+
+/* --- Tournament Lobby --- */
+.tourney-lobby {
+    background: #fff;
+    border: 3px solid #000;
+    border-radius: 6px 12px 8px 10px / 10px 8px 12px 6px;
+    padding: 25px;
+    box-shadow: 6px 6px 0 #000;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.tourney-lobby-header {
+    text-align: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px dashed #000;
+}
+
+.tourney-lobby-header h3 {
+    font-family: 'Permanent Marker', cursive;
+    font-size: 1.8rem;
+    margin: 0 0 5px;
+    color: #6c5ce7;
+}
+
+.tourney-lobby-header p {
+    font-family: 'Patrick Hand', cursive;
+    color: #666;
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.tourney-participants {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+    margin: 20px 0;
+    min-height: 80px;
+}
+
+.tourney-participant {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    padding: 10px;
+    background: #f8f9fa;
+    border: 2px solid #dee2e6;
+    border-radius: 10px;
+    width: 80px;
+    transition: transform 0.2s, border-color 0.2s;
+    animation: participantPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.tourney-participant:hover {
+    transform: translateY(-3px);
+    border-color: #6c5ce7;
+}
+
+.tourney-participant img {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    border: 2px solid #000;
+    object-fit: cover;
+}
+
+.tourney-participant span {
+    font-family: 'Patrick Hand', cursive;
+    font-size: 0.8rem;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 70px;
+}
+
+.tourney-participant.is-host {
+    border-color: #f1c40f;
+    background: #fff9db;
+}
+
+.tourney-participant.is-host::after {
+    content: '👑';
+    font-size: 0.7rem;
+}
+
+.tourney-slot-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 10px;
+    background: #f1f2f6;
+    border: 2px dashed #b2bec3;
+    border-radius: 10px;
+    width: 80px;
+    height: 85px;
+    color: #b2bec3;
+    font-family: 'Patrick Hand', cursive;
+    font-size: 0.8rem;
+}
+
+@keyframes participantPop {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.tourney-lobby-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 20px;
+    flex-wrap: wrap;
+}
+
+/* --- Tournament Bracket --- */
+.tourney-bracket-wrapper {
+    padding: 20px 10px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.tourney-bracket-header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.tourney-bracket-header h3 {
+    font-family: 'Permanent Marker', cursive;
+    font-size: 1.8rem;
+    color: #6c5ce7;
+    margin: 0 0 5px;
+}
+
+.tourney-bracket-header p {
+    font-family: 'Patrick Hand', cursive;
+    color: #666;
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.tourney-bracket {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    min-width: fit-content;
+    margin: 0 auto;
+    justify-content: center;
+}
+
+.tourney-round {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    min-width: 180px;
+    gap: 15px;
+    position: relative;
+}
+
+.tourney-round-label {
+    text-align: center;
+    font-family: 'Permanent Marker', cursive;
+    font-size: 0.95rem;
+    color: #636e72;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.tourney-match {
+    background: #fff;
+    border: 2.5px solid #2d3436;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.15);
+    transition: transform 0.2s, box-shadow 0.2s;
+    min-width: 160px;
+}
+
+.tourney-match:hover {
+    transform: translateY(-2px);
+    box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.2);
+}
+
+.tourney-match.match-active {
+    border-color: #6c5ce7;
+    box-shadow: 0 0 12px rgba(108, 92, 231, 0.35), 3px 3px 0 rgba(108, 92, 231, 0.3);
+    animation: matchPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes matchPulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 12px rgba(108, 92, 231, 0.35), 3px 3px 0 rgba(108, 92, 231, 0.3);
+    }
+
+    50% {
+        box-shadow: 0 0 20px rgba(108, 92, 231, 0.5), 3px 3px 0 rgba(108, 92, 231, 0.3);
+    }
+}
+
+.tourney-match.match-done {
+    opacity: 0.75;
+    border-color: #b2bec3;
+}
+
+.tourney-match-player {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    font-family: 'Patrick Hand', cursive;
+    font-size: 0.95rem;
+    transition: background 0.2s;
+    position: relative;
+}
+
+.tourney-match-player+.tourney-match-player {
+    border-top: 1.5px solid #eee;
+}
+
+.tourney-match-player img {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1.5px solid #000;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.tourney-match-player span {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tourney-match-player.match-winner {
+    background: rgba(0, 184, 148, 0.12);
+    font-weight: bold;
+}
+
+.tourney-match-player.match-winner::after {
+    content: '✓';
+    color: #00b894;
+    font-size: 1rem;
+    font-weight: bold;
+}
+
+.tourney-match-player.match-loser {
+    background: rgba(214, 48, 49, 0.06);
+    opacity: 0.6;
+    text-decoration: line-through;
+}
+
+.tourney-match-player.is-bye {
+    color: #b2bec3;
+    font-style: italic;
+}
+
+.tourney-match-player.is-tbd {
+    color: #b2bec3;
+    font-style: italic;
+}
+
+/* Connector lines between rounds */
+.tourney-connector {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    width: 30px;
+    min-width: 30px;
+    position: relative;
+}
+
+.tourney-connector-line {
+    border: 1.5px solid #b2bec3;
+    border-left: none;
+    height: 50%;
+    position: relative;
+    border-radius: 0 6px 6px 0;
+}
+
+/* --- Champion Display --- */
+.tourney-champion-card {
+    text-align: center;
+    padding: 30px;
+    background: linear-gradient(135deg, #fff9db, #ffeaa7);
+    border: 4px solid #f1c40f;
+    border-radius: 12px;
+    box-shadow: 0 0 30px rgba(241, 196, 15, 0.3), 6px 6px 0 #000;
+    margin: 20px auto;
+    max-width: 400px;
+    animation: championReveal 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.tourney-champion-crown {
+    font-size: 3rem;
+    animation: crownBounce 1s ease-in-out infinite;
+}
+
+@keyframes crownBounce {
+
+    0%,
+    100% {
+        transform: translateY(0) rotate(-5deg);
+    }
+
+    50% {
+        transform: translateY(-8px) rotate(5deg);
+    }
+}
+
+.tourney-champion-card h2 {
+    font-family: 'Permanent Marker', cursive;
+    font-size: 2rem;
+    color: #2d3436;
+    margin: 10px 0 5px;
+}
+
+.tourney-champion-card img {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 4px solid #f1c40f;
+    object-fit: cover;
+    box-shadow: 0 0 20px rgba(241, 196, 15, 0.4);
+    margin: 10px 0;
+}
+
+.tourney-champion-card h3 {
+    font-family: 'Permanent Marker', cursive;
+    font-size: 1.5rem;
+    margin: 5px 0;
+    color: #6c5ce7;
+}
+
+@keyframes championReveal {
+    0% {
+        transform: scale(0) rotate(-10deg);
+        opacity: 0;
+    }
+
+    70% {
+        transform: scale(1.05) rotate(2deg);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(1) rotate(0);
+        opacity: 1;
+    }
+}
+
+/* --- Tournament Standings --- */
+.tourney-standings {
+    max-width: 500px;
+    margin: 20px auto;
+    background: #fff;
+    border: 3px solid #000;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 4px 4px 0 #000;
+}
+
+.tourney-standings-header {
+    background: linear-gradient(135deg, #2d3436, #636e72);
+    color: #f1c40f;
+    padding: 12px 20px;
+    font-family: 'Permanent Marker', cursive;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tourney-standing-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 15px;
+    border-bottom: 1px solid #f1f2f6;
+    font-family: 'Patrick Hand', cursive;
+}
+
+.tourney-standing-row:nth-child(even) {
+    background: #f8f9fa;
+}
+
+.tourney-standing-rank {
+    font-family: 'Permanent Marker', cursive;
+    font-size: 1.1rem;
+    min-width: 30px;
+    text-align: center;
+}
+
+.tourney-standing-row img {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    border: 2px solid #000;
+    object-fit: cover;
+}
+
+.tourney-standing-name {
+    flex: 1;
+    font-size: 1.05rem;
+    font-weight: bold;
+}
+
+.tourney-standing-result {
+    font-size: 0.9rem;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-weight: bold;
+}
+
+.tourney-standing-result.gold {
+    background: #fff9db;
+    color: #f39c12;
+    border: 1.5px solid #f1c40f;
+}
+
+.tourney-standing-result.silver {
+    background: #f1f2f6;
+    color: #636e72;
+    border: 1.5px solid #95a5a6;
+}
+
+.tourney-standing-result.bronze {
+    background: #ffecd2;
+    color: #e17055;
+    border: 1.5px solid #e17055;
+}
+
+.tourney-standing-result.eliminated {
+    background: #fff5f5;
+    color: #d63031;
+    border: 1.5px solid #fab1a0;
+}
+
+/* --- Tournament Create Modal --- */
+.tourney-create-form {
+    text-align: center;
+    padding: 10px 0;
+}
+
+.tourney-create-form h3 {
+    font-family: 'Permanent Marker', cursive;
+    font-size: 1.5rem;
+    margin: 0 0 15px;
+    color: #6c5ce7;
+}
+
+.tourney-size-options {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin: 15px 0 20px;
+    flex-wrap: wrap;
+}
+
+.tourney-size-btn {
+    width: 80px;
+    height: 80px;
+    border: 3px solid #000;
+    border-radius: 12px;
+    background: #fff;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    font-family: 'Patrick Hand', cursive;
+    transition: all 0.2s;
+    box-shadow: 3px 3px 0 #000;
+}
+
+.tourney-size-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 5px 5px 0 #000;
+}
+
+.tourney-size-btn.selected {
+    background: #6c5ce7;
+    color: #fff;
+    border-color: #6c5ce7;
+}
+
+.tourney-size-btn span:first-child {
+    font-family: 'Permanent Marker', cursive;
+    font-size: 1.5rem;
+}
+
+.tourney-size-btn span:last-child {
+    font-size: 0.8rem;
+}
+
+/* --- Tournament Bracket Responsive --- */
+@media (max-width: 600px) {
+    .tourney-bracket-wrapper {
+        padding: 10px 5px;
+    }
+
+    .tourney-round {
+        min-width: 130px;
+    }
+
+    .tourney-match {
+        min-width: 120px;
+    }
+
+    .tourney-match-player {
+        padding: 6px 8px;
+        font-size: 0.85rem;
+    }
+
+    .tourney-match-player img {
+        width: 22px;
+        height: 22px;
+    }
+
+    .tourney-connector {
+        width: 18px;
+        min-width: 18px;
+    }
+
+    .tourney-participant {
+        width: 65px;
+    }
+
+    .tourney-participant img {
+        width: 35px;
+        height: 35px;
+    }
+
+    .tourney-champion-card h2 {
+        font-size: 1.5rem;
+    }
+
+    .tourney-lobby {
+        padding: 15px;
+    }
+}

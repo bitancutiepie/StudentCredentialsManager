@@ -859,4 +859,876 @@
         }
     };
 
+    // ============================================================
+    //   TOURNAMENT BRACKET SYSTEM
+    // ============================================================
+
+    // --- Tournament State ---
+    let tourney = null; // { id, hostId, hostName, size, status, participants, bracket, currentMatchIdx }
+    let isTourneyHost = false;
+    let inTourneyMatch = false; // true when playing a tournament match
+
+    function getMyAvatar() {
+        return window.user.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(window.user.name) + '&background=random';
+    }
+
+    // --- Extend renderLanding to show tournament buttons ---
+    const _origRenderLanding = renderLanding;
+
+    renderLanding = function () {
+        _origRenderLanding();
+        // Insert tournament section into the landing
+        var container = document.getElementById('battle-game-container');
+        if (!container) return;
+        var landing = container.querySelector('.battle-landing');
+        if (!landing) return;
+
+        var loreHeader = landing.querySelector('.battle-lore-header');
+        if (!loreHeader) return;
+
+        // Add tournament button next to "BATTLE A CLASSMATE"
+        var tourneyBtn = document.createElement('button');
+        tourneyBtn.className = 'sketch-btn';
+        tourneyBtn.style.cssText = 'background: #f1c40f; color: #000; border-color: #f1c40f; margin-top: 10px;';
+        tourneyBtn.innerHTML = '🏆 TOURNAMENT';
+        tourneyBtn.onclick = function () { window.openTourneyCreate(); };
+        loreHeader.appendChild(tourneyBtn);
+
+        // Show active tournament banner if one exists
+        if (tourney && tourney.status !== 'finished') {
+            var banner = document.createElement('div');
+            banner.className = 'tourney-banner';
+            banner.onclick = function () { window.openTourneyView(); };
+            var statusText = tourney.status === 'lobby' ? (tourney.participants.length + '/' + tourney.size + ' players joined') : 'Tournament in progress!';
+            banner.innerHTML =
+                '<span class="tourney-banner-icon">🏆</span>' +
+                '<div class="tourney-banner-text"><h4>TOURNAMENT ACTIVE!</h4><p>' + statusText + '</p></div>' +
+                '<i class="fas fa-chevron-right" style="color: #fff; font-size: 1.2rem;"></i>';
+            loreHeader.parentNode.insertBefore(banner, loreHeader.nextSibling);
+        }
+    };
+
+    // --- Create Tournament ---
+    window.openTourneyCreate = function () {
+        if (!window.user) return showToast('You must be logged in!', 'error');
+        if (!window.roomChannel) return showToast('Not connected to live features.', 'error');
+
+        // If tournament already exists, go to view
+        if (tourney && tourney.status !== 'finished') {
+            window.openTourneyView();
+            return;
+        }
+
+        var overlay = document.getElementById('tourney-create-modal');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'tourney-create-modal';
+            overlay.className = 'wimpy-modal-overlay';
+            document.body.appendChild(overlay);
+        }
+
+        overlay.innerHTML =
+            '<div class="wimpy-modal-box" style="max-width: 420px;">' +
+            '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom: 2px dashed #000; padding-bottom: 10px;">' +
+            '<h2 style="margin:0; font-size: 1.5rem;">🏆 Create Tournament</h2>' +
+            '<button onclick="document.getElementById(\'tourney-create-modal\').classList.add(\'hidden\')" class="sketch-btn danger" style="width:auto; padding: 5px 10px;">X</button>' +
+            '</div>' +
+            '<div class="tourney-create-form">' +
+            '<h3>Pick Bracket Size</h3>' +
+            '<p style="font-family: Patrick Hand; color: #666; font-size: 1.05rem;">How many fighters in this tournament?</p>' +
+            '<div class="tourney-size-options">' +
+            '<div class="tourney-size-btn selected" data-size="4" onclick="window.selectTourneySize(this, 4)"><span>4</span><span>Players</span></div>' +
+            '<div class="tourney-size-btn" data-size="8" onclick="window.selectTourneySize(this, 8)"><span>8</span><span>Players</span></div>' +
+            '<div class="tourney-size-btn" data-size="16" onclick="window.selectTourneySize(this, 16)"><span>16</span><span>Players</span></div>' +
+            '</div>' +
+            '<button class="sketch-btn" onclick="window.createTourney()" style="background: #6c5ce7; color: #fff; width: 100%; font-size: 1.2rem; padding: 12px;"><i class="fas fa-trophy"></i> CREATE TOURNAMENT</button>' +
+            '</div>' +
+            '</div>';
+
+        overlay.classList.remove('hidden');
+        window._selectedTourneySize = 4;
+    };
+
+    window.selectTourneySize = function (btn, size) {
+        document.querySelectorAll('.tourney-size-btn').forEach(function (b) { b.classList.remove('selected'); });
+        btn.classList.add('selected');
+        window._selectedTourneySize = size;
+    };
+
+    window.createTourney = function () {
+        var size = window._selectedTourneySize || 4;
+
+        tourney = {
+            id: 'tourney_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+            hostId: window.user.id,
+            hostName: window.user.name,
+            size: size,
+            status: 'lobby', // lobby | active | finished
+            participants: [{
+                id: window.user.id,
+                name: window.user.name,
+                avatar: getMyAvatar()
+            }],
+            bracket: null,
+            currentMatchIdx: 0
+        };
+        isTourneyHost = true;
+        inTourneyMatch = false;
+
+        // Broadcast creation
+        window.roomChannel.send({
+            type: 'broadcast',
+            event: 'tourney_create',
+            payload: tourney
+        });
+
+        var modal = document.getElementById('tourney-create-modal');
+        if (modal) modal.classList.add('hidden');
+
+        showToast('Tournament created! Waiting for players...');
+        renderTourneyLobby();
+    };
+
+    // --- Join Tournament ---
+    window.joinTourney = function () {
+        if (!tourney || tourney.status !== 'lobby') return;
+        if (!window.user) return showToast('You must be logged in!', 'error');
+
+        // Check if already joined
+        var already = tourney.participants.some(function (p) { return p.id === window.user.id; });
+        if (already) {
+            showToast('You already joined!');
+            return;
+        }
+
+        if (tourney.participants.length >= tourney.size) {
+            showToast('Tournament is full!', 'error');
+            return;
+        }
+
+        window.roomChannel.send({
+            type: 'broadcast',
+            event: 'tourney_join',
+            payload: {
+                tourney_id: tourney.id,
+                player: {
+                    id: window.user.id,
+                    name: window.user.name,
+                    avatar: getMyAvatar()
+                }
+            }
+        });
+
+        // Optimistic add
+        tourney.participants.push({
+            id: window.user.id,
+            name: window.user.name,
+            avatar: getMyAvatar()
+        });
+
+        showToast('You joined the tournament!');
+        renderTourneyLobby();
+    };
+
+    // --- Leave Tournament ---
+    window.leaveTourney = function () {
+        if (!tourney || tourney.status !== 'lobby') return;
+
+        window.roomChannel.send({
+            type: 'broadcast',
+            event: 'tourney_leave',
+            payload: {
+                tourney_id: tourney.id,
+                player_id: window.user.id
+            }
+        });
+
+        tourney.participants = tourney.participants.filter(function (p) { return p.id !== window.user.id; });
+
+        if (isTourneyHost) {
+            // Host leaves = cancel
+            window.roomChannel.send({
+                type: 'broadcast',
+                event: 'tourney_cancel',
+                payload: { tourney_id: tourney.id }
+            });
+            tourney = null;
+            isTourneyHost = false;
+            showToast('Tournament cancelled.');
+            renderLanding();
+        } else {
+            showToast('You left the tournament.');
+            renderLanding();
+        }
+    };
+
+    // --- Tournament View (Redirector) ---
+    window.openTourneyView = function () {
+        if (!tourney) return;
+        // Navigate to games > battle tab if not there
+        var battleBtn = document.querySelector('[onclick*="switchGame(\'battle\'"]');
+        if (battleBtn) window.switchGame('battle', battleBtn);
+
+        if (tourney.status === 'lobby') {
+            renderTourneyLobby();
+        } else if (tourney.status === 'active') {
+            renderTourneyBracket();
+        } else if (tourney.status === 'finished') {
+            renderTourneyFinished();
+        }
+    };
+
+    // --- Render Lobby ---
+    function renderTourneyLobby() {
+        var container = document.getElementById('battle-game-container');
+        if (!container) return;
+
+        var participantsHTML = '';
+        for (var i = 0; i < tourney.size; i++) {
+            if (i < tourney.participants.length) {
+                var p = tourney.participants[i];
+                var hostClass = p.id === tourney.hostId ? ' is-host' : '';
+                participantsHTML += '<div class="tourney-participant' + hostClass + '">' +
+                    '<img src="' + p.avatar + '" alt="' + escapeHTML(p.name) + '">' +
+                    '<span>' + escapeHTML(p.name) + '</span></div>';
+            } else {
+                participantsHTML += '<div class="tourney-slot-empty"><i class="fas fa-user-plus"></i><span>Empty</span></div>';
+            }
+        }
+
+        var isJoined = tourney.participants.some(function (p) { return p.id === window.user.id; });
+        var actionsHTML = '';
+
+        if (isTourneyHost) {
+            var canStart = tourney.participants.length >= 2;
+            actionsHTML =
+                '<button class="sketch-btn" onclick="window.startTourney()" style="background: #00b894; color: #fff; width: auto; font-size: 1.1rem; padding: 10px 25px;"' +
+                (canStart ? '' : ' disabled style="background: #b2bec3; color: #fff; width: auto; font-size: 1.1rem; padding: 10px 25px; cursor: not-allowed;"') +
+                '><i class="fas fa-play"></i> START TOURNAMENT (' + tourney.participants.length + '/' + tourney.size + ')</button>' +
+                '<button class="sketch-btn danger" onclick="window.leaveTourney()" style="width: auto; padding: 10px 20px;">Cancel</button>';
+        } else if (isJoined) {
+            actionsHTML = '<button class="sketch-btn danger" onclick="window.leaveTourney()" style="width: auto; padding: 10px 20px;">Leave Tournament</button>';
+        } else {
+            actionsHTML = '<button class="sketch-btn" onclick="window.joinTourney()" style="background: #6c5ce7; color: #fff; width: auto; font-size: 1.1rem; padding: 10px 25px;"><i class="fas fa-sign-in-alt"></i> JOIN TOURNAMENT</button>' +
+                '<button class="sketch-btn" onclick="window.battleBackToLobby()" style="width: auto; padding: 10px 20px;">Back</button>';
+        }
+
+        container.innerHTML =
+            '<div class="tourney-lobby">' +
+            '<div class="tourney-lobby-header">' +
+            '<h3>🏆 TOURNAMENT LOBBY</h3>' +
+            '<p>Hosted by ' + escapeHTML(tourney.hostName) + ' • ' + tourney.size + '-Player Bracket</p>' +
+            '</div>' +
+            '<div class="tourney-participants">' + participantsHTML + '</div>' +
+            '<div class="tourney-lobby-actions">' + actionsHTML + '</div>' +
+            '</div>';
+    }
+
+    // --- Start Tournament (Host only) ---
+    window.startTourney = function () {
+        if (!isTourneyHost || !tourney || tourney.status !== 'lobby') return;
+        if (tourney.participants.length < 2) return showToast('Need at least 2 players!', 'error');
+
+        tourney.status = 'active';
+        tourney.bracket = generateBracket(tourney.participants, tourney.size);
+        tourney.currentMatchIdx = 0;
+
+        // Resolve byes
+        resolveByes();
+
+        // Broadcast
+        window.roomChannel.send({
+            type: 'broadcast',
+            event: 'tourney_start',
+            payload: tourney
+        });
+
+        showToast('Tournament started!');
+        renderTourneyBracket();
+
+        // Auto-trigger first available match
+        setTimeout(function () { triggerNextMatch(); }, 2000);
+    };
+
+    // --- Bracket Generation ---
+    function generateBracket(participants, bracketSize) {
+        // Shuffle participants
+        var shuffled = participants.slice();
+        for (var i = shuffled.length - 1; i > 0; i--) {
+            var j = Math.floor(Math.random() * (i + 1));
+            var temp = shuffled[i];
+            shuffled[i] = shuffled[j];
+            shuffled[j] = temp;
+        }
+
+        var totalRounds = Math.log2(bracketSize);
+        var matches = [];
+        var matchId = 0;
+
+        // First round matches
+        for (var m = 0; m < bracketSize / 2; m++) {
+            var p1 = shuffled[m * 2] || null;
+            var p2 = shuffled[m * 2 + 1] || null;
+            matches.push({
+                id: matchId++,
+                round: 0,
+                p1: p1, // { id, name, avatar } or null (bye)
+                p2: p2,
+                winner: null,
+                played: false
+            });
+        }
+
+        // Subsequent rounds (empty, to be filled)
+        var prevRoundCount = bracketSize / 2;
+        for (var r = 1; r < totalRounds; r++) {
+            prevRoundCount = prevRoundCount / 2;
+            for (var mc = 0; mc < prevRoundCount; mc++) {
+                matches.push({
+                    id: matchId++,
+                    round: r,
+                    p1: null,
+                    p2: null,
+                    winner: null,
+                    played: false
+                });
+            }
+        }
+
+        return matches;
+    }
+
+    // --- Resolve Byes ---
+    function resolveByes() {
+        if (!tourney || !tourney.bracket) return;
+        var changed = true;
+        while (changed) {
+            changed = false;
+            for (var i = 0; i < tourney.bracket.length; i++) {
+                var match = tourney.bracket[i];
+                if (match.played) continue;
+
+                // If one player is null (bye), the other auto-advances
+                if (match.p1 && !match.p2) {
+                    match.winner = match.p1;
+                    match.played = true;
+                    advanceWinner(match);
+                    changed = true;
+                } else if (match.p2 && !match.p1) {
+                    match.winner = match.p2;
+                    match.played = true;
+                    advanceWinner(match);
+                    changed = true;
+                } else if (!match.p1 && !match.p2 && match.round === 0) {
+                    // Both null on round 0 = double bye, no one advances
+                    match.played = true;
+                    changed = true;
+                }
+            }
+        }
+    }
+
+    // --- Advance Winner to next round ---
+    function advanceWinner(match) {
+        if (!tourney || !tourney.bracket) return;
+        var totalRounds = Math.log2(tourney.size);
+        if (match.round >= totalRounds - 1) return; // Final already
+
+        // Find next round match
+        var matchesInRound = [];
+        var matchIndex = -1;
+        for (var i = 0; i < tourney.bracket.length; i++) {
+            if (tourney.bracket[i].round === match.round) {
+                if (tourney.bracket[i].id === match.id) matchIndex = matchesInRound.length;
+                matchesInRound.push(tourney.bracket[i]);
+            }
+        }
+
+        var nextMatchLocalIdx = Math.floor(matchIndex / 2);
+        var isTop = matchIndex % 2 === 0;
+
+        // Find the next round match
+        var nextRoundMatches = [];
+        for (var j = 0; j < tourney.bracket.length; j++) {
+            if (tourney.bracket[j].round === match.round + 1) {
+                nextRoundMatches.push(tourney.bracket[j]);
+            }
+        }
+
+        if (nextMatchLocalIdx < nextRoundMatches.length) {
+            var nextMatch = nextRoundMatches[nextMatchLocalIdx];
+            if (isTop) {
+                nextMatch.p1 = match.winner;
+            } else {
+                nextMatch.p2 = match.winner;
+            }
+        }
+    }
+
+    // --- Render Bracket ---
+    function renderTourneyBracket() {
+        var container = document.getElementById('battle-game-container');
+        if (!container || !tourney || !tourney.bracket) return;
+
+        var totalRounds = Math.log2(tourney.size);
+        var roundNames = [];
+        for (var r = 0; r < totalRounds; r++) {
+            if (r === totalRounds - 1) roundNames.push('Final');
+            else if (r === totalRounds - 2) roundNames.push('Semis');
+            else roundNames.push('Round ' + (r + 1));
+        }
+
+        var bracketHTML = '<div class="tourney-bracket">';
+
+        for (var rd = 0; rd < totalRounds; rd++) {
+            bracketHTML += '<div class="tourney-round">';
+            bracketHTML += '<div class="tourney-round-label">' + roundNames[rd] + '</div>';
+
+            var roundMatches = tourney.bracket.filter(function (m) { return m.round === rd; });
+
+            for (var mi = 0; mi < roundMatches.length; mi++) {
+                var m = roundMatches[mi];
+                var matchClass = 'tourney-match';
+                if (m.played) matchClass += ' match-done';
+                else if (m.p1 && m.p2) matchClass += ' match-active';
+
+                bracketHTML += '<div class="' + matchClass + '">';
+                bracketHTML += renderMatchPlayer(m, m.p1, true);
+                bracketHTML += renderMatchPlayer(m, m.p2, false);
+                bracketHTML += '</div>';
+            }
+
+            bracketHTML += '</div>';
+
+            // Add connectors between rounds (except after last)
+            if (rd < totalRounds - 1) {
+                bracketHTML += '<div class="tourney-connector">';
+                var connCount = Math.pow(2, totalRounds - rd - 1) / 2;
+                for (var c = 0; c < connCount; c++) {
+                    bracketHTML += '<div class="tourney-connector-line"></div>';
+                }
+                bracketHTML += '</div>';
+            }
+        }
+
+        bracketHTML += '</div>';
+
+        // Check if finished
+        var championHTML = '';
+        var standingsHTML = '';
+        var actionsHTML = '';
+        var finalMatch = tourney.bracket[tourney.bracket.length - 1];
+
+        if (finalMatch && finalMatch.played && finalMatch.winner) {
+            tourney.status = 'finished';
+            championHTML = renderChampion(finalMatch.winner);
+            standingsHTML = renderStandings();
+            actionsHTML = '<div style="text-align: center; margin-top: 20px;">' +
+                '<button class="sketch-btn" onclick="window.endTourney()" style="background: #6c5ce7; color: #fff; width: auto; padding: 10px 25px; font-size: 1.1rem;"><i class="fas fa-home"></i> BACK TO LOBBY</button>' +
+                '</div>';
+        } else {
+            actionsHTML = '<div style="text-align: center; margin-top: 15px;">';
+            if (isTourneyHost) {
+                actionsHTML += '<button class="sketch-btn" onclick="window.triggerNextMatchManual()" style="background: #00b894; color: #fff; width: auto; padding: 8px 20px; margin: 5px;"><i class="fas fa-bolt"></i> Trigger Next Match</button>';
+                actionsHTML += '<button class="sketch-btn danger" onclick="window.cancelTourney()" style="width: auto; padding: 8px 20px; margin: 5px;">Cancel Tournament</button>';
+            }
+            actionsHTML += '<button class="sketch-btn" onclick="window.battleBackToLobby()" style="width: auto; padding: 8px 20px; margin: 5px;">Back to Lobby</button>';
+            actionsHTML += '</div>';
+        }
+
+        container.innerHTML =
+            '<div class="tourney-bracket-wrapper">' +
+            '<div class="tourney-bracket-header">' +
+            '<h3>🏆 TOURNAMENT BRACKET</h3>' +
+            '<p>Hosted by ' + escapeHTML(tourney.hostName) + '</p>' +
+            '</div>' +
+            championHTML +
+            bracketHTML +
+            standingsHTML +
+            actionsHTML +
+            '</div>';
+    }
+
+    function renderMatchPlayer(match, player, isTop) {
+        if (!player) {
+            if (match.round === 0) {
+                return '<div class="tourney-match-player is-bye"><span>— BYE —</span></div>';
+            }
+            return '<div class="tourney-match-player is-tbd"><span>TBD</span></div>';
+        }
+
+        var cls = 'tourney-match-player';
+        if (match.played && match.winner) {
+            if (match.winner.id === player.id) cls += ' match-winner';
+            else cls += ' match-loser';
+        }
+
+        var isMe = window.user && player.id === window.user.id;
+        if (isMe) cls += ' lb-row-me';
+
+        return '<div class="' + cls + '">' +
+            '<img src="' + player.avatar + '" alt="' + escapeHTML(player.name) + '">' +
+            '<span>' + escapeHTML(player.name) + '</span>' +
+            '</div>';
+    }
+
+    function renderChampion(winner) {
+        return '<div class="tourney-champion-card">' +
+            '<div class="tourney-champion-crown">👑</div>' +
+            '<h2>CHAMPION!</h2>' +
+            '<img src="' + winner.avatar + '" alt="' + escapeHTML(winner.name) + '">' +
+            '<h3>' + escapeHTML(winner.name) + '</h3>' +
+            '</div>';
+    }
+
+    function renderStandings() {
+        if (!tourney || !tourney.bracket) return '';
+
+        // Build standings: champion, runner-up, semi-finalists, etc.
+        var totalRounds = Math.log2(tourney.size);
+        var standings = [];
+
+        // Champion
+        var finalMatch = tourney.bracket[tourney.bracket.length - 1];
+        if (finalMatch && finalMatch.winner) {
+            standings.push({ player: finalMatch.winner, result: 'Champion', resultClass: 'gold' });
+            // Runner-up
+            var loser = finalMatch.p1 && finalMatch.p1.id !== finalMatch.winner.id ? finalMatch.p1 : finalMatch.p2;
+            if (loser) standings.push({ player: loser, result: 'Runner-up', resultClass: 'silver' });
+        }
+
+        // Semi-finalists and others
+        for (var rd = totalRounds - 2; rd >= 0; rd--) {
+            var roundMatches = tourney.bracket.filter(function (m) { return m.round === rd && m.played && m.winner; });
+            for (var i = 0; i < roundMatches.length; i++) {
+                var m = roundMatches[i];
+                var rl = m.p1 && m.p1.id !== m.winner.id ? m.p1 : m.p2;
+                if (rl && !standings.some(function (s) { return s.player.id === rl.id; })) {
+                    var label = rd === totalRounds - 2 ? 'Semi-finalist' : 'Round ' + (rd + 1);
+                    var resultClass = rd === totalRounds - 2 ? 'bronze' : 'eliminated';
+                    standings.push({ player: rl, result: label, resultClass: resultClass });
+                }
+            }
+        }
+
+        if (standings.length === 0) return '';
+
+        var html = '<div class="tourney-standings">' +
+            '<div class="tourney-standings-header"><i class="fas fa-list-ol"></i> Tournament Standings</div>';
+
+        for (var s = 0; s < standings.length; s++) {
+            var st = standings[s];
+            var rankIcon = s === 0 ? '🥇' : s === 1 ? '🥈' : s === 2 ? '🥉' : (s + 1);
+            html += '<div class="tourney-standing-row">' +
+                '<div class="tourney-standing-rank">' + rankIcon + '</div>' +
+                '<img src="' + st.player.avatar + '" alt="' + escapeHTML(st.player.name) + '">' +
+                '<div class="tourney-standing-name">' + escapeHTML(st.player.name) + '</div>' +
+                '<div class="tourney-standing-result ' + st.resultClass + '">' + st.result + '</div>' +
+                '</div>';
+        }
+
+        html += '</div>';
+        return html;
+    }
+
+    // --- Trigger Next Match (Host) ---
+    function triggerNextMatch() {
+        if (!isTourneyHost || !tourney || tourney.status !== 'active') return;
+
+        // Find next unplayed match where both players are set
+        var nextMatch = null;
+        for (var i = 0; i < tourney.bracket.length; i++) {
+            var m = tourney.bracket[i];
+            if (!m.played && m.p1 && m.p2) {
+                nextMatch = m;
+                break;
+            }
+        }
+
+        if (!nextMatch) {
+            // Check if tournament is over
+            var finalMatch = tourney.bracket[tourney.bracket.length - 1];
+            if (finalMatch && finalMatch.played) {
+                tourney.status = 'finished';
+                broadcastTourneyUpdate();
+                renderTourneyBracket();
+            }
+            return;
+        }
+
+        tourney.currentMatchIdx = nextMatch.id;
+
+        // Broadcast to both players to start battle
+        window.roomChannel.send({
+            type: 'broadcast',
+            event: 'tourney_battle_start',
+            payload: {
+                tourney_id: tourney.id,
+                match_id: nextMatch.id,
+                p1: nextMatch.p1,
+                p2: nextMatch.p2
+            }
+        });
+
+        // If host is one of the players, handle locally
+        if (nextMatch.p1.id === window.user.id || nextMatch.p2.id === window.user.id) {
+            startTourneyMatchAsPlayer(nextMatch);
+        }
+    }
+
+    window.triggerNextMatchManual = function () {
+        triggerNextMatch();
+        showToast('Triggering next match...');
+    };
+
+    // --- Start a match as a player in tournament ---
+    function startTourneyMatchAsPlayer(match) {
+        inTourneyMatch = true;
+        var oppPlayer = match.p1.id === window.user.id ? match.p2 : match.p1;
+
+        opponentId = oppPlayer.id;
+        opponentName = oppPlayer.name;
+        opponentAvatar = oppPlayer.avatar;
+        currentBattleId = 'tourney_match_' + match.id;
+
+        startCreatureSelection();
+    }
+
+    // --- Handle Tournament Battle Result ---
+    function onTourneyBattleResult(result) {
+        if (!tourney || !inTourneyMatch) return;
+        inTourneyMatch = false;
+
+        // Report result to host
+        window.roomChannel.send({
+            type: 'broadcast',
+            event: 'tourney_match_result',
+            payload: {
+                tourney_id: tourney.id,
+                match_id: tourney.currentMatchIdx,
+                reporter_id: window.user.id,
+                winner_id: result === 'win' ? window.user.id : (result === 'lose' ? opponentId : null),
+                result: result
+            }
+        });
+
+        // If I'm the host, process immediately
+        if (isTourneyHost && result !== 'draw') {
+            processTourneyMatchResult(tourney.currentMatchIdx, result === 'win' ? window.user.id : opponentId);
+        }
+    }
+
+    function processTourneyMatchResult(matchId, winnerId) {
+        if (!tourney || !tourney.bracket) return;
+
+        var match = null;
+        for (var i = 0; i < tourney.bracket.length; i++) {
+            if (tourney.bracket[i].id === matchId) {
+                match = tourney.bracket[i];
+                break;
+            }
+        }
+
+        if (!match || match.played) return;
+
+        // Set winner
+        if (match.p1 && match.p1.id === winnerId) {
+            match.winner = match.p1;
+        } else if (match.p2 && match.p2.id === winnerId) {
+            match.winner = match.p2;
+        } else {
+            return; // Invalid
+        }
+
+        match.played = true;
+        advanceWinner(match);
+        resolveByes(); // In case the next round has byes
+
+        // Broadcast updated state
+        broadcastTourneyUpdate();
+
+        // Re-render bracket
+        renderTourneyBracket();
+
+        // Trigger next match after delay
+        setTimeout(function () { triggerNextMatch(); }, 3000);
+    }
+
+    function broadcastTourneyUpdate() {
+        if (!tourney) return;
+        window.roomChannel.send({
+            type: 'broadcast',
+            event: 'tourney_update',
+            payload: tourney
+        });
+    }
+
+    // --- Cancel Tournament ---
+    window.cancelTourney = function () {
+        if (!isTourneyHost || !tourney) return;
+        window.roomChannel.send({
+            type: 'broadcast',
+            event: 'tourney_cancel',
+            payload: { tourney_id: tourney.id }
+        });
+        showToast('Tournament cancelled.');
+        tourney = null;
+        isTourneyHost = false;
+        inTourneyMatch = false;
+        renderLanding();
+    };
+
+    // --- End Tournament (back to lobby) ---
+    window.endTourney = function () {
+        tourney = null;
+        isTourneyHost = false;
+        inTourneyMatch = false;
+        resetBattleState();
+        renderLanding();
+    };
+
+    function renderTourneyFinished() {
+        renderTourneyBracket(); // Bracket renderer handles finished state
+    }
+
+    // --- Extend showBattleResult for tournament mode ---
+    var _origShowBattleResult = showBattleResult;
+    showBattleResult = function () {
+        _origShowBattleResult();
+
+        if (inTourneyMatch) {
+            var result = determineBattleResult();
+            onTourneyBattleResult(result);
+
+            // Add "Back to Bracket" button
+            var resultArea = document.getElementById('battle-result-area');
+            if (resultArea) {
+                var bracketBtn = document.createElement('button');
+                bracketBtn.className = 'sketch-btn';
+                bracketBtn.style.cssText = 'width: auto; margin-top: 10px; font-size: 1rem; padding: 8px 20px; background: #6c5ce7; color: #fff;';
+                bracketBtn.innerHTML = '<i class="fas fa-trophy"></i> Back to Bracket';
+                bracketBtn.onclick = function () {
+                    resetBattleState();
+                    inTourneyMatch = false;
+                    renderTourneyBracket();
+                };
+                var splash = resultArea.querySelector('.battle-result-splash');
+                if (splash) splash.appendChild(bracketBtn);
+            }
+        }
+    };
+
+    // --- Extend handleBattleEvent for tournament events ---
+    var _origHandleBattleEvent = window.handleBattleEvent;
+    window.handleBattleEvent = function (event, payload) {
+        // Handle tournament events first
+        switch (event) {
+            case 'tourney_create':
+                if (!tourney || tourney.status === 'finished') {
+                    tourney = payload;
+                    isTourneyHost = (payload.hostId === window.user.id);
+                    showToast('🏆 ' + escapeHTML(payload.hostName) + ' created a tournament!');
+                    // If on battle landing, re-render to show banner
+                    var container = document.getElementById('battle-game-container');
+                    if (container && container.querySelector('.battle-landing')) {
+                        renderLanding();
+                    }
+                }
+                return;
+
+            case 'tourney_join':
+                if (tourney && tourney.id === payload.tourney_id && tourney.status === 'lobby') {
+                    var exists = tourney.participants.some(function (p) { return p.id === payload.player.id; });
+                    if (!exists) {
+                        tourney.participants.push(payload.player);
+                        showToast(escapeHTML(payload.player.name) + ' joined the tournament!');
+                        // Re-render lobby if viewing it
+                        var cont = document.getElementById('battle-game-container');
+                        if (cont && cont.querySelector('.tourney-lobby')) {
+                            renderTourneyLobby();
+                        }
+                    }
+                }
+                return;
+
+            case 'tourney_leave':
+                if (tourney && tourney.id === payload.tourney_id && tourney.status === 'lobby') {
+                    tourney.participants = tourney.participants.filter(function (p) { return p.id !== payload.player_id; });
+                    var cont2 = document.getElementById('battle-game-container');
+                    if (cont2 && cont2.querySelector('.tourney-lobby')) {
+                        renderTourneyLobby();
+                    }
+                }
+                return;
+
+            case 'tourney_start':
+                tourney = payload;
+                isTourneyHost = (payload.hostId === window.user.id);
+                showToast('🏆 Tournament has started!');
+                // Switch to bracket if in battle section
+                var bContainer = document.getElementById('battle-game-container');
+                if (bContainer) {
+                    renderTourneyBracket();
+                }
+                return;
+
+            case 'tourney_update':
+                tourney = payload;
+                isTourneyHost = (payload.hostId === window.user.id);
+                var uContainer = document.getElementById('battle-game-container');
+                if (uContainer && !inTourneyMatch) {
+                    if (tourney.status === 'active' || tourney.status === 'finished') {
+                        renderTourneyBracket();
+                    }
+                }
+                return;
+
+            case 'tourney_battle_start':
+                if (!tourney || tourney.id !== payload.tourney_id) return;
+                // Check if I'm a player in this match
+                if (payload.p1.id === window.user.id || payload.p2.id === window.user.id) {
+                    tourney.currentMatchIdx = payload.match_id;
+
+                    // Switch to battle tab if needed
+                    var gamesTab = document.querySelector('[onclick*="switchTab"][onclick*="games"]') ||
+                        document.querySelector('.tab-btn[onclick*="games"]');
+                    if (gamesTab) gamesTab.click();
+
+                    var bBtn = document.querySelector('[onclick*="switchGame(\'battle\'"]');
+                    if (bBtn) window.switchGame('battle', bBtn);
+
+                    showToast('🏆 Your tournament match is starting!');
+
+                    var matchInfo = { p1: payload.p1, p2: payload.p2, id: payload.match_id };
+                    startTourneyMatchAsPlayer(matchInfo);
+                }
+                return;
+
+            case 'tourney_match_result':
+                if (isTourneyHost && tourney && tourney.id === payload.tourney_id) {
+                    // Only process if host and not already processed
+                    if (payload.result !== 'draw' && payload.winner_id) {
+                        processTourneyMatchResult(payload.match_id, payload.winner_id);
+                    }
+                }
+                return;
+
+            case 'tourney_cancel':
+                if (tourney && tourney.id === payload.tourney_id) {
+                    showToast('Tournament was cancelled.', 'error');
+                    tourney = null;
+                    isTourneyHost = false;
+                    inTourneyMatch = false;
+                    var cContainer = document.getElementById('battle-game-container');
+                    if (cContainer) {
+                        renderLanding();
+                    }
+                }
+                return;
+        }
+
+        // Fall through to original handler
+        _origHandleBattleEvent(event, payload);
+    };
+
 })();

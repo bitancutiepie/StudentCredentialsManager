@@ -988,6 +988,31 @@ async function initLiveTracking() {
                 })
                 .on('broadcast', { event: 'battle_cancel' }, (payload) => {
                     if (window.handleBattleEvent) window.handleBattleEvent('battle_cancel', payload.payload);
+                })
+                // --- TOURNAMENT EVENTS ---
+                .on('broadcast', { event: 'tourney_create' }, (payload) => {
+                    if (window.handleBattleEvent) window.handleBattleEvent('tourney_create', payload.payload);
+                })
+                .on('broadcast', { event: 'tourney_join' }, (payload) => {
+                    if (window.handleBattleEvent) window.handleBattleEvent('tourney_join', payload.payload);
+                })
+                .on('broadcast', { event: 'tourney_leave' }, (payload) => {
+                    if (window.handleBattleEvent) window.handleBattleEvent('tourney_leave', payload.payload);
+                })
+                .on('broadcast', { event: 'tourney_start' }, (payload) => {
+                    if (window.handleBattleEvent) window.handleBattleEvent('tourney_start', payload.payload);
+                })
+                .on('broadcast', { event: 'tourney_update' }, (payload) => {
+                    if (window.handleBattleEvent) window.handleBattleEvent('tourney_update', payload.payload);
+                })
+                .on('broadcast', { event: 'tourney_battle_start' }, (payload) => {
+                    if (window.handleBattleEvent) window.handleBattleEvent('tourney_battle_start', payload.payload);
+                })
+                .on('broadcast', { event: 'tourney_match_result' }, (payload) => {
+                    if (window.handleBattleEvent) window.handleBattleEvent('tourney_match_result', payload.payload);
+                })
+                .on('broadcast', { event: 'tourney_cancel' }, (payload) => {
+                    if (window.handleBattleEvent) window.handleBattleEvent('tourney_cancel', payload.payload);
                 });
         }
 
