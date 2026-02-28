@@ -1,50 +1,35 @@
-// --- IMPROVISED GROUP CHAT SYSTEM ---
-// Leveraging the 'notes' table to simulate a group chat without DB schema changes.
-// Chat messages are stored as notes with color = 'CHAT_HIDDEN'.
-// The 'content' field stores a JSON string: { u: "Name", a: "Avatar", m: "Message", t: Timestamp, id: UserID }
-
-const GC_SUPABASE_URL = 'https://egnyblflgppsosunnilq.supabase.co';
-const GC_SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVnbnlibGZsZ3Bwc29zdW5uaWxxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY0OTYzMjksImV4cCI6MjA4MjA3MjMyOX0.HR9lt4oHuFjGcjwsF_fLoJMuG2OI8aCIoRCSyyu0zVE';
+// --- GROUP CHAT SYSTEM (Messenger-Style) ---
+// Uses the 'notes' table with color = 'CHAT_HIDDEN' to store messages.
+// Uses window.roomChannel (from dashboard.js) for typing/seen broadcasts.
+// Content field: JSON { u: "Name", a: "Avatar", m: "Message", t: Timestamp, id: UserID }
 
 window.groupChat = {
     isOpen: false,
     subscription: null,
     hasUnread: false,
     maxMessages: 50,
-    client: null,
+    renderedIds: new Set(),
+    pendingOptimistic: new Set(),
+    typingTimeout: null,
+    typingUsers: {},
+    lastSeenTime: null,
+    seenBy: [],
 
+    // ===== INIT =====
     init: async function () {
-        console.log("Initializing Group Chat...");
-        this.getClient();
+        console.log("Group Chat: Initializing...");
+        if (!window.db) {
+            console.warn("Group Chat: window.db not ready.");
+            return;
+        }
         this.setupRealtime();
-        // Check for unread messages (optional, maybe check last 't' > lastReadTime)
+        this.setupSelfRegen();
+        this.setupBroadcastListeners();
+        console.log("Group Chat: Ready.");
     },
 
-    getClient: function () {
-        if (this.client) return this.client;
-
-        // Try global existing clients first
-        if (window.db) this.client = window.db;
-        else if (window.supabaseClient) this.client = window.supabaseClient;
-        else if (window.sb) this.client = window.sb;
-
-        // Fallback: Create own instance
-        if (!this.client && window.supabase) {
-            console.log("Group Chat: Creating dedicated Supabase client.");
-            this.client = window.supabase.createClient(GC_SUPABASE_URL, GC_SUPABASE_KEY);
-        }
-        return this.client;
-    },
-
+    // ===== OPEN / CLOSE / TOGGLE =====
     open: async function () {
-        // UNDER MAINTENANCE BABY KALMA
-        if (window.showWimpyConfirm) {
-            await window.showWimpyConfirm("UNDER MAINTENANCE BABY KALMA");
-        } else {
-            alert("UNDER MAINTENANCE BABY KALMA");
-        }
-        return;
-
         const modal = document.getElementById('groupChatModal');
         if (!modal) return;
 
@@ -52,22 +37,25 @@ window.groupChat = {
         this.isOpen = true;
         this.hasUnread = false;
         this.updateBadge(false);
+
+        setTimeout(() => {
+            const input = document.getElementById('gc-input');
+            if (input) input.focus();
+        }, 100);
+
+        // Always load fresh history when opening
+        await this.loadHistory();
         this.scrollToBottom();
 
-        // Focus input
-        setTimeout(() => document.getElementById('gc-input').focus(), 100);
-
-        // Load History (only if empty)
-        const historyContainer = document.getElementById('gc-history');
-        if (historyContainer.innerHTML.trim() === '') {
-            await this.loadHistory();
-        }
+        // Broadcast "seen" when opening
+        this.broadcastSeen();
     },
 
     close: function () {
         const modal = document.getElementById('groupChatModal');
         if (modal) modal.classList.add('hidden');
         this.isOpen = false;
+        this.clearTypingIndicator();
     },
 
     toggle: function () {
@@ -75,55 +63,122 @@ window.groupChat = {
         else this.open();
     },
 
+    // ===== REALTIME: Postgres Changes for new messages =====
     setupRealtime: function () {
         if (this.subscription) return;
-        const client = this.getClient();
-        if (!client) return;
+        if (!window.db) return;
 
-        this.subscription = client
-            .channel('public:notes:chat')
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notes', filter: 'color=eq.CHAT_HIDDEN' }, payload => {
+        this.subscription = window.db
+            .channel('gc-messages')
+            .on('postgres_changes', {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'notes',
+                filter: 'color=eq.CHAT_HIDDEN'
+            }, payload => {
                 this.handleIncoming(payload.new);
             })
-            .subscribe();
+            .subscribe((status) => {
+                console.log("Group Chat Realtime:", status);
+                if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+                    this.subscription = null;
+                    setTimeout(() => this.setupRealtime(), 3000);
+                }
+            });
     },
 
+    // ===== BROADCAST LISTENERS: Typing + Seen via roomChannel =====
+    setupBroadcastListeners: function () {
+        // Wait for roomChannel to be ready (it's created in dashboard.js)
+        const waitForChannel = () => {
+            if (window.roomChannel) {
+                window.roomChannel
+                    .on('broadcast', { event: 'gc_typing' }, (payload) => {
+                        this.handleTypingBroadcast(payload.payload);
+                    })
+                    .on('broadcast', { event: 'gc_seen' }, (payload) => {
+                        this.handleSeenBroadcast(payload.payload);
+                    });
+                console.log("Group Chat: Broadcast listeners attached.");
+            } else {
+                setTimeout(waitForChannel, 500);
+            }
+        };
+        waitForChannel();
+    },
+
+    // ===== SELF-REGEN: Auto-reconnect =====
+    setupSelfRegen: function () {
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                if (!this.subscription) this.setupRealtime();
+                if (this.isOpen) this.loadHistory();
+            }
+        });
+
+        window.addEventListener('online', () => {
+            this.subscription = null;
+            this.setupRealtime();
+            if (this.isOpen) this.loadHistory();
+        });
+    },
+
+    // ===== LOAD HISTORY =====
     loadHistory: async function () {
         const historyContainer = document.getElementById('gc-history');
-        historyContainer.innerHTML = '<div class="loader" style="font-size:1rem; padding:20px;">Loading chismis...</div>';
+        if (!historyContainer || !window.db) return;
 
-        const client = this.getClient();
-        if (!client) {
-            historyContainer.innerHTML = 'Client setup failed.';
-            return;
-        }
+        historyContainer.innerHTML = '<div style="text-align:center; padding:20px; color:#666; font-family:Patrick Hand;">Loading chismis...</div>';
 
-        const { data, error } = await client
+        const { data, error } = await window.db
             .from('notes')
             .select('*')
             .eq('color', 'CHAT_HIDDEN')
-            .order('created_at', { ascending: false }) // Get latest
+            .order('created_at', { ascending: false })
             .limit(this.maxMessages);
 
         if (error) {
             historyContainer.innerHTML = '<div style="text-align:center; color:red;">Failed to load chat.</div>';
+            console.error("GC Load Error:", error);
             return;
         }
 
         historyContainer.innerHTML = '';
-        // Reverse to show oldest first
+        this.renderedIds.clear();
+        this.pendingOptimistic.clear();
+
         const messages = (data || []).reverse();
         messages.forEach(msg => this.renderMessage(msg));
         this.scrollToBottom();
     },
 
+    // ===== HANDLE INCOMING REALTIME MESSAGE =====
     handleIncoming: function (record) {
         if (!record || record.color !== 'CHAT_HIDDEN') return;
+
+        // Skip if already rendered
+        if (record.id && this.renderedIds.has(record.id)) return;
+
+        // De-dupe optimistic renders
+        try {
+            const data = JSON.parse(record.content);
+            if (data.t && this.pendingOptimistic.has(data.t)) {
+                this.pendingOptimistic.delete(data.t);
+                if (record.id) this.renderedIds.add(record.id);
+                return;
+            }
+            // Clear typing for this user since they sent a message
+            if (data.id && this.typingUsers[data.id]) {
+                delete this.typingUsers[data.id];
+                this.renderTypingIndicator();
+            }
+        } catch (e) { }
 
         this.renderMessage(record);
 
         if (this.isOpen) {
             this.scrollToBottom();
+            this.broadcastSeen();
         } else {
             this.hasUnread = true;
             this.updateBadge(true);
@@ -131,14 +186,19 @@ window.groupChat = {
         }
     },
 
+    // ===== RENDER A MESSAGE =====
     renderMessage: function (record) {
         const historyContainer = document.getElementById('gc-history');
+        if (!historyContainer) return;
+
+        if (record.id && this.renderedIds.has(record.id)) return;
+        if (record.id) this.renderedIds.add(record.id);
+
         let data;
         try {
             data = JSON.parse(record.content);
         } catch (e) {
-            console.error("Invalid chat message format:", record.content);
-            return; // invalid format
+            return;
         }
 
         const isMe = window.user && (data.id === window.user.id);
@@ -146,32 +206,38 @@ window.groupChat = {
 
         const div = document.createElement('div');
         div.className = `gc-message ${isMe ? 'me' : 'them'}`;
+        div.style.animation = 'gcSlideIn 0.25s ease-out';
 
-        // Avatar (only for THEM)
-        const avatarHtml = !isMe ? `<img src="${data.a}" class="gc-avatar" title="${data.u}">` : '';
-        const nameHtml = !isMe ? `<div class="gc-name">${data.u}</div>` : '';
+        const avatarUrl = data.a || `https://ui-avatars.com/api/?name=${encodeURIComponent(data.u)}&background=random`;
+        const avatarHtml = !isMe ? `<img src="${avatarUrl}" class="gc-avatar" title="${this.escapeHTML(data.u)}" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(data.u)}&background=random'">` : '';
+        const nameHtml = !isMe ? `<div class="gc-name">${this.escapeHTML(data.u)}</div>` : '';
 
         div.innerHTML = `
             ${avatarHtml}
             <div class="gc-content-wrapper">
                 ${nameHtml}
-                <div class="gc-bubble">
-                    ${this.escapeHTML(data.m)}
-                </div>
+                <div class="gc-bubble">${this.escapeHTML(data.m)}</div>
                 <div class="gc-time">${time}</div>
             </div>
         `;
 
-        historyContainer.appendChild(div);
+        // Insert before typing indicator if it exists
+        const typingEl = document.getElementById('gc-typing-indicator');
+        if (typingEl) {
+            historyContainer.insertBefore(div, typingEl);
+        } else {
+            historyContainer.appendChild(div);
+        }
     },
 
+    // ===== SEND MESSAGE =====
     send: async function () {
         const input = document.getElementById('gc-input');
+        if (!input) return;
         const text = input.value.trim();
         if (!text) return;
 
         if (!window.user) {
-            // Try to recover user from storage if global var is missing
             const stored = localStorage.getItem('wimpy_user');
             if (stored) window.user = JSON.parse(stored);
             else {
@@ -180,9 +246,14 @@ window.groupChat = {
             }
         }
 
-        input.value = ''; // Clear input immediately
+        if (!window.db) {
+            alert("Connection error — please refresh the page.");
+            return;
+        }
 
-        // Prepare Payload
+        input.value = '';
+        this.broadcastStopTyping();
+
         const payload = {
             u: window.user.name,
             a: window.user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(window.user.name)}&background=random`,
@@ -193,21 +264,14 @@ window.groupChat = {
 
         const jsonString = JSON.stringify(payload);
 
-        // OPTIMISTIC RENDER (Immediate Feedback)
-        const tempRecord = { content: jsonString, created_at: payload.t, color: 'CHAT_HIDDEN' };
-        this.renderMessage(tempRecord);
+        // Optimistic render
+        this.pendingOptimistic.add(payload.t);
+        this.renderMessage({ content: jsonString, created_at: payload.t, color: 'CHAT_HIDDEN' });
         this.scrollToBottom();
 
-        // Use robust client getter
-        const client = this.getClient();
-        if (!client) {
-            if (window.showToast) window.showToast("Connection Error: No DB Client", "error");
-            else alert("Connection Error: No DB Client");
-            return;
-        }
-
+        // Save to DB
         try {
-            const { error } = await client.from('notes').insert([{
+            const { error } = await window.db.from('notes').insert([{
                 content: jsonString,
                 x_pos: 0,
                 y_pos: 0,
@@ -217,23 +281,219 @@ window.groupChat = {
             }]);
 
             if (error) {
-                console.error("Supabase Error:", error);
+                console.error("GC Send Error:", error);
                 if (window.showToast) window.showToast("Send failed: " + error.message, "error");
-                else alert("Send failed: " + error.message);
             }
         } catch (err) {
-            console.error("Network/Client Error:", err);
-            if (window.showToast) window.showToast("Network Error: " + err.message, "error");
-            else alert("Network Error");
+            console.error("GC Network Error:", err);
+            if (window.showToast) window.showToast("Network Error", "error");
         }
     },
 
-    scrollToBottom: function () {
+    // ===== TYPING INDICATOR =====
+    broadcastTyping: function () {
+        if (!window.roomChannel || !window.user) return;
+        window.roomChannel.send({
+            type: 'broadcast',
+            event: 'gc_typing',
+            payload: {
+                id: window.user.id,
+                name: window.user.name,
+                typing: true
+            }
+        });
+
+        // Auto-stop after 3 seconds of no keystrokes
+        clearTimeout(this.typingTimeout);
+        this.typingTimeout = setTimeout(() => this.broadcastStopTyping(), 3000);
+    },
+
+    broadcastStopTyping: function () {
+        if (!window.roomChannel || !window.user) return;
+        clearTimeout(this.typingTimeout);
+        window.roomChannel.send({
+            type: 'broadcast',
+            event: 'gc_typing',
+            payload: {
+                id: window.user.id,
+                name: window.user.name,
+                typing: false
+            }
+        });
+    },
+
+    handleTypingBroadcast: function (data) {
+        if (!data || !data.id) return;
+        // Don't show own typing
+        if (window.user && data.id === window.user.id) return;
+
+        if (data.typing) {
+            this.typingUsers[data.id] = data.name;
+        } else {
+            delete this.typingUsers[data.id];
+        }
+        this.renderTypingIndicator();
+    },
+
+    renderTypingIndicator: function () {
         const historyContainer = document.getElementById('gc-history');
-        if (historyContainer) historyContainer.scrollTop = historyContainer.scrollHeight;
+        if (!historyContainer) return;
+
+        // Remove existing
+        let el = document.getElementById('gc-typing-indicator');
+
+        const names = Object.values(this.typingUsers);
+        if (names.length === 0) {
+            if (el) el.remove();
+            return;
+        }
+
+        let text = '';
+        if (names.length === 1) text = names[0] + ' is typing';
+        else if (names.length === 2) text = names[0] + ' and ' + names[1] + ' are typing';
+        else text = names.length + ' people are typing';
+
+        if (!el) {
+            el = document.createElement('div');
+            el.id = 'gc-typing-indicator';
+            historyContainer.appendChild(el);
+        }
+
+        el.innerHTML = `
+            <div style="display:flex; align-items:center; gap:6px; padding:4px 10px; font-size:0.8rem; color:#666; font-family:'Patrick Hand',cursive; animation:gcSlideIn 0.2s ease-out;">
+                <span style="display:flex; gap:3px;">
+                    <span class="gc-dot"></span><span class="gc-dot"></span><span class="gc-dot"></span>
+                </span>
+                ${this.escapeHTML(text)}
+            </div>
+        `;
+
+        this.scrollToBottom();
+    },
+
+    clearTypingIndicator: function () {
+        this.typingUsers = {};
+        const el = document.getElementById('gc-typing-indicator');
+        if (el) el.remove();
+    },
+
+    // ===== SEEN RECEIPTS =====
+    broadcastSeen: function () {
+        if (!window.roomChannel || !window.user) return;
+        window.roomChannel.send({
+            type: 'broadcast',
+            event: 'gc_seen',
+            payload: {
+                id: window.user.id,
+                name: window.user.name,
+                avatar: window.user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(window.user.name)}&background=random`,
+                at: new Date().toISOString()
+            }
+        });
+    },
+
+    handleSeenBroadcast: function (data) {
+        if (!data || !data.id) return;
+        if (window.user && data.id === window.user.id) return;
+
+        // Update seen list (keep unique by user id)
+        const existing = this.seenBy.findIndex(s => s.id === data.id);
+        if (existing >= 0) this.seenBy[existing] = data;
+        else this.seenBy.push(data);
+
+        // Keep only last 10
+        if (this.seenBy.length > 10) this.seenBy = this.seenBy.slice(-10);
+
+        this.renderSeenReceipts();
+    },
+
+    renderSeenReceipts: function () {
+        let el = document.getElementById('gc-seen-receipts');
+        if (!el) return;
+
+        if (this.seenBy.length === 0) {
+            el.innerHTML = '';
+            return;
+        }
+
+        const avatars = this.seenBy.map(s =>
+            `<img src="${s.avatar}" title="Seen by ${this.escapeHTML(s.name)}" style="width:16px;height:16px;border-radius:50%;border:1px solid #fff;object-fit:cover;" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=random&size=16'">`
+        ).join('');
+
+        el.innerHTML = `
+            <div style="display:flex;align-items:center;gap:2px;justify-content:flex-end;padding:2px 8px;opacity:0.7;">
+                <span style="font-size:0.65rem;color:#999;margin-right:3px;">Seen by</span>
+                ${avatars}
+            </div>
+        `;
+    },
+
+    // ===== ADMIN TOOLS =====
+    toggleAdminMenu: function () {
+        const panel = document.getElementById('gc-admin-panel');
+        if (panel) panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
+    },
+
+    adminClearOld: async function () {
+        if (!window.user || window.user.sr_code !== 'ADMIN') return;
+        if (!window.db) return;
+
+        if (window.showWimpyConfirm) {
+            if (!await window.showWimpyConfirm('Delete all GC messages older than 24 hours?')) return;
+        }
+
+        const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        try {
+            const { error } = await window.db
+                .from('notes')
+                .delete()
+                .eq('color', 'CHAT_HIDDEN')
+                .lt('created_at', cutoff);
+
+            if (error) {
+                if (window.showToast) window.showToast('Error: ' + error.message, 'error');
+            } else {
+                if (window.showToast) window.showToast('Old GC messages cleared!');
+                this.loadHistory();
+            }
+        } catch (e) {
+            console.error('GC Admin Clear Old:', e);
+        }
+    },
+
+    adminClearAll: async function () {
+        if (!window.user || window.user.sr_code !== 'ADMIN') return;
+        if (!window.db) return;
+
+        if (window.showWimpyConfirm) {
+            if (!await window.showWimpyConfirm('⚠️ DELETE ALL group chat messages? This cannot be undone!')) return;
+        }
+
+        try {
+            const { error } = await window.db
+                .from('notes')
+                .delete()
+                .eq('color', 'CHAT_HIDDEN');
+
+            if (error) {
+                if (window.showToast) window.showToast('Error: ' + error.message, 'error');
+            } else {
+                if (window.showToast) window.showToast('All GC messages cleared!');
+                this.loadHistory();
+            }
+        } catch (e) {
+            console.error('GC Admin Clear All:', e);
+        }
+    },
+
+    // ===== UTILITIES =====
+    scrollToBottom: function () {
+        const el = document.getElementById('gc-history');
+        if (el) setTimeout(() => { el.scrollTop = el.scrollHeight; }, 50);
     },
 
     updateBadge: function (show) {
+        // Header badge
         const badge = document.getElementById('gc-badge');
         if (badge) {
             badge.style.display = show ? 'block' : 'none';
@@ -243,11 +503,27 @@ window.groupChat = {
                 badge.classList.add('pop');
             }
         }
+        // FAB badge
+        const fabBadge = document.getElementById('gc-fab-badge');
+        if (fabBadge) {
+            fabBadge.style.display = show ? 'flex' : 'none';
+        }
     },
 
     playNotificationSound: function () {
-        const audio = document.getElementById('notif-sound');
-        if (audio) audio.play().catch(e => { });
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.frequency.value = 880;
+            osc.type = 'sine';
+            gain.gain.value = 0.12;
+            osc.start();
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+            osc.stop(ctx.currentTime + 0.25);
+        } catch (e) { }
     },
 
     escapeHTML: function (str) {
@@ -260,41 +536,41 @@ window.groupChat = {
     }
 };
 
-// Robust Initialization
+// ===== INITIALIZATION =====
 document.addEventListener('DOMContentLoaded', () => {
     let attempts = 0;
-    const maxAttempts = 10; // Try for 5 seconds (10 * 500ms)
+    const maxAttempts = 20; // 10 seconds
 
     const tryInit = () => {
-        // Relaxed Check: We can init if we have the Supabase lib OR an existing client
-        const hasSupabase = window.supabase || window.db || window.supabaseClient || window.sb;
-
-        if (hasSupabase && window.user) {
+        if (window.db && window.user) {
             window.groupChat.init();
-        } else if (localStorage.getItem('wimpy_user') && hasSupabase) {
-            // Recover user
+        } else if (window.db && localStorage.getItem('wimpy_user')) {
             try {
                 window.user = JSON.parse(localStorage.getItem('wimpy_user'));
                 window.groupChat.init();
             } catch (e) {
-                console.error("User recovery failed", e);
+                console.error("GC: User recovery failed", e);
             }
         } else {
             attempts++;
             if (attempts < maxAttempts) {
                 setTimeout(tryInit, 500);
             } else {
-                console.warn("Group Chat: Could not init (User or Supabase Lib missing).");
+                console.warn("Group Chat: Could not init after 10s.");
             }
         }
     };
-
     tryInit();
 });
 
-// Bind Enter Key
+// ===== KEY BINDINGS =====
 document.addEventListener('keydown', function (e) {
-    if (e.target.id === 'gc-input' && e.key === 'Enter') {
-        window.groupChat.send();
+    if (e.target.id === 'gc-input') {
+        if (e.key === 'Enter') {
+            window.groupChat.send();
+        } else {
+            // Broadcast typing on any other key
+            window.groupChat.broadcastTyping();
+        }
     }
 });
