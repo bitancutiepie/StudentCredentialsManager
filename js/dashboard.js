@@ -2746,3 +2746,113 @@ function showPrelimsBanner() {
         };
     });
 }
+
+// ================= FLASHCARDS LOGIC =================
+const FC_STORAGE_KEY = 'wimpy_flashcards';
+const FC_EXPIRY_DAYS = 7;
+
+function getFlashcards() {
+    try {
+        let cards = JSON.parse(localStorage.getItem(FC_STORAGE_KEY)) || [];
+        const now = Date.now();
+        const expiryMs = FC_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
+        const before = cards.length;
+        cards = cards.filter(c => (now - (c.createdTimestamp || c.id)) < expiryMs);
+        if (cards.length !== before) saveFlashcards(cards); // auto-purge expired
+        return cards;
+    } catch { return []; }
+}
+
+function saveFlashcards(cards) {
+    localStorage.setItem(FC_STORAGE_KEY, JSON.stringify(cards));
+}
+
+window.addFlashcard = function (e) {
+    e.preventDefault();
+    const topic = document.getElementById('fc-topic').value.trim();
+    const link = document.getElementById('fc-link').value.trim();
+    const desc = document.getElementById('fc-desc').value.trim();
+
+    if (!topic || !link) return showToast('Please fill in the topic and link!');
+
+    const cards = getFlashcards();
+    cards.unshift({
+        id: Date.now(),
+        createdTimestamp: Date.now(),
+        topic,
+        link,
+        desc,
+        addedAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    });
+    saveFlashcards(cards);
+    e.target.reset();
+    renderFlashcards();
+    showToast('Flashcard set saved!');
+}
+
+window.deleteFlashcard = async function (id) {
+    if (!await showWimpyConfirm('Delete this flashcard set?')) return;
+    const cards = getFlashcards().filter(c => c.id !== id);
+    saveFlashcards(cards);
+    renderFlashcards();
+    showToast('Flashcard set removed.');
+}
+
+function renderFlashcards() {
+    const container = document.getElementById('flashcard-list');
+    if (!container) return;
+
+    const cards = getFlashcards();
+
+    if (!cards.length) {
+        container.innerHTML = '<p style="text-align: center; color: #666; font-style: italic;">No flashcards saved yet. Add your first set above!</p>';
+        return;
+    }
+
+    const colors = ['#6c5ce7', '#00b894', '#0984e3', '#e17055', '#fdcb6e', '#d63031', '#00cec9', '#e84393'];
+
+    container.innerHTML = cards.map((card, i) => {
+        const color = colors[i % colors.length];
+        const domain = (() => {
+            try { return new URL(card.link).hostname.replace('www.', ''); } catch { return 'Link'; }
+        })();
+        const ageMs = Date.now() - (card.createdTimestamp || card.id);
+        const daysLeft = Math.max(0, FC_EXPIRY_DAYS - Math.floor(ageMs / (24 * 60 * 60 * 1000)));
+        const expiryColor = daysLeft <= 1 ? '#d63031' : daysLeft <= 3 ? '#e67e22' : '#00b894';
+
+        return `
+            <div class="class-card" style="border-left: 5px solid ${color}; position: relative; animation-delay: ${i * 0.08}s;">
+                <button onclick="deleteFlashcard(${card.id})" class="sketch-btn danger"
+                    style="position: absolute; top: 10px; right: 10px; width: auto; padding: 4px 10px; font-size: 0.8rem; margin: 0;">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+                <div style="display: flex; align-items: flex-start; gap: 15px; flex-wrap: wrap;">
+                    <div style="background: ${color}; color: #fff; width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; box-shadow: 3px 3px 0 rgba(0,0,0,0.15); flex-shrink: 0;">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+                    <div style="flex: 1; min-width: 180px;">
+                        <h3 style="margin: 0 30px 5px 0; font-family: 'Permanent Marker'; font-size: 1.2rem; color: #2d3436;">
+                            ${escapeHTML(card.topic)}
+                        </h3>
+                        ${card.desc ? `<p style="margin: 0 0 8px 0; font-family: 'Patrick Hand'; font-size: 1rem; color: #636e72; line-height: 1.4;">${escapeHTML(card.desc)}</p>` : ''}
+                        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                            <a href="${escapeHTML(card.link)}" target="_blank" class="sketch-btn"
+                                style="background: ${color}; color: #fff; border-color: ${color}; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; font-size: 0.95rem; margin: 0; width: auto;">
+                                <i class="fas fa-external-link-alt"></i> Open (${escapeHTML(domain)})
+                            </a>
+                            <small style="color: #aaa; font-family: 'Patrick Hand'; font-size: 0.85rem;">
+                                <i class="fas fa-clock"></i> ${card.addedAt}
+                            </small>
+                            <small style="color: ${expiryColor}; font-family: 'Patrick Hand'; font-size: 0.85rem; font-weight: bold;">
+                                <i class="fas fa-hourglass-half"></i> ${daysLeft}d left
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// Load flashcards on page ready
+document.addEventListener('DOMContentLoaded', () => { renderFlashcards(); });
