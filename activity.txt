@@ -1,0 +1,106 @@
+LABORATORY ACTIVITY 3: DATABASE AUDIT & OPTIMIZATION REPORT
+IT 222 – ADVANCED DATABASE MANAGEMENT SYSTEM
+Information Technology Department | Second Semester, A.Y. 2025-2026
+
+Name: Joshua Vincent M. Bitancor
+Section: IT-2101
+
+================================================================================
+TASK 1: SYSTEM ARCHITECTURE & OVERVIEW
+================================================================================
+The project analyzed is the "Student Credentials Manager" (Sistema ni JV). 
+
+Technical Stack:
+- Frontend: HTML5, Vanilla JavaScript, CSS3 (Custom Design System)
+- Backend: Supabase (PostgreSQL-as-a-Service)
+- Purpose: Centralized academic management for class schedules, assignments, and peer collaboration.
+
+[REPORTER'S NOTES]:
+- "Our system is built on PostgreSQL, a robust relational database, which allows us to apply advanced optimization techniques."
+- "The core value is providing real-time data to students via Supabase's listener architecture."
+
+================================================================================
+TASK 2: CRITICAL SYSTEM VULNERABILITIES (DATABASE PERSPECTIVE)
+================================================================================
+1. DATA REDUNDANCY & UPDATE ANOMALIES:
+   In the current `schedule` table schema, Subject Name, Subject Code, and Instructor are stored as redundant text fields.
+   - Impact: If an instructor is reassigned, the database administrator must update dozens of rows. Failure to update even one row leads to "Data Inconsistency."
+   - Normalization Failure: This violates 3rd Normal Form (3NF) because non-key attributes (Subject Name) depend on another non-key attribute (Subject Code) rather than strictly the primary key.
+
+2. QUERY EXECUTION PERFORMANCE (SEQUENTIAL SCANNING):
+   The system retrieves student profiles using `SELECT * FROM students WHERE sr_code = '...'`.
+   - The Problem: Without a B-tree index on `sr_code`, PostgreSQL performs a "Sequential Scan." It reads every single block of data from disk to find one student.
+   - Scalability: For 50 students, this is unnoticeable. For 5,000 students, this causes login latency and high server CPU usage.
+
+[REPORTER'S NOTES]:
+- "Highlight that redundancy isn't just about 'extra space'—it's about the risk of having two different names for the same subject in our records."
+- "Explain that the database is currently 'reading the whole book' just to find one page because we haven't built an index (the table of contents)."
+
+================================================================================
+TASK 3: PROPOSED OPTIMIZATION STRATEGIES
+================================================================================
+1. SCHEMA REFACTORING (JOIN OPTIMIZATION):
+   We propose splitting the database into two related tables: `subjects` (Master Data) and `schedule` (Transaction Data).
+   - Proposed Query Structure:
+     ```sql
+     -- Optimized Query using Foreign Key Joins
+     SELECT s.day_of_week, s.start_time, sub.subject_name, sub.instructor
+     FROM schedule s
+     INNER JOIN subjects sub ON s.subject_id = sub.subject_id
+     WHERE s.day_of_week = 'Monday';
+     ```
+
+2. INDEXING STRATEGY:
+   Implementing a unique B-tree index on the `sr_code` column.
+   ```sql
+   CREATE UNIQUE INDEX idx_student_srcode ON students(sr_code);
+   ```
+   - Benefit: Query complexity drops from O(n) to O(log n), reducing lookup time from milliseconds to microseconds.
+
+[REPORTER'S NOTES]:
+- "Point out the SQL code: We are moving from 'flat files' to a truly 'relational' model."
+- "Mention that the unique index also acts as a second layer of data validation, preventing duplicate student entries."
+
+================================================================================
+TASK 4: DATA WAREHOUSE DESIGN (STAR SCHEMA)
+================================================================================
+To enable high-level reporting without slowing down the app, we move to a Star Schema.
+
+FACT TABLE: `Fact_Student_Activity`
+- Keys: Student_ID, Date_ID, Subject_ID, Tool_ID
+- Measures: Total_Logins, Notes_Posted, Files_Accessed
+
+DIMENSION TABLES:
+1. `Dim_Student`: Attributes: Name, SR_Code, Year_Level, Enrollment_Status.
+2. `Dim_Date`: Attributes: Day_Name, Month, Semester, Academic_Year.
+3. `Dim_Subject`: Attributes: Subject_Title, Subject_Code, Department.
+4. `Dim_Tool`: Attributes: Tool_Name (Freedom Wall, Minesweeper, Calendar).
+
+[REPORTER'S NOTES]:
+- "Explain the Fact-Dimension relationship: The Fact table stores the 'numbers' (how many logins), and Dimensions store the 'context' (who, when, what)."
+- "Why is this better? It allows us to answer complex questions like 'What is the most used tool by 2nd-year students during midterms?' in a single, fast query."
+
+================================================================================
+TASK 5: DATA MINING & PATTERN RECOGNITION
+================================================================================
+PROPOSAL: STUDENT ENGAGEMENT PREDICTIVE ANALYSIS (CLUSTERING)
+
+- Objective: Identify students at risk of missing enrollment or deadlines.
+- Methodology: Aggregate `last_login` frequency and `note_post_count`.
+- Expected Output:
+  - Cluster A (High Engagement): Daily users, active in collaboration.
+  - Cluster B (At-Risk): Users who haven't logged in for 5+ days and have pending assignments.
+- Strategic Value: Administrators can send targeted reminders or "check-in" messages to Cluster B students automatically.
+
+[REPORTER'S NOTES]:
+- "This isn't just about counting; it's about predicting behavior."
+- "Mention that this data mining can improve student retention rates by catching 'ghosting' students before they fail their subjects."
+
+================================================================================
+TASK 6: CONCLUSION & REFLECTION
+================================================================================
+The transition from a functional application to an optimized database system requires moving beyond simple "CRUD" operations. By implementing 3NF normalization and B-tree indexing, we ensure the system's longevity. Furthermore, the proposed Data Warehouse and Mining ideas transform raw student data into actionable intelligence, proving that a well-designed database is the backbone of any successful educational platform.
+
+[REPORTER'S NOTES]:
+- "Close with: A fast database is a happy user. These changes make our system professional-grade."
+

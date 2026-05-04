@@ -842,16 +842,13 @@ function startClock() {
 }
 
 // --- LIVE CLASS LOGIC ---
-
-// 1. We need to store today's classes globally so we don't fetch from DB every second
 let todaysClasses = [];
+let currentLiveClassLink = null;
 
-// Call this once when the page loads
 async function initLiveClassChecker() {
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const todayName = days[new Date().getDay()];
 
-    // Fetch ONLY today's classes
     const { data, error } = await db
         .from('schedule')
         .select('*')
@@ -859,8 +856,75 @@ async function initLiveClassChecker() {
 
     if (data) {
         todaysClasses = data;
-        checkLiveClass(); // Run immediately
-        setInterval(checkLiveClass, 1000 * 60); // Then run every 60 seconds
+        updateLiveClassUI(); 
+        setInterval(updateLiveClassUI, 30000); // Check every 30s
+    }
+}
+
+function updateLiveClassUI() {
+    checkLiveClass();
+    updateCountdownPill();
+}
+
+function updateCountdownPill() {
+    const pill = document.getElementById('class-countdown-pill');
+    const pillText = document.getElementById('pill-text');
+    if (!pill || !pillText) return;
+
+    const now = new Date();
+    const currentH = now.getHours();
+    const currentM = now.getMinutes();
+    const currentTimeVal = currentH * 60 + currentM;
+
+    // 1. Check for Active Class
+    const activeClass = todaysClasses.find(cls => {
+        const [sh, sm] = cls.start_time.split(':').map(Number);
+        const [eh, em] = cls.end_time.split(':').map(Number);
+        const startVal = sh * 60 + sm;
+        const endVal = eh * 60 + em;
+        return currentTimeVal >= startVal && currentTimeVal < endVal;
+    });
+
+    if (activeClass) {
+        const [eh, em] = activeClass.end_time.split(':').map(Number);
+        const endVal = eh * 60 + em;
+        const diffMins = endVal - currentTimeVal;
+        
+        pillText.innerHTML = `<span style="color:#fab1a0; font-weight:bold;">${activeClass.subject_code}</span> ends in ${diffMins}m`;
+        currentLiveClassLink = activeClass.meet_link || activeClass.classroom_link;
+        pill.classList.remove('hidden');
+        return;
+    }
+
+    // 2. Check for Next Class
+    const futureClasses = todaysClasses.filter(cls => {
+        const [sh, sm] = cls.start_time.split(':').map(Number);
+        const startVal = sh * 60 + sm;
+        return startVal > currentTimeVal;
+    }).sort((a, b) => a.start_time.localeCompare(b.start_time));
+
+    if (futureClasses.length > 0) {
+        const nextClass = futureClasses[0];
+        const [sh, sm] = nextClass.start_time.split(':').map(Number);
+        const startVal = sh * 60 + sm;
+        const diffMins = startVal - currentTimeVal;
+
+        if (diffMins <= 60) {
+            pillText.innerHTML = `Next: <span style="color:#74b9ff; font-weight:bold;">${nextClass.subject_code}</span> in ${diffMins}m`;
+            currentLiveClassLink = nextClass.meet_link || nextClass.classroom_link;
+            pill.classList.remove('hidden');
+            return;
+        }
+    }
+
+    pill.classList.add('hidden');
+}
+
+window.openLiveClassLink = function() {
+    if (currentLiveClassLink) {
+        window.open(currentLiveClassLink, '_blank');
+    } else {
+        showToast("No link available for this class!");
     }
 }
 
@@ -869,20 +933,15 @@ function checkLiveClass() {
     if (!container) return;
 
     const now = new Date();
-    // Convert current time to "HH:MM" format (e.g., "14:30") for comparison
     const currentTimeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
 
-    // Find a class that is happening RIGHT NOW
     const liveClass = todaysClasses.find(cls => {
-        // Supabase time format is usually "HH:MM:SS"
         const start = cls.start_time.substring(0, 5);
         const end = cls.end_time.substring(0, 5);
-
         return currentTimeStr >= start && currentTimeStr < end;
     });
 
     if (liveClass) {
-        // Use 12h for display
         const startDisp = formatTime12h(liveClass.start_time);
         const endDisp = formatTime12h(liveClass.end_time);
 
@@ -904,17 +963,16 @@ function checkLiveClass() {
                         ${liveClass.classroom_link ? `<a href="${liveClass.classroom_link}" target="_blank" class="sketch-btn classroom" style="font-size:1.1rem; border-width:3px; display: flex; justify-content: center; align-items: center; gap: 8px; border-color: #00b894; color: #00b894;">
                             <i class="fas fa-chalkboard"></i> Go to Classroom
                         </a>` : ''}
-                        ${(!liveClass.meet_link && !liveClass.classroom_link) ? '<small style="color:#666; font-style:italic;">No links provided.</small>' : ''}
                     </div>
                 </div>
             </div>
         `;
         container.style.display = 'block';
     } else {
-        // No class right now? Hide the container.
         container.style.display = 'none';
     }
 }
+
 
 // Global variable for the channel
 window.roomChannel = null;

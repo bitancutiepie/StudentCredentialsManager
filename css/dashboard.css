@@ -2675,3 +2675,75 @@ h2:hover {
         grid-template-columns: 1fr;
     }
 }
+
+/* --- CLASS COUNTDOWN PILL --- */
+#class-countdown-pill {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10000;
+    background: #2d3436;
+    color: #fff;
+    padding: 8px 22px;
+    border-radius: 50px;
+    font-family: 'Patrick Hand', cursive;
+    font-size: 1.15rem;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.3), 0 0 0 2px rgba(255,255,255,0.15);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border: 2px solid #fff;
+    white-space: nowrap;
+}
+
+#class-countdown-pill:hover {
+    transform: translateX(-50%) translateY(-3px) scale(1.05);
+    background: #000;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.4);
+}
+
+#class-countdown-pill .pill-pulse {
+    width: 10px;
+    height: 10px;
+    background: #00b894;
+    border-radius: 50%;
+    position: relative;
+}
+
+#class-countdown-pill .pill-pulse::after {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    right: -4px;
+    bottom: -4px;
+    border: 2px solid #00b894;
+    border-radius: 50%;
+    animation: pillPulse 1.5s infinite;
+    opacity: 0;
+}
+
+@keyframes pillPulse {
+    0% { transform: scale(0.5); opacity: 0; }
+    50% { opacity: 0.5; }
+    100% { transform: scale(1.5); opacity: 0; }
+}
+
+#class-countdown-pill.hidden {
+    display: none;
+    transform: translateX(-50%) translateY(-50px);
+    opacity: 0;
+}
+
+@media (max-width: 600px) {
+    #class-countdown-pill {
+        top: 10px;
+        padding: 6px 16px;
+        font-size: 0.95rem;
+        width: auto;
+        max-width: 90%;
+    }
+}
