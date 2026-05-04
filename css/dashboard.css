@@ -9,10 +9,13 @@
 
 body {
     font-family: 'Patrick Hand', cursive;
-    background-color: #57606f;
-    /* Dark Desk Background */
-    background-image: radial-gradient(#2f3542 15%, transparent 16%), radial-gradient(#2f3542 15%, transparent 16%);
-    background-size: 20px 20px;
+    background-color: #3d3d3d;
+    background-image:
+        linear-gradient(135deg, rgba(0,0,0,0.08) 25%, transparent 25%),
+        linear-gradient(225deg, rgba(0,0,0,0.08) 25%, transparent 25%),
+        linear-gradient(315deg, rgba(0,0,0,0.08) 25%, transparent 25%),
+        linear-gradient(45deg, rgba(0,0,0,0.08) 25%, transparent 25%);
+    background-size: 40px 40px;
     margin: 0;
     padding: 20px;
     color: var(--ink-color);
@@ -60,12 +63,13 @@ html {
     max-width: 1200px;
     margin: 0 auto;
     background: var(--paper-color);
-    box-shadow: 15px 15px 30px rgba(0, 0, 0, 0.4);
-    border-radius: 5px;
+    box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.5),
+        0 0 0 1px rgba(255,255,255,0.1);
+    border-radius: 8px;
     position: relative;
     min-height: 85vh;
     overflow: hidden;
-    /* For rounded corners */
     transition: max-width 0.3s ease;
 }
 
@@ -76,7 +80,7 @@ html {
 /* Left Sidebar (The Rings & Tabs) */
 .sidebar {
     width: 80px;
-    background: #2f3542;
+    background: linear-gradient(180deg, #1a1a2e 0%, #2f3542 50%, #1a1a2e 100%);
     position: relative;
     display: flex;
     flex-direction: column;
@@ -84,6 +88,7 @@ html {
     padding-top: 40px;
     z-index: 20;
     flex-shrink: 0;
+    box-shadow: inset -3px 0 10px rgba(0,0,0,0.3);
 }
 
 .binder-ring {
@@ -286,35 +291,33 @@ h2:hover {
 .class-card {
     background: white;
     padding: 20px;
-    /* Pencil Shading Effect: Solid ink line + soft smudge */
-    box-shadow: 4px 4px 0 #000, 8px 8px 0 rgba(0, 0, 0, 0.15);
+    box-shadow: 3px 3px 0 #000, 0 4px 15px rgba(0, 0, 0, 0.08);
     position: relative;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     border: 2px solid #000;
-    /* Default hidden for animation */
     opacity: 0;
     animation: paperDeal 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    border-radius: 4px;
 }
 
 /* Tape Effect on top of cards */
 .class-card::before {
     content: '';
     position: absolute;
-    top: -15px;
+    top: -12px;
     left: 50%;
-    transform: translateX(-50%);
-    width: 100px;
-    height: 30px;
-    background-color: rgba(255, 255, 255, 0.4);
-    border-left: 1px dashed rgba(0, 0, 0, 0.1);
-    border-right: 1px dashed rgba(0, 0, 0, 0.1);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-    opacity: 0.7;
+    transform: translateX(-50%) rotate(-1deg);
+    width: 80px;
+    height: 24px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.5), rgba(255,255,255,0.25));
+    border-left: 1px dashed rgba(0, 0, 0, 0.08);
+    border-right: 1px dashed rgba(0, 0, 0, 0.08);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 .class-card:hover {
-    transform: scale(1.02) rotate(-1deg);
-    box-shadow: 10px 10px 15px rgba(0, 0, 0, 0.15);
+    transform: translateY(-4px);
+    box-shadow: 5px 5px 0 #000, 0 12px 25px rgba(0, 0, 0, 0.12);
     z-index: 10;
 }
 
@@ -517,26 +520,31 @@ h2:hover {
 
 /* --- LIVE CLASS CARD STYLES --- */
 .live-card {
-    padding: 15px 20px;
-    border-radius: 4px;
+    padding: 18px 22px;
+    border-radius: 6px;
     position: relative;
-    box-shadow: 0 0 15px rgba(214, 48, 49, 0.3);
-    transform: rotate(-1deg);
-    animation: urgentPulse 2s infinite;
+    background: linear-gradient(135deg, #fff5f5 0%, #fff 100%);
+    border: 2px solid #d63031;
+    box-shadow: 0 0 20px rgba(214, 48, 49, 0.15);
+    transform: rotate(-0.5deg);
+    animation: urgentPulse 2.5s infinite;
 }
 
 .live-card::before {
-    content: 'HAPPENING NOW';
+    content: '● HAPPENING NOW';
     position: absolute;
-    top: -12px;
+    top: -14px;
     left: 20px;
     background: #d63031;
     color: white;
     font-family: 'Permanent Marker', cursive;
-    padding: 2px 10px;
-    font-size: 1rem;
+    padding: 3px 14px;
+    font-size: 0.95rem;
     transform: rotate(-2deg);
     z-index: 2;
+    border-radius: 3px;
+    letter-spacing: 0.5px;
+    box-shadow: 2px 2px 0 rgba(0,0,0,0.15);
 }
 
 .live-card h3 {
@@ -555,15 +563,15 @@ h2:hover {
 
 @keyframes urgentPulse {
     0% {
-        box-shadow: 0 0 0 0 rgba(214, 48, 49, 0.4);
+        box-shadow: 0 0 0 0 rgba(214, 48, 49, 0.25), 0 4px 15px rgba(214, 48, 49, 0.1);
     }
 
     70% {
-        box-shadow: 0 0 0 10px rgba(214, 48, 49, 0);
+        box-shadow: 0 0 0 12px rgba(214, 48, 49, 0), 0 4px 15px rgba(214, 48, 49, 0.1);
     }
 
     100% {
-        box-shadow: 0 0 0 0 rgba(214, 48, 49, 0);
+        box-shadow: 0 0 0 0 rgba(214, 48, 49, 0), 0 4px 15px rgba(214, 48, 49, 0.1);
     }
 }
 
@@ -1129,57 +1137,56 @@ h2:hover {
 .sticky-time {
     position: relative;
     margin: 0 auto 20px auto;
-    background: #fff740;
-    /* Post-it yellow */
+    background: linear-gradient(135deg, #fff740 0%, #ffe066 100%);
     padding: 15px;
     width: 280px;
-    /* Fixed width */
     height: 140px;
-    /* Fixed height */
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     text-align: center;
-    box-shadow: 4px 4px 5px rgba(0, 0, 0, 0.2);
+    box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0,0,0,0.1);
     transform: rotate(3deg);
-    /* Taped crookedly */
     font-family: 'Permanent Marker', cursive;
     z-index: 10;
     border-bottom-right-radius: 30px 5px;
-    /* Dog-ear effect */
     box-sizing: border-box;
+    transition: transform 0.3s ease;
+}
+
+.sticky-time:hover {
+    transform: rotate(0deg) scale(1.03);
 }
 
 .sticky-time .pin {
     position: absolute;
     top: -15px;
     left: 50%;
-    /* Center the pin */
     font-size: 1.5rem;
     filter: drop-shadow(2px 2px 0 rgba(0, 0, 0, 0.2));
     transform: translateX(-50%);
-    /* Adjust for centering */
+    color: #d63031;
 }
 
 .sticky-time small {
     display: block;
     font-size: 1rem;
-    /* Slightly larger for better readability */
     color: #555;
     font-family: 'Patrick Hand', cursive;
     margin-bottom: 5px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
 }
 
 .sticky-time #live-clock {
     font-family: 'Patrick Hand', sans-serif;
     font-size: 3rem;
-    /* Adjusted to fit fixed box */
     color: #2d3436;
     line-height: 1;
     font-weight: bold;
     white-space: nowrap;
-    /* Prevent wrapping */
+    text-shadow: 1px 1px 0 rgba(0,0,0,0.06);
 }
 
 /* Mobile */
@@ -1211,15 +1218,16 @@ h2:hover {
 /* --- EYE-CATCHING ONLINE USERS HEADER --- */
 .online-users-header {
     margin: 10px 0 30px 0;
-    padding: 12px 20px;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.4));
-    backdrop-filter: blur(10px);
-    border: 2px solid #fff;
+    padding: 14px 24px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.5));
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 2px solid rgba(255,255,255,0.6);
     border-radius: 50px;
     display: inline-flex;
     align-items: center;
     gap: 15px;
-    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.07);
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1), inset 0 1px 0 rgba(255,255,255,0.8);
     animation: headerAppear 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
