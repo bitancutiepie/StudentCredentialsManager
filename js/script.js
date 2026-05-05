@@ -83,6 +83,12 @@ const initApp = async () => {
         }
 
 
+        // IF STUDENT: Check for mandatory full name
+        if (user.sr_code !== 'ADMIN' && (!user.full_name || user.full_name === '')) {
+            document.getElementById('nameCollectorModal').classList.remove('hidden');
+            return;
+        }
+
         // IF STUDENT: Go to web2
         window.location.href = 'web2.html';
         return;
@@ -380,6 +386,7 @@ async function handleLogin(srCode, password) {
         avatar_url: data.avatar_url,
         email: data.email,
         role: data.role,
+        full_name: data.full_name,
         enrollment_status: data.enrollment_status || 'Not Enrolled'
     });
 
@@ -411,7 +418,48 @@ async function handleLogin(srCode, password) {
         if (adminControls) adminControls.classList.remove('hidden');
     } else {
         // Students OR Admins without blacklist access go to binder
+        // CHECK: Mandatory Full Name
+        if (data.sr_code !== 'ADMIN' && (!data.full_name || data.full_name === '')) {
+            document.getElementById('nameCollectorModal').classList.remove('hidden');
+            return;
+        }
         window.location.href = 'web2.html';
+    }
+}
+
+// --- NEW: MANDATORY NAME COLLECTOR LOGIC ---
+window.saveFullName = async function () {
+    const fullName = document.getElementById('collector-full-name').value.trim();
+    if (fullName.length < 3) return showToast('Please enter your complete real name.', 'error');
+
+    const storedUser = localStorage.getItem('wimpy_user') || sessionStorage.getItem('wimpy_user');
+    if (!storedUser) return window.location.reload();
+
+    const user = JSON.parse(storedUser);
+    const btn = document.getElementById('saveNameBtn');
+    btn.innerText = 'Saving...';
+    btn.disabled = true;
+
+    try {
+        const { error } = await supabaseClient
+            .from('students')
+            .update({ full_name: fullName })
+            .eq('id', user.id);
+
+        if (error) throw error;
+
+        // Update local session
+        user.full_name = fullName;
+        const userPayload = JSON.stringify(user);
+        if (localStorage.getItem('wimpy_user')) localStorage.setItem('wimpy_user', userPayload);
+        else sessionStorage.setItem('wimpy_user', userPayload);
+
+        showToast('Identification saved! Welcome.');
+        setTimeout(() => window.location.href = 'web2.html', 1000);
+    } catch (err) {
+        showToast('Error saving name: ' + err.message, 'error');
+        btn.innerText = 'SAVE & CONTINUE →';
+        btn.disabled = false;
     }
 }
 
@@ -775,6 +823,7 @@ window.openStudentDetails = function (id) {
     content.innerHTML = `
         <img src="${avatar}" style="width:100px; height:100px; border-radius:50%; border:3px solid #000; margin-bottom:15px; object-fit:cover;">
         <h2 style="margin:0;">${escapeHTML(student.name)}</h2>
+        <p style="color:#d63031; font-weight:bold; margin-top:0;">Real Name: ${escapeHTML(student.full_name || 'NOT SET')}</p>
         <p style="color:#666; margin-top:5px;">${escapeHTML(student.email) || 'No Email'}</p>
         
         <div style="background:#f1f2f6; padding:15px; border-radius:10px; border:2px dashed #ccc; margin:15px 0; text-align:left;">

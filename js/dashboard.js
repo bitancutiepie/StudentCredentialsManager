@@ -82,6 +82,13 @@ function checkSession() {
         return;
     }
     user = JSON.parse(storedUser);
+
+    // SECURITY CHECK: Mandatory Full Name
+    if (user.sr_code !== 'ADMIN' && (!user.full_name || user.full_name === '')) {
+        window.location.href = 'index.html';
+        return;
+    }
+
     window.user = user;
     window.isAdmin = (user.sr_code === 'ADMIN' || (user.role && (user.role === 'admin' || user.role.startsWith('admin:'))));
     isAdmin = window.isAdmin; // Keep local var synced
@@ -129,7 +136,7 @@ async function refreshUserProfile() {
     // Fetch fresh status from DB to ensure it's up to date
     const { data, error } = await db
         .from('students')
-        .select('enrollment_status, role, avatar_url, birthday')
+        .select('enrollment_status, role, avatar_url, birthday, full_name')
         .eq('id', user.id)
         .single();
 
@@ -138,6 +145,13 @@ async function refreshUserProfile() {
         user.role = data.role;
         user.avatar_url = data.avatar_url;
         user.birthday = data.birthday || null;
+        user.full_name = data.full_name || null;
+
+        // Verify Full Name again (in case they managed to get here without one)
+        if (user.sr_code !== 'ADMIN' && (!user.full_name || user.full_name === '')) {
+            window.location.href = 'index.html';
+            return;
+        }
 
         // Update Local variable and Window global
         isAdmin = (user.sr_code === 'ADMIN' || (user.role && (user.role === 'admin' || user.role.startsWith('admin:'))));
