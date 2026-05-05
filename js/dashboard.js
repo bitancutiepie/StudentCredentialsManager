@@ -1818,9 +1818,9 @@ window.showCongratsMessage = function (prevModal) {
     const box = document.createElement('div');
     box.className = 'wimpy-modal-box';
     box.innerHTML = `
-        <h2 style="margin:0 0 15px 0; font-size:2rem;">🎉 CONGRATS!</h2>
-        <p style="font-size:1.3rem; margin-bottom:20px;">Congrays Guys at naipasa natin ang First Sem, Goodluck sa Second Sem!<br><br>- Jv</p>
-        <button onclick="this.closest('.wimpy-modal-overlay').remove()" class="sketch-btn" style="background: #000; color: #fff; width: 100%;">LET'S GO!</button>
+        <h2 style="margin:0 0 15px 0; font-size:2rem;">🎉 KONTI NALANG!</h2>
+        <p style="font-size:1.3rem; margin-bottom:20px;">KONTI NALANG MATATAPOS NA NATIN THIRD YEAR NA TAYO!<br><br>- Jv</p>
+        <button onclick="this.closest('.wimpy-modal-overlay').remove()" class="sketch-btn" style="background: #000; color: #fff; width: 100%;">LETS GO</button>
     `;
 
     overlay.appendChild(box);
@@ -2775,13 +2775,13 @@ function showPrelimsBanner() {
                     <i class="fas fa-medal"></i>
                 </div>
                 <h2 style="margin:0 0 10px;font-family:'Permanent Marker',cursive;font-size:1.8rem;color:#6c5ce7;text-shadow:2px 2px 0 rgba(108,92,231,0.1);">
-                    CONGRATS IT-2206! 🎓
+                    MIDTERMS ARE OVER! 🎓
                 </h2>
                 <p style="font-family:'Patrick Hand',cursive;font-size:1.2rem;color:#2d3436;margin:0 0 20px;line-height:1.4; font-weight: bold;">
-                    Prelims are finally over! Great job everyone! 🎉
+                    Finals nalang then tapos na 🎉
                 </p>
                 <button id="prelims-banner-close-btn" class="sketch-btn" style="background:#6c5ce7;color:#fff;width:100%;font-size:1.15rem;padding:12px;transform:rotate(-0.5deg);border-color:#5a4bd1;">
-                    <i class="fas fa-fire"></i> LET'S GO!
+                    <i class="fas fa-fire"></i> LETS GO
                 </button>
             </div>
         `;

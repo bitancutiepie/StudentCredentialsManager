@@ -1994,29 +1994,23 @@ function showWelcomeNote() {
         <div style="text-align: left; background: #f9f9f9; border: 2px dashed #bbb; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
             <p style="font-weight: bold; margin: 0 0 10px 0; border-bottom: 2px solid #ddd; padding-bottom: 5px;"><i class="fas fa-edit"></i> What's New in this Update:</p>
             <ul style="padding-left: 20px; margin: 0; list-style-type: none; font-size: 1rem; line-height: 1.6;">
-                <li><i class="fas fa-shield-alt"></i> <b>Security Patch:</b> Strengthened admin protocols and fixed navigation loopholes.</li>
-                <li><i class="fas fa-user-lock"></i> <b>Session Integrity:</b> Added validation to prevent unauthorized access via storage modification.</li>
-                <li><i class="fas fa-folder-open"></i> <b>System Cleanup:</b> Organized file structure (CSS/JS/Assets) for better performance.</li>
-                <li><i class="fas fa-code"></i> <b>Optimized Codebase:</b> Extracted inline styles and scripts to improve load times.</li>
-                <li><i class="fas fa-check-circle"></i> <b>Data Ethics:</b> Reinforced authorized access controls for all users.</li>
+                <li><i class="fas fa-id-card"></i> <b>Real Name Verification:</b> Everyone is now required to enter their <b>Original Real Name</b> once. This helps Jv identify everyone properly!</li>
+                <li><i class="fas fa-paint-brush"></i> <b>Visual Glow Up:</b> Major design upgrades with new doodles, coffee stains, and a hand-drawn sketchbook aesthetic.</li>
+                <li><i class="fas fa-bolt"></i> <b>Speed Boost:</b> Cleaned up the system so the website loads faster on your phones and laptops.</li>
+                <li><i class="fas fa-shield-alt"></i> <b>Security Check:</b> Improved account protection to keep your credentials and notes safe.</li>
             </ul>
         </div>
         
         <div style="text-align: left; background: #fffde7; border: 2px dashed #f1c40f; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
-             <p style="font-weight: bold; margin: 0 0 10px 0; border-bottom: 2px solid #f39c12; padding-bottom: 5px;"><i class="fas fa-star"></i> Key Features:</p>
+             <p style="font-weight: bold; margin: 0 0 10px 0; border-bottom: 2px solid #f39c12; padding-bottom: 5px;"><i class="fas fa-star"></i> Awesome Features:</p>
              <ul style="padding-left: 20px; margin: 0; list-style-type: none; font-size: 1rem; line-height: 1.6;">
-                <li><i class="fas fa-paper-plane"></i> <b>Message Anyone:</b> New floating notepad button to chat with any classmate!</li>
-                <li><i class="fas fa-mobile-alt"></i> <b>Mobile Optimization:</b> Reorganized header layout to prevent overlapping on phone screens.</li>
-                <li><i class="fas fa-camera-retro"></i> <b>Memories Gallery:</b> New photo gallery added to the login page!</li>
-                <li><i class="fas fa-question-circle"></i> <b>Help Guide:</b> Added a user guide tab inside the binder.</li>
-                <li><i class="fas fa-filter"></i> <b>Smart Filters:</b> Gallery photos no longer clutter your reviewer files.</li>
-                <li><i class="fas fa-magic"></i> <b>Wallpaper Generator V2:</b> Create wallpapers with <i>Glassmorphism</i> effects or upload your own background image!</li>
-                <li><i class="fas fa-tools"></i> <b>Admin Tools Tab:</b> (For Admin) All management tools are now in a dedicated binder tab.</li>
-                <li><i class="fas fa-sticky-note"></i> <b>Better Sticky Notes:</b> Improved tape visuals and smoother dragging.</li>
-                <li><i class="fas fa-eye"></i> <b>File Previewer:</b> Preview PDFs and images instantly before downloading.</li>
-                <li><i class="fas fa-clock"></i> <b>Live Class Tracker:</b> See exactly which class is happening right now.</li>
-                <li><i class="fas fa-folder"></i> <b>Subject Cabinet:</b> Files are now organized by subject folders.</li>
-                <li><i class="fas fa-paint-brush"></i> <b>New Look:</b> Added doodles, coffee stains, and a credits section to the login page.</li>
+                <li><i class="fas fa-paper-plane"></i> <b>Classroom Chat:</b> Message your classmates instantly using the floating notepad button!</li>
+                <li><i class="fas fa-camera-retro"></i> <b>Memories Gallery:</b> A dedicated space on the login page to see and share our class photos.</li>
+                <li><i class="fas fa-clock"></i> <b>Live Class Tracker:</b> No more guessing! See exactly what subject is happening right now in real-time.</li>
+                <li><i class="fas fa-magic"></i> <b>Custom Wallpapers:</b> Generate your own aesthetic wallpapers or upload your favorite background.</li>
+                <li><i class="fas fa-eye"></i> <b>Quick Preview:</b> View your PDFs and images directly in the browser without downloading them first.</li>
+                <li><i class="fas fa-folder"></i> <b>Subject Cabinet:</b> All our reviewers are now neatly organized into subject folders.</li>
+                <li><i class="fas fa-mobile-alt"></i> <b>Phone Ready:</b> Fully optimized for mobile screens so it looks great even on the go!</li>
              </ul>
         </div>
         <p style="font-size:1.3rem; margin: 15px 0; color: #d32f2f; font-weight: bold;">"Login na kayo para makita niyo!"</p>
@@ -2048,9 +2042,9 @@ window.showCongratsMessage = function (prevModal) {
     box.className = 'wimpy-modal-box';
 
     box.innerHTML = `
-        <h2 style="margin:0 0 15px 0; font-size:2rem;">🎉 CONGRATS!</h2>
-        <p style="font-size:1.3rem; margin-bottom:20px;">Congrays Guys at naipasa natin ang First Sem, Goodluck sa Second Sem!<br><br>- Jv</p>
-        <button onclick="this.closest('.wimpy-modal-overlay').remove()" style="background: #000; color: #fff; border: 2px solid #000; font-family: 'Patrick Hand'; font-size: 1.2rem; cursor: pointer; width: 100%; border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; padding: 10px;">LET'S GO!</button>
+        <h2 style="margin:0 0 15px 0; font-size:2rem;">🎉 KONTI NALANG!</h2>
+        <p style="font-size:1.3rem; margin-bottom:20px;">KONTI NALANG MATATAPOS NA NATIN THIRD YEAR NA TAYO!<br><br>- Jv</p>
+        <button onclick="this.closest('.wimpy-modal-overlay').remove()" style="background: #000; color: #fff; border: 2px solid #000; font-family: 'Patrick Hand'; font-size: 1.2rem; cursor: pointer; width: 100%; border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; padding: 10px;">LETS GO</button>
     `;
 
     overlay.appendChild(box);
