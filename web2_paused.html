@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Announcement - Closed</title>
+    <!-- Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Permanent+Marker&family=Outfit:wght@400;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at center, #f5f6fa 0%, #dcdde1 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Ambient floating doodles/shapes in the background to make it look premium and playful */
+        .bg-element {
+            position: absolute;
+            color: rgba(0, 0, 0, 0.03);
+            font-size: 8rem;
+            user-select: none;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .bg-el-1 {
+            top: 10%;
+            left: 10%;
+            transform: rotate(-15deg);
+        }
+
+        .bg-el-2 {
+            bottom: 15%;
+            right: 10%;
+            transform: rotate(20deg);
+        }
+
+        .bg-el-3 {
+            top: 20%;
+            right: 15%;
+            transform: rotate(10deg);
+        }
+
+        .bg-el-4 {
+            bottom: 10%;
+            left: 15%;
+            transform: rotate(-25deg);
+        }
+
+        /* The Signboard Container */
+        .signboard-container {
+            position: relative;
+            z-index: 10;
+            width: 90%;
+            max-width: 750px;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        /* Announcement Board */
+        .announcement-board {
+            background: #ffffff;
+            border: 4px solid #1e272e;
+            border-radius: 20px;
+            padding: 60px 40px;
+            box-shadow: 12px 12px 0px #1e272e, 0px 20px 40px rgba(0, 0, 0, 0.1);
+            position: relative;
+            text-align: center;
+            overflow: hidden;
+        }
+
+        /* Pinned Tape Graphic at the top corners */
+        .tape {
+            position: absolute;
+            width: 120px;
+            height: 35px;
+            background: rgba(241, 196, 15, 0.4);
+            border-left: 1px dashed rgba(255, 255, 255, 0.5);
+            border-right: 1px dashed rgba(255, 255, 255, 0.5);
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.05);
+            z-index: 20;
+            backdrop-filter: blur(1px);
+        }
+
+        .tape-left {
+            top: -10px;
+            left: -30px;
+            transform: rotate(-35deg);
+        }
+
+        .tape-right {
+            top: -10px;
+            right: -30px;
+            transform: rotate(35deg);
+        }
+
+        /* Thumbtack style dot at the top center */
+        .pin {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 20px;
+            background: #ff7675;
+            border-radius: 50%;
+            border: 2px solid #1e272e;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .pin::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 6px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 50%;
+        }
+
+        /* Ribbon/Badge at the top */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #1e272e;
+            color: #f1c40f;
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 30px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.15);
+        }
+
+        .badge i {
+            animation: pulse 2s infinite;
+        }
+
+        /* The Main Signboard Text */
+        .signboard-title {
+            font-family: 'Permanent Marker', cursive;
+            font-size: 4.5rem;
+            line-height: 1.1;
+            color: #1e272e;
+            margin-bottom: 25px;
+            letter-spacing: 1px;
+            word-wrap: break-word;
+            transform: rotate(-1deg);
+            text-shadow: 3px 3px 0px rgba(0, 0, 0, 0.05);
+            animation: textWobble 4s ease-in-out infinite;
+        }
+
+        /* Subtext / Decorative divider */
+        .divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin: 25px auto 15px;
+            width: 80%;
+        }
+
+        .divider-line {
+            height: 3px;
+            background: #1e272e;
+            flex-grow: 1;
+            border-radius: 2px;
+        }
+
+        .divider-icon {
+            font-size: 1.2rem;
+            color: #1e272e;
+        }
+
+        /* Additional subtext (sketchy style) */
+        .signboard-subtext {
+            font-family: 'Patrick Hand', cursive;
+            font-size: 1.8rem;
+            color: #57606f;
+            line-height: 1.4;
+            transform: rotate(0.5deg);
+        }
+
+        /* Micro animations */
+        @keyframes float {
+            0% {
+                transform: translateY(0px) rotate(0deg);
+            }
+
+            50% {
+                transform: translateY(-12px) rotate(0.5deg);
+            }
+
+            100% {
+                transform: translateY(0px) rotate(0deg);
+            }
+        }
+
+        @keyframes textWobble {
+            0% {
+                transform: rotate(-1deg) scale(1);
+            }
+
+            50% {
+                transform: rotate(1deg) scale(1.02);
+            }
+
+            100% {
+                transform: rotate(-1deg) scale(1);
+            }
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(1.2);
+                opacity: 0.8;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 768px) {
+            .signboard-title {
+                font-size: 3rem;
+            }
+
+            .announcement-board {
+                padding: 40px 20px;
+            }
+
+            .signboard-subtext {
+                font-size: 1.5rem;
+            }
+
+            .badge {
+                font-size: 0.8rem;
+                padding: 6px 15px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Ambient Doodles in Background -->
+    <i class="fas fa-graduation-cap bg-element bg-el-1"></i>
+    <i class="fas fa-heart bg-element bg-el-2"></i>
+    <i class="fas fa-star bg-element bg-el-3"></i>
+    <i class="fas fa-smile bg-element bg-el-4"></i>
+
+    <!-- Signboard Container -->
+    <div class="signboard-container">
+
+        <!-- Tape at corners -->
+        <div class="tape tape-left"></div>
+        <div class="tape tape-right"></div>
+
+        <!-- Pinned Board -->
+        <div class="announcement-board">
+            <div class="pin"></div>
+
+            <!-- Announcement Badge -->
+            <div class="badge">
+                <i class="fas fa-bullhorn"></i> Announcement
+            </div>
+
+            <!-- Message -->
+            <h1 class="signboard-title">GOODLUCK & THANK YOU 06!</h1>
+
+            <div class="divider">
+                <span class="divider-line"></span>
+                <i class="fas fa-quote-left divider-icon"></i>
+                <span class="divider-line"></span>
+            </div>
+
+            <!-- Subtext -->
+            <p class="signboard-subtext">-see ya around</p>
+        </div>
+    </div>
+
+</body>
+
+</html>
