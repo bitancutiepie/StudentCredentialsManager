@@ -1,0 +1,15 @@
+{
+  "name": "sistema-ni-jv",
+  "version": "2.0.0",
+  "private": true,
+  "description": "The Wimpy Credentials Book — Student Companion App",
+  "scripts": {
+    "lint": "npx eslint js/**/*.js",
+    "format": "npx prettier --write \"js/**/*.js\" \"css/**/*.css\" \"*.html\"",
+    "format:check": "npx prettier --check \"js/**/*.js\" \"css/**/*.css\" \"*.html\""
+  },
+  "devDependencies": {
+    "eslint": "^9.0.0",
+    "prettier": "^3.0.0"
+  }
+}

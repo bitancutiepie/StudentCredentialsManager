@@ -1,0 +1,21 @@
+# OS files
+*.swp
+*.swo
+*.log
+.DS_Store
+Thumbs.db
+
+# Large binaries / duplicates
+web2_backup.html
+web2_paused.html
+assets/screenshots/
+*.wav
+*.pdf
+
+# Node
+node_modules/
+dist/
+
+# Environment
+.env
+.env.local

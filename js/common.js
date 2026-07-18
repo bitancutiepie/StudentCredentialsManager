@@ -1,16 +1,13 @@
 // common.js - Shared Configuration and Utilities
-
-// --- CONFIGURATION ---
-const SUPABASE_URL = 'https://egnyblflgppsosunnilq.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVnbnlibGZsZ3Bwc29zdW5uaWxxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY0OTYzMjksImV4cCI6MjA4MjA3MjMyOX0.HR9lt4oHuFjGcjwsF_fLoJMuG2OI8aCIoRCSyyu0zVE';
+// Depends on: config.js (window.APP_CONFIG)
 
 // --- INITIALIZE CLIENT ---
-if (typeof window.supabase !== 'undefined') {
-    window.db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    // Legacy support
+var cfg = window.APP_CONFIG || {};
+if (typeof window.supabase !== 'undefined' && cfg.SUPABASE_URL && cfg.SUPABASE_KEY) {
+    window.db = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_KEY);
     window.supabaseClient = window.db;
 } else {
-    console.warn('Supabase JS not loaded yet. common.js will wait...');
+    console.warn('Supabase not ready. config.js must load first.');
 }
 
 // --- SHARED UTILITIES ---

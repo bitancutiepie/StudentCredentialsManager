@@ -1072,6 +1072,7 @@ h2:hover {
     padding: 15px;
     font-family: 'Patrick Hand', cursive;
     font-size: 1.1rem;
+    will-change: transform;
     background: #fff;
     border: 2px solid #000;
     box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.1);

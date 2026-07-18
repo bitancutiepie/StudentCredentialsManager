@@ -21,11 +21,15 @@
         })();
     </script>
     <!-- html2canvas for Wallpaper Generation -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <!-- PDF.js for Schedule Scanning -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        document.addEventListener('DOMContentLoaded', function () {
+            if (typeof pdfjsLib !== 'undefined') {
+                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            }
+        });
     </script>
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Permanent+Marker&display=swap"
@@ -1750,6 +1754,7 @@
     </div>
 
     <!-- SCRIPTS -->
+    <script src="js/config.js"></script>
     <script src="js/common.js"></script>
     <script src="js/dashboard.js?v=202405152300"></script> <!-- Update this version number on every deployment -->
     <script src="js/messaging.js"></script>
@@ -2867,15 +2872,15 @@
 
     <!-- GC: Online count sync (uses existing roomChannel, no extra queries) -->
     <script>
+        const gcBadge = document.getElementById('gc-online-count');
         setInterval(() => {
-            const badge = document.getElementById('gc-online-count');
-            if (!badge || !window.roomChannel) return;
+            if (!gcBadge || !window.roomChannel) return;
             try {
                 const count = Object.keys(window.roomChannel.presenceState()).length;
-                badge.textContent = count > 0 ? count + ' online now' : '';
-                badge.style.display = count > 0 ? 'block' : 'none';
+                gcBadge.textContent = count > 0 ? count + ' online now' : '';
+                gcBadge.style.display = count > 0 ? 'block' : 'none';
             } catch (e) { }
-        }, 5000); // 5s interval to reduce overhead
+        }, 5000);
     </script>
 </body>
 

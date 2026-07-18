@@ -280,3 +280,16 @@ textarea:focus {
 .toast.error {
     background: #ffadad;
 }
+
+.toast::after {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    width: 60px;
+    height: 20px;
+    background: rgba(255, 255, 255, 0.4);
+    transform: translateX(-50%) rotate(1deg);
+    border-left: 1px dashed rgba(0, 0, 0, 0.1);
+    border-right: 1px dashed rgba(0, 0, 0, 0.1);
+}

@@ -42,6 +42,7 @@ body {
     cursor: grab;
     user-select: none;
     word-wrap: break-word;
+    will-change: transform;
 }
 
 .sticky-note:active {
@@ -224,25 +225,7 @@ h2 {
 
 /* .sketch-btn removed (in common.css) */
 
-input,
-textarea {
-    width: 100%;
-    padding: 10px;
-    margin: 10px 0;
-    background: transparent;
-    border: none;
-    border-bottom: 2px solid #333;
-    font-family: 'Patrick Hand', cursive;
-    font-size: 1.2rem;
-    outline: none;
-    transition: border-color 0.3s;
-    box-sizing: border-box;
-}
-
-input:focus {
-    border-bottom: 3px solid #000;
-    animation: nervousWrite 0.3s ease-in-out;
-}
+/* input, textarea, select styles are in common.css */
 
 button {
     width: 100%;
@@ -282,9 +265,7 @@ button:active {
     color: #444;
 }
 
-.hidden {
-    display: none !important;
-}
+/* .hidden is in common.css */
 
 table {
     width: 100%;
@@ -434,51 +415,7 @@ tr:hover {
     padding-top: 15px;
 }
 
-#toast-container {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 20000;
-}
-
-.toast {
-    background: #fff740;
-    color: #2d3436;
-    padding: 15px 25px;
-    padding-bottom: 25px;
-    /* Extra space for jagged bottom */
-    margin-bottom: 15px;
-    box-shadow: none;
-    /* Drop-shadow handled by filter */
-    border: none;
-    /* Jagged Paper Effect */
-    clip-path: polygon(0% 0%, 100% 0%, 100% 100%,
-            95% 95%, 90% 100%, 85% 95%, 80% 100%, 75% 95%, 70% 100%, 65% 95%, 60% 100%,
-            55% 95%, 50% 100%, 45% 95%, 40% 100%, 35% 95%, 30% 100%, 25% 95%, 20% 100%,
-            15% 95%, 10% 100%, 5% 95%, 0% 100%);
-    filter: drop-shadow(3px 3px 0 rgba(0, 0, 0, 0.15));
-    font-family: 'Patrick Hand', cursive;
-    font-size: 1.3rem;
-    transform: rotate(-2deg);
-    opacity: 0;
-    animation: toastIn 0.5s forwards;
-    position: relative;
-    text-align: center;
-}
-
-/* Optional: Add a tape strip to the top of the toast */
-.toast::after {
-    content: '';
-    position: absolute;
-    top: -10px;
-    left: 50%;
-    width: 60px;
-    height: 20px;
-    background: rgba(255, 255, 255, 0.4);
-    transform: translateX(-50%) rotate(1deg);
-    border-left: 1px dashed rgba(0, 0, 0, 0.1);
-    border-right: 1px dashed rgba(0, 0, 0, 0.1);
-}
+/* #toast-container, .toast, .toast::after are in common.css */
 
 @keyframes slideInRight {
     from {
@@ -492,17 +429,7 @@ tr:hover {
     }
 }
 
-@keyframes slideUp {
-    from {
-        transform: translateY(50px);
-        opacity: 0;
-    }
-
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
+/* @keyframes slideUp is in common.css */
 
 @keyframes float {
     0% {
@@ -518,43 +445,9 @@ tr:hover {
     }
 }
 
-@keyframes toastIn {
-    from {
-        transform: translateX(100%) rotate(0deg);
-        opacity: 0;
-    }
+/* @keyframes toastIn and toastOut are in common.css */
 
-    to {
-        transform: translateX(0) rotate(-2deg);
-        opacity: 1;
-    }
-}
-
-@keyframes toastOut {
-    from {
-        opacity: 1;
-    }
-
-    to {
-        opacity: 0;
-        transform: translateY(-20px);
-    }
-}
-
-/* --- NEW: Refresh Button Spin Animation --- */
-.spin-animation {
-    animation: spin 1s infinite linear;
-}
-
-@keyframes spin {
-    0% {
-        transform: rotate(0deg);
-    }
-
-    100% {
-        transform: rotate(360deg);
-    }
-}
+/* .spin-animation and @keyframes spin are in common.css */
 
 @media (max-width: 600px) {
     .sketch-box {
@@ -1045,51 +938,7 @@ input[type="checkbox"] {
 }
 
 /* JUMPSCARE */
-@keyframes shake {
-    0% {
-        transform: translate(1px, 1px) rotate(0deg);
-    }
-
-    10% {
-        transform: translate(-1px, -2px) rotate(-1deg);
-    }
-
-    20% {
-        transform: translate(-3px, 0px) rotate(1deg);
-    }
-
-    30% {
-        transform: translate(3px, 2px) rotate(0deg);
-    }
-
-    40% {
-        transform: translate(1px, -1px) rotate(1deg);
-    }
-
-    50% {
-        transform: translate(-1px, 2px) rotate(-1deg);
-    }
-
-    60% {
-        transform: translate(-3px, 1px) rotate(0deg);
-    }
-
-    70% {
-        transform: translate(3px, 1px) rotate(-1deg);
-    }
-
-    80% {
-        transform: translate(-1px, -1px) rotate(1deg);
-    }
-
-    90% {
-        transform: translate(1px, 2px) rotate(0deg);
-    }
-
-    100% {
-        transform: translate(1px, -2px) rotate(-1deg);
-    }
-}
+/* @keyframes shake is in common.css */
 
 /* --- DESKTOP LANDING GRID --- */
 .landing-grid-container {

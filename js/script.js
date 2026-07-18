@@ -103,8 +103,6 @@ const initApp = async () => {
 
     // Start Jumpscare Timer
     startJumpscareTimer();
-    // Start Jumpscare Timer
-    startJumpscareTimer();
 
     // REALTIME LISTENERS (Everyone)
     if (window.db && window.db.channel) {
@@ -1575,64 +1573,63 @@ window.fetchNotes = async function () {
         if (u.sr_code === 'ADMIN' || u.role === 'admin') isAdmin = true;
     }
 
-    noteLayer.innerHTML = '';
+    const fragment = document.createDocumentFragment();
     data.forEach(note => {
-        const div = document.createElement('div');
-        div.className = 'sticky-note';
-
-        // Content
-        const p = document.createElement('p');
-        p.innerText = note.content;
-        p.style.margin = '0';
-        p.style.pointerEvents = 'none'; // Let clicks pass to drag handler
-        div.appendChild(p);
-
-        div.id = `note-${note.id}`;
-        div.style.left = (note.x_pos || 0) + '%';
-        div.style.top = (note.y_pos || 0) + '%';
-        div.style.transform = `rotate(${note.rotation}deg)`;
-
-        // Apply Wimpy Style (Color or Lined)
-        if (note.color) div.classList.add(note.color);
-
-        // Delete Button (Only if Admin)
-        if (isAdmin) {
-            const btn = document.createElement('button');
-            btn.className = 'delete-note-btn';
-            btn.innerHTML = '<i class="fas fa-times"></i>';
-            btn.title = "Delete Note";
-            btn.style.display = 'flex';
-            btn.style.width = '20px'; // Override global button styles
-            btn.style.padding = '0';
-            btn.style.marginTop = '0';
-            // Prevent drag when clicking button
-            btn.onmousedown = (e) => e.stopPropagation();
-            btn.onclick = () => deleteNote(note.id);
-            div.appendChild(btn);
-        }
-
-        // Like Sticker
-        const likeBtn = document.createElement('div');
-        likeBtn.className = 'like-sticker';
-        // Check if user liked this locally
-        let likedNotes = [];
-        try {
-            likedNotes = JSON.parse(localStorage.getItem('liked_notes') || '[]');
-        } catch (e) {
-            localStorage.removeItem('liked_notes'); // Reset if corrupted
-        }
-        if (likedNotes.includes(note.id)) likeBtn.classList.add('liked');
-
-        likeBtn.innerHTML = `<i class="fas fa-heart"></i> <span class="like-count">${note.likes || 0}</span>`;
-        // Stop propagation to prevent dragging when clicking like
-        likeBtn.onmousedown = (e) => e.stopPropagation();
-        likeBtn.onclick = (e) => { e.stopPropagation(); toggleLike(note.id); };
-        div.appendChild(likeBtn);
-
-        makeDraggable(div, note.id);
-        noteLayer.appendChild(div);
+        const div = createNoteElement(note, isAdmin);
+        fragment.appendChild(div);
     });
+    noteLayer.appendChild(fragment);
     setTimeout(resolveCollisions, 200);
+}
+
+function createNoteElement(note, isAdmin) {
+    const div = document.createElement('div');
+    div.className = 'sticky-note';
+
+    const p = document.createElement('p');
+    p.innerText = note.content;
+    p.style.margin = '0';
+    p.style.pointerEvents = 'none';
+    div.appendChild(p);
+
+    div.id = `note-${note.id}`;
+    div.style.left = (note.x_pos || 0) + '%';
+    div.style.top = (note.y_pos || 0) + '%';
+    div.style.transform = `rotate(${note.rotation}deg)`;
+
+    if (note.color) div.classList.add(note.color);
+
+    if (isAdmin) {
+        const btn = document.createElement('button');
+        btn.className = 'delete-note-btn';
+        btn.innerHTML = '<i class="fas fa-times"></i>';
+        btn.title = "Delete Note";
+        btn.style.display = 'flex';
+        btn.style.width = '20px';
+        btn.style.padding = '0';
+        btn.style.marginTop = '0';
+        btn.onmousedown = (e) => e.stopPropagation();
+        btn.onclick = () => deleteNote(note.id);
+        div.appendChild(btn);
+    }
+
+    const likeBtn = document.createElement('div');
+    likeBtn.className = 'like-sticker';
+    let likedNotes = [];
+    try {
+        likedNotes = JSON.parse(localStorage.getItem('liked_notes') || '[]');
+    } catch (e) {
+        localStorage.removeItem('liked_notes');
+    }
+    if (likedNotes.includes(note.id)) likeBtn.classList.add('liked');
+
+    likeBtn.innerHTML = `<i class="fas fa-heart"></i> <span class="like-count">${note.likes || 0}</span>`;
+    likeBtn.onmousedown = (e) => e.stopPropagation();
+    likeBtn.onclick = (e) => { e.stopPropagation(); toggleLike(note.id); };
+    div.appendChild(likeBtn);
+
+    makeDraggable(div, note.id);
+    return div;
 }
 
 
@@ -1725,7 +1722,18 @@ function setupRealtimeNotes() {
             // However, sticky notes are deleted by ID. If ID doesn't exist in DOM, no harm done.
 
             if (payload.eventType === 'INSERT') {
-                fetchNotes(); // New note added, refresh board
+                const noteLayer = document.getElementById('freedom-wall-board');
+                if (noteLayer) {
+                    const storedUser = localStorage.getItem('wimpy_user') || sessionStorage.getItem('wimpy_user');
+                    let isAdmin = false;
+                    if (storedUser) {
+                        const u = JSON.parse(storedUser);
+                        if (u.sr_code === 'ADMIN' || u.role === 'admin') isAdmin = true;
+                    }
+                    const div = createNoteElement(payload.new, isAdmin);
+                    noteLayer.appendChild(div);
+                    resolveCollisions();
+                }
             } else if (payload.eventType === 'DELETE') {
                 const el = document.getElementById(`note-${payload.old.id}`);
                 if (el) el.remove();
@@ -1752,15 +1760,16 @@ function resolveCollisions() {
 
     const boardRect = board.getBoundingClientRect();
     const padding = 10;
+    let rects = notes.map(n => n.getBoundingClientRect());
 
-    for (let iter = 0; iter < 10; iter++) {
+    for (let iter = 0; iter < 3; iter++) {
         let movedInThisPass = false;
+        const changes = new Array(notes.length);
+
         for (let i = 0; i < notes.length; i++) {
             for (let j = i + 1; j < notes.length; j++) {
-                const n1 = notes[i];
-                const n2 = notes[j];
-                const r1 = n1.getBoundingClientRect();
-                const r2 = n2.getBoundingClientRect();
+                const r1 = rects[i];
+                const r2 = rects[j];
 
                 const overlapX = Math.min(r1.right, r2.right) - Math.max(r1.left, r2.left) + padding;
                 const overlapY = Math.min(r1.bottom, r2.bottom) - Math.max(r1.top, r2.top) + padding;
@@ -1777,21 +1786,30 @@ function resolveCollisions() {
                     const moveX = (dx / distance) * force;
                     const moveY = (dy / distance) * force;
 
-                    const applyMove = (el, mx, my) => {
-                        let lVal = parseFloat(el.style.left) || 0;
-                        let tVal = parseFloat(el.style.top) || 0;
-                        if (el.style.left.includes('px')) lVal = (lVal / boardRect.width) * 100;
-                        if (el.style.top.includes('px')) tVal = (tVal / boardRect.height) * 100;
-
-                        el.style.left = Math.max(0, Math.min(90, lVal + (mx / boardRect.width) * 100)) + '%';
-                        el.style.top = Math.max(0, Math.min(90, tVal + (my / boardRect.height) * 100)) + '%';
-                    };
-                    applyMove(n1, moveX, moveY);
-                    applyMove(n2, -moveX, -moveY);
+                    changes[i] = changes[i] || { mx: 0, my: 0 };
+                    changes[j] = changes[j] || { mx: 0, my: 0 };
+                    changes[i].mx += moveX;
+                    changes[i].my += moveY;
+                    changes[j].mx -= moveX;
+                    changes[j].my -= moveY;
                 }
             }
         }
+
         if (!movedInThisPass) break;
+
+        changes.forEach((c, idx) => {
+            if (!c) return;
+            const el = notes[idx];
+            let lVal = parseFloat(el.style.left) || 0;
+            let tVal = parseFloat(el.style.top) || 0;
+            if (el.style.left.includes('px')) lVal = (lVal / boardRect.width) * 100;
+            if (el.style.top.includes('px')) tVal = (tVal / boardRect.height) * 100;
+            el.style.left = Math.max(0, Math.min(90, lVal + (c.mx / boardRect.width) * 100)) + '%';
+            el.style.top = Math.max(0, Math.min(90, tVal + (c.my / boardRect.height) * 100)) + '%';
+        });
+
+        rects = notes.map(n => n.getBoundingClientRect());
     }
 }
 
@@ -1807,7 +1825,8 @@ window.deleteNote = async function (id) {
 
 function makeDraggable(element, noteId) {
     let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-    let startLeft = 0, startTop = 0; // Track starting position
+    let dragOffsetX = 0, dragOffsetY = 0;
+    let noteRotation = 0;
 
     element.onmousedown = dragMouseDown;
     element.ontouchstart = dragMouseDown;
@@ -1815,10 +1834,17 @@ function makeDraggable(element, noteId) {
     function dragMouseDown(e) {
         e = e || window.event;
 
-        // Bring to front
         element.style.zIndex = 1000;
-        startLeft = element.offsetLeft; // Capture start position
-        startTop = element.offsetTop;
+
+        const parent = element.parentElement;
+        if (!parent) return;
+        const parentRect = parent.getBoundingClientRect();
+        const elRect = element.getBoundingClientRect();
+        dragOffsetX = elRect.left - parentRect.left;
+        dragOffsetY = elRect.top - parentRect.top;
+
+        const match = element.style.transform.match(/rotate\(([-\d.]+)deg\)/);
+        noteRotation = match ? parseFloat(match[1]) : 0;
 
         if (e.type !== 'touchstart') e.preventDefault();
         pos3 = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
@@ -1829,10 +1855,17 @@ function makeDraggable(element, noteId) {
         document.ontouchmove = elementDrag;
     }
 
-    function elementDrag(e) { e = e || window.event; let clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX; let clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY; pos1 = pos3 - clientX; pos2 = pos4 - clientY; pos3 = clientX; pos4 = clientY; element.style.top = (element.offsetTop - pos2) + "px"; element.style.left = (element.offsetLeft - pos1) + "px"; }
+    function elementDrag(e) {
+        e = e || window.event;
+        let clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+        let clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+        pos1 = pos3 - clientX; pos2 = pos4 - clientY; pos3 = clientX; pos4 = clientY;
+        dragOffsetX -= pos1;
+        dragOffsetY -= pos2;
+        element.style.transform = `rotate(${noteRotation}deg) translate(${dragOffsetX}px, ${dragOffsetY}px)`;
+    }
 
     function closeDragElement() {
-        // Reset z-index slightly so it doesn't stay 'active' forever, or keep it high
         element.style.zIndex = 'auto';
         const parent = element.parentElement;
 
@@ -1841,14 +1874,19 @@ function makeDraggable(element, noteId) {
         document.ontouchend = null;
         document.ontouchmove = null;
 
-        // FIX: Check if parent has dimensions to avoid NaN/Infinity errors
         if (!parent || parent.offsetWidth <= 0 || parent.offsetHeight <= 0) return;
 
-        // FIX: Only update if actually moved (prevents 400 errors on simple clicks)
-        if (Math.abs(element.offsetLeft - startLeft) < 2 && Math.abs(element.offsetTop - startTop) < 2) return;
+        const parentRect = parent.getBoundingClientRect();
+        const elRect = element.getBoundingClientRect();
+        const xPercent = ((elRect.left - parentRect.left) / parentRect.width) * 100;
+        const yPercent = ((elRect.top - parentRect.top) / parentRect.height) * 100;
 
-        const xPercent = (element.offsetLeft / parent.offsetWidth) * 100;
-        const yPercent = (element.offsetTop / parent.offsetHeight) * 100;
+        if (Math.abs(xPercent - parseFloat(element.style.left)) < 0.3 && Math.abs(yPercent - parseFloat(element.style.top)) < 0.3) return;
+
+        element.style.left = Math.max(0, Math.min(95, xPercent)) + '%';
+        element.style.top = Math.max(0, Math.min(95, yPercent)) + '%';
+        element.style.transform = `rotate(${noteRotation}deg)`;
+
         resolveCollisions();
         updateNotePosition(noteId, xPercent, yPercent);
     }
