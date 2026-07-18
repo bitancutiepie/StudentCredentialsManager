@@ -340,7 +340,41 @@ function timeAgo(dateString) {
  * Displays a premium Wimpy Kid style announcement on screen.
  */
 window.showAnnouncementPopup = async function (data) {
-    const { id, message, admin_name, admin_avatar } = data;
+    const { id, message, admin_name, admin_avatar, duration, createdAt } = data;
+
+    // Compute remaining time if duration is provided
+    let timerHtml = '';
+    if (duration && createdAt) {
+        const createdMs = new Date(createdAt).getTime();
+        const durationMs = parseInt(duration) * 60 * 1000;
+        const expiresAt = createdMs + durationMs;
+        const now = Date.now();
+        const remainingMs = expiresAt - now;
+        const remainingMins = Math.max(0, Math.floor(remainingMs / 60000));
+        const remainingSecs = Math.max(0, Math.ceil(remainingMs / 1000));
+        const percentRemaining = Math.max(0, Math.min(100, (remainingMs / durationMs) * 100));
+        const severityClass = remainingMs <= 0 ? 'low' : percentRemaining > 50 ? '' : percentRemaining > 25 ? 'mid' : 'low';
+
+        let timerLabel;
+        if (remainingMs <= 0) {
+            timerLabel = 'Expired';
+        } else if (remainingMins >= 1) {
+            timerLabel = `${remainingMins}m remaining`;
+        } else {
+            timerLabel = `${remainingSecs}s remaining`;
+        }
+
+        timerHtml = `
+            <div style="display:flex; align-items:center; gap:8px; margin-top:8px; padding-top:8px; border-top:1px dashed rgba(0,0,0,0.1);">
+                <span style="white-space:nowrap; font-family:'Patrick Hand'; font-size:0.8rem; font-weight:700; color:${severityClass === 'low' ? '#d63031' : severityClass === 'mid' ? '#e17055' : '#0984e3'}">
+                    <i class="fas fa-hourglass-half"></i> ${timerLabel}
+                </span>
+                <div style="flex:1; height:4px; background:#e9ecef; border-radius:3px; overflow:hidden;">
+                    <div style="height:100%; width:${percentRemaining}%; background:${severityClass === 'low' ? '#d63031' : severityClass === 'mid' ? '#fdcb6e' : '#0984e3'}; border-radius:3px;"></div>
+                </div>
+            </div>
+        `;
+    }
 
     // Create overlay if not exists
     let overlay = document.getElementById('announcement-overlay');
@@ -370,15 +404,15 @@ window.showAnnouncementPopup = async function (data) {
 
     overlay.innerHTML = `
         <div class="announcement-pop-card" id="announcement-${id}" style="
-            background: #fff740; 
-            border: 4px solid #000; 
+            background: #fff; 
+            border: 3px solid #000; 
             padding: 25px; 
             max-width: 500px; 
             width: 90%; 
             position: relative; 
             transform: rotate(-0.5deg);
-            box-shadow: 12px 12px 0 #000;
-            animation: announcePop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 8px 8px 0 #000;
+            animation: announcePop 0.4s cubic-bezier(0.23, 1, 0.32, 1);
             color: #000;
             text-align: left;
             max-height: 90vh;
@@ -386,43 +420,47 @@ window.showAnnouncementPopup = async function (data) {
             flex-direction: column;
         ">
             <!-- Tape -->
-            <div style="position: absolute; top: -15px; left: 50%; transform: translateX(-50%); width: 100px; height: 35px; background: rgba(255,255,255,0.4); border: 1px dashed rgba(0,0,0,0.1); border-radius: 2px;"></div>
+            <div style="position: absolute; top: -15px; left: 50%; transform: translateX(-50%); width: 100px; height: 35px; background: rgba(0,0,0,0.06); border: 1px dashed rgba(255,255,255,0.3); border-radius: 2px;"></div>
             
             <!-- Close Button Top Right -->
             <button onclick="document.getElementById('announcement-overlay').style.display='none'; document.getElementById('announcement-overlay').innerHTML='';" 
-                    style="position: absolute; top: 10px; right: 10px; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #000;">
+                    style="position: absolute; top: 10px; right: 10px; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #000; transition: transform 150ms ease-out;"
+                    onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">
                 <i class="fas fa-times"></i>
             </button>
 
-            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px; border-bottom: 2px dashed rgba(0,0,0,0.2); padding-bottom: 10px;">
-                <img src="${avatar}" style="width: 50px; height: 50px; border: 3px solid #000; border-radius: 50%; background: #fff; object-fit: cover;">
-                <div>
-                    <h2 style="margin: 0; font-family: 'Permanent Marker', cursive; font-size: 1.5rem; color: #000;">ANNOUNCEMENT!</h2>
-                    <p style="margin: 0; font-style: italic; font-size: 1rem; color: #333; font-family: 'Patrick Hand';">from ${admin_name}</p>
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px; border-bottom: 2px solid #000; padding-bottom: 12px;">
+                <img src="${avatar}" style="width: 48px; height: 48px; border: 2px solid #000; border-radius: 50%; background: #fff; object-fit: cover;">
+                <div style="flex:1;">
+                    <h2 style="margin: 0; font-family: 'Permanent Marker', cursive; font-size: 1.3rem; color: #000; line-height:1.2;">
+                        <i class="fas fa-bullhorn" style="color:#0984e3;"></i> Announcement
+                    </h2>
+                    <p style="margin: 2px 0 0 0; font-style: italic; font-size: 0.9rem; color: #636e72; font-family: 'Patrick Hand';">from ${admin_name}</p>
+                    ${timerHtml}
                 </div>
             </div>
 
             <!-- Content Area - Scrollable if too long -->
             <div style="flex: 1; overflow-y: auto; margin-bottom: 15px; padding-right: 5px;" class="custom-scroll">
-                <div style="font-size: 1.3rem; line-height: 1.4; color: #000; margin-bottom: 20px; white-space: pre-wrap; font-family: 'Patrick Hand', cursive;">
+                <div style="font-size: 1.2rem; line-height: 1.5; color: #2d3436; margin-bottom: 20px; white-space: pre-wrap; font-family: 'Patrick Hand', cursive;">
                     ${message}
                 </div>
 
                 <!-- Comment Section Wrapper -->
-                <div style="border-top: 1px solid rgba(0,0,0,0.1); padding-top: 15px;">
-                    <h4 style="margin: 0 0 10px 0; font-family: 'Permanent Marker'; font-size: 1.1rem;"><i class="fas fa-comments"></i> Reactions</h4>
+                <div style="border-top: 1px solid #e9ecef; padding-top: 15px;">
+                    <h4 style="margin: 0 0 10px 0; font-family: 'Permanent Marker'; font-size: 1rem; color: #0984e3;"><i class="fas fa-comments"></i> Reactions</h4>
                     <div id="comment-list-${id}" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;">
-                        <p style="font-style: italic; color: #666; font-family: 'Patrick Hand';">Loading comments...</p>
+                        <p style="font-style: italic; color: #636e72; font-family: 'Patrick Hand'; font-size:0.9rem;">Loading comments...</p>
                     </div>
                 </div>
             </div>
 
             <!-- Comment Input -->
-            <div style="display: flex; gap: 5px; background: #fff; padding: 5px; border: 2px solid #000;">
+            <div style="display: flex; gap: 5px; background: #f8f9fa; padding: 5px; border: 2px solid #000;">
                 <input type="text" id="comment-input-${id}" placeholder="Say something..." 
-                    style="flex: 1; border: none; background: transparent; font-family: 'Patrick Hand'; font-size: 1.1rem; padding: 5px; outline: none;"
+                    style="flex: 1; border: none; background: transparent; font-family: 'Patrick Hand'; font-size: 1rem; padding: 5px 8px; outline: none;"
                     onkeydown="if(event.key === 'Enter') postAnnouncementComment('${id}')">
-                <button onclick="postAnnouncementComment('${id}')" style="background: #000; color: #fff; border: none; padding: 5px 12px; font-family: 'Permanent Marker'; cursor: pointer;">
+                <button onclick="postAnnouncementComment('${id}')" style="background: #0984e3; color: #fff; border: none; padding: 5px 14px; font-family: 'Permanent Marker'; cursor: pointer; font-size:0.85rem; transition: transform 150ms ease-out;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
                     POST
                 </button>
             </div>
@@ -430,7 +468,7 @@ window.showAnnouncementPopup = async function (data) {
 
         <style>
             @keyframes announcePop {
-                0% { transform: scale(0.5) rotate(10deg); opacity: 0; }
+                0% { transform: scale(0.95) rotate(2deg); opacity: 0; }
                 100% { transform: scale(1) rotate(-0.5deg); opacity: 1; }
             }
             #announcement-overlay {
@@ -448,7 +486,7 @@ window.showAnnouncementPopup = async function (data) {
             }
             .custom-scroll::-webkit-scrollbar { width: 6px; }
             .custom-scroll::-webkit-scrollbar-track { background: transparent; }
-            .custom-scroll::-webkit-scrollbar-thumb { background: #000; border-radius: 10px; }
+            .custom-scroll::-webkit-scrollbar-thumb { background: #2d3436; border-radius: 10px; }
         </style>
     `;
 
@@ -616,6 +654,8 @@ window.checkActiveAnnouncements = async function () {
                     message: ann.content,
                     admin_name: 'Admin',
                     admin_avatar: '',
+                    duration: durationMins,
+                    createdAt: ann.created_at,
                 });
             }
         }

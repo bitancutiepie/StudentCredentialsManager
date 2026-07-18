@@ -2461,6 +2461,29 @@ window.loadRecentAnnouncementsSidebar = async function () {
                     : new Date(ann.created_at).toLocaleTimeString();
                 const annComments = commentMap[ann.id] || [];
 
+                // Compute remaining time
+                const createdAt = new Date(ann.created_at).getTime();
+                const durationMins = parseInt(ann.x_pos) || 10;
+                const expiresAt = createdAt + durationMins * 60 * 1000;
+                const now = Date.now();
+                const remainingMs = expiresAt - now;
+                const remainingMins = Math.max(0, Math.floor(remainingMs / 60000));
+                const remainingSecs = Math.max(0, Math.ceil(remainingMs / 1000));
+                const percentRemaining = Math.max(0, Math.min(100, (remainingMs / (durationMins * 60 * 1000)) * 100));
+
+                let timerLabel = '';
+                let severityClass = '';
+                if (remainingMs <= 0) {
+                    timerLabel = 'Expired';
+                    severityClass = 'low';
+                } else if (remainingMins >= 1) {
+                    timerLabel = `${remainingMins}m left`;
+                    severityClass = percentRemaining > 50 ? '' : percentRemaining > 25 ? 'mid' : 'low';
+                } else {
+                    timerLabel = `${remainingSecs}s left`;
+                    severityClass = 'low';
+                }
+
                 // Build Peek HTML
                 let peekHtml = '';
                 if (annComments.length > 0) {
@@ -2491,19 +2514,30 @@ window.loadRecentAnnouncementsSidebar = async function () {
                 const deleteBtn = isAdmin
                     ? `
                 <button onclick="event.stopPropagation(); deleteAnnouncementSidebar('${ann.id}')" 
-                        style="position: absolute; top: -5px; right: -5px; background: #d63031; color: #fff; border: 2px solid #000; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.7rem; z-index: 10; box-shadow: 2px 2px 0 rgba(0,0,0,0.1);">
+                        class="ann-delete-btn">
                     <i class="fas fa-times"></i>
                 </button>
             `
                     : '';
 
+                const safeMsg = ann.content.replace(/`/g, '\\`').replace(/\$/g, '\\$');
+
                 return `
-                <div class="ann-mini-card" style="position: relative;" onclick="window.showAnnouncementPopup({id: '${ann.id}', message: \`${ann.content.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`, admin_name: 'Admin'})">
+                <div class="ann-mini-card" onclick="window.showAnnouncementPopup({id: '${ann.id}', message: \`${safeMsg}\`, admin_name: 'Admin', duration: ${durationMins}, createdAt: '${ann.created_at}'})">
                     ${deleteBtn}
-                    <div class="ann-mini-content" style="font-weight: bold; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
+                    <div class="ann-mini-content">
                         ${escapeHTML(ann.content)}
                     </div>
                     <small><i class="fas fa-clock"></i> ${timeStr} ${annComments.length > 0 ? `<span style="margin-left:auto;"><i class="fas fa-comment"></i> ${annComments.length}</span>` : ''}</small>
+                    ${remainingMs > 0 ? `
+                    <div class="ann-card-footer">
+                        <span class="ann-timer-label ${severityClass}"><i class="fas fa-hourglass-half"></i> ${timerLabel}</span>
+                        <div class="ann-timer-track"><div class="ann-timer-fill ${severityClass}" style="width:${percentRemaining}%"></div></div>
+                    </div>` : `
+                    <div class="ann-card-footer">
+                        <span class="ann-timer-label low"><i class="fas fa-hourglass-end"></i> ${timerLabel}</span>
+                        <div class="ann-timer-track"><div class="ann-timer-fill low" style="width:0%"></div></div>
+                    </div>`}
                     ${peekHtml}
                 </div>
             `;

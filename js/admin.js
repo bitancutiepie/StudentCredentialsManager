@@ -618,15 +618,19 @@ window.performBroadcast = async function (message, duration, btn = null) {
 
         if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Broadcasting...';
 
+        const payload = {
+            id: announcementId,
+            message: message,
+            admin_name: window.user.name,
+            admin_avatar: window.user.avatar_url,
+            duration: duration,
+            createdAt: new Date().toISOString(),
+        };
+
         const resp = await window.roomChannel.send({
             type: 'broadcast',
             event: 'announcement',
-            payload: {
-                id: announcementId,
-                message: message,
-                admin_name: window.user.name,
-                admin_avatar: window.user.avatar_url,
-            },
+            payload: payload,
         });
 
         if (resp !== 'ok') throw new Error('Broadcast failed. Check connection.');
@@ -634,12 +638,7 @@ window.performBroadcast = async function (message, duration, btn = null) {
         showToast('📢 Announcement sent to everyone!');
 
         if (window.showAnnouncementPopup) {
-            window.showAnnouncementPopup({
-                id: announcementId,
-                message: message,
-                admin_name: window.user.name,
-                admin_avatar: window.user.avatar_url,
-            });
+            window.showAnnouncementPopup(payload);
         }
 
         // Refresh sidebar list if it exists
