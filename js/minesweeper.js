@@ -27,7 +27,9 @@ class Minesweeper {
     }
 
     init() {
-        this.board = Array(this.rows).fill().map(() => Array(this.cols).fill(0));
+        this.board = Array(this.rows)
+            .fill()
+            .map(() => Array(this.cols).fill(0));
         this.minePositions.clear();
         this.revealedCount = 0;
         this.flagsCount = 0;
@@ -44,10 +46,10 @@ class Minesweeper {
 
     setFaceIcon(type) {
         const iconMap = {
-            'smile': 'fa-smile',
-            'win': 'fa-laugh-beam',
-            'lose': 'fa-dizzy',
-            'scared': 'fa-surprise'
+            smile: 'fa-smile',
+            win: 'fa-laugh-beam',
+            lose: 'fa-dizzy',
+            scared: 'fa-surprise',
         };
         this.faceBtn.innerHTML = `<i class="fas ${iconMap[type] || 'fa-smile'}"></i>`;
     }
@@ -58,7 +60,7 @@ class Minesweeper {
         if (best) {
             this.bestTimeDisplay.innerText = this.formatTime(best);
         } else {
-            this.bestTimeDisplay.innerText = "--:--";
+            this.bestTimeDisplay.innerText = '--:--';
         }
     }
 
@@ -69,7 +71,10 @@ class Minesweeper {
             bestTimes[this.difficulty] = this.timer;
             localStorage.setItem('ms_best_times', JSON.stringify(bestTimes));
             this.loadBestTime();
-            showToast(`NEW RECORD! Best time for ${this.difficulty.toUpperCase()}: ${this.formatTime(this.timer)}`, "success");
+            showToast(
+                `NEW RECORD! Best time for ${this.difficulty.toUpperCase()}: ${this.formatTime(this.timer)}`,
+                'success',
+            );
         }
     }
 
@@ -124,7 +129,8 @@ class Minesweeper {
                 let count = 0;
                 for (let dr = -1; dr <= 1; dr++) {
                     for (let dc = -1; dc <= 1; dc++) {
-                        const nr = r + dr, nc = c + dc;
+                        const nr = r + dr,
+                            nc = c + dc;
                         if (nr >= 0 && nr < this.rows && nc >= 0 && nc < this.cols && this.board[nr][nc] === -1) {
                             count++;
                         }
@@ -137,7 +143,7 @@ class Minesweeper {
 
     render() {
         this.container.style.gridTemplateColumns = `repeat(${this.cols}, 1fr)`;
-        this.container.innerHTML = "";
+        this.container.innerHTML = '';
 
         for (let r = 0; r < this.rows; r++) {
             for (let c = 0; c < this.cols; c++) {
@@ -148,27 +154,36 @@ class Minesweeper {
 
                 // Mobile Long Press for Flagging
                 let touchTimer = null;
-                cell.addEventListener('touchstart', (e) => {
-                    if (this.gameOver) return;
-                    this.setFaceIcon('scared');
-                    touchTimer = setTimeout(() => {
-                        this.handleCellRightClick(r, c, cell);
-                        touchTimer = null;
-                        if (window.navigator.vibrate) window.navigator.vibrate(50);
-                    }, 500);
-                }, { passive: true });
+                cell.addEventListener(
+                    'touchstart',
+                    (e) => {
+                        if (this.gameOver) return;
+                        this.setFaceIcon('scared');
+                        touchTimer = setTimeout(() => {
+                            this.handleCellRightClick(r, c, cell);
+                            touchTimer = null;
+                            if (window.navigator.vibrate) window.navigator.vibrate(50);
+                        }, 500);
+                    },
+                    { passive: true },
+                );
 
-                cell.addEventListener('touchend', () => {
-                    if (touchTimer) {
-                        clearTimeout(touchTimer);
-                        touchTimer = null;
-                    }
-                    if (!this.gameOver) this.setFaceIcon('smile');
-                }, { passive: true });
+                cell.addEventListener(
+                    'touchend',
+                    () => {
+                        if (touchTimer) {
+                            clearTimeout(touchTimer);
+                            touchTimer = null;
+                        }
+                        if (!this.gameOver) this.setFaceIcon('smile');
+                    },
+                    { passive: true },
+                );
 
                 cell.addEventListener('mousedown', (e) => {
                     if (this.gameOver) return;
-                    if (e.button === 0) { // Left click
+                    if (e.button === 0) {
+                        // Left click
                         this.setFaceIcon('scared');
                     }
                 });
@@ -200,7 +215,8 @@ class Minesweeper {
                 let flagsAround = 0;
                 for (let dr = -1; dr <= 1; dr++) {
                     for (let dc = -1; dc <= 1; dc++) {
-                        const nr = r + dr, nc = c + dc;
+                        const nr = r + dr,
+                            nc = c + dc;
                         if (nr >= 0 && nr < this.rows && nc >= 0 && nc < this.cols) {
                             const neighbor = this.getCellElement(nr, nc);
                             if (neighbor.classList.contains('flagged')) flagsAround++;
@@ -211,10 +227,14 @@ class Minesweeper {
                 if (flagsAround === val) {
                     for (let dr = -1; dr <= 1; dr++) {
                         for (let dc = -1; dc <= 1; dc++) {
-                            const nr = r + dr, nc = c + dc;
+                            const nr = r + dr,
+                                nc = c + dc;
                             if (nr >= 0 && nr < this.rows && nc >= 0 && nc < this.cols) {
                                 const neighbor = this.getCellElement(nr, nc);
-                                if (!neighbor.classList.contains('revealed') && !neighbor.classList.contains('flagged')) {
+                                if (
+                                    !neighbor.classList.contains('revealed') &&
+                                    !neighbor.classList.contains('flagged')
+                                ) {
                                     this.handleCellClick(nr, nc);
                                 }
                             }
@@ -241,7 +261,7 @@ class Minesweeper {
 
         this.revealCell(r, c);
 
-        if (this.revealedCount === (this.rows * this.cols - this.minesCount)) {
+        if (this.revealedCount === this.rows * this.cols - this.minesCount) {
             this.endGame(true);
         }
     }
@@ -276,7 +296,8 @@ class Minesweeper {
             // Flood fill for empty cells
             for (let dr = -1; dr <= 1; dr++) {
                 for (let dc = -1; dc <= 1; dc++) {
-                    const nr = r + dr, nc = c + dc;
+                    const nr = r + dr,
+                        nc = c + dc;
                     if (nr >= 0 && nr < this.rows && nc >= 0 && nc < this.cols) {
                         this.revealCell(nr, nc);
                     }
@@ -286,7 +307,7 @@ class Minesweeper {
     }
 
     revealMines(hitR, hitC) {
-        this.minePositions.forEach(pos => {
+        this.minePositions.forEach((pos) => {
             const [r, c] = pos.split(',').map(Number);
             const el = this.getCellElement(r, c);
             if (!el.classList.contains('flagged')) {
@@ -319,15 +340,15 @@ class Minesweeper {
 
         if (win) {
             this.saveBestTime();
-            showToast("ZOO WEE MAMA! You cleared the field!", "success");
+            showToast('ZOO WEE MAMA! You cleared the field!', 'success');
         } else {
-            showToast("RATS! You hit a mine!", "error");
+            showToast('RATS! You hit a mine!', 'error');
         }
     }
 
     destroy() {
         this.stopTimer();
-        if (this.container) this.container.innerHTML = "";
+        if (this.container) this.container.innerHTML = '';
     }
 }
 

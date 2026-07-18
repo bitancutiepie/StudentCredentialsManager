@@ -1,0 +1,4 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": ["@chousyn/opencode-alert@0.2.5"]
+}

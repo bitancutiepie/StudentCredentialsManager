@@ -12,19 +12,24 @@ window.initMessaging = async function () {
     if (window.msgSubscription) await window.db.removeChannel(window.msgSubscription);
 
     // Subscribe to incoming messages
-    window.msgSubscription = window.db.channel('public:messages')
-        .on('postgres_changes', {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'messages',
-            filter: `receiver_id=eq.${user.id}`
-        }, payload => {
-            handleIncomingMessage(payload.new);
-        })
+    window.msgSubscription = window.db
+        .channel('public:messages')
+        .on(
+            'postgres_changes',
+            {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'messages',
+                filter: `receiver_id=eq.${user.id}`,
+            },
+            (payload) => {
+                handleIncomingMessage(payload.new);
+            },
+        )
         .subscribe();
 
     checkUnreadCount();
-}
+};
 
 // --- NEW CHAT / RECIPIENT LOGIC ---
 window.openNewChatModal = async function () {
@@ -53,7 +58,7 @@ window.openNewChatModal = async function () {
     allClassmates = data;
     renderRecipientList(allClassmates);
     setTimeout(() => document.getElementById('recipient-search').focus(), 100);
-}
+};
 
 function renderRecipientList(students) {
     const list = document.getElementById('recipient-list');
@@ -62,9 +67,11 @@ function renderRecipientList(students) {
         return;
     }
 
-    list.innerHTML = students.map(s => {
-        const avatar = s.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=random`;
-        return `
+    list.innerHTML = students
+        .map((s) => {
+            const avatar =
+                s.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=random`;
+            return `
             <div onclick="openChatModal('${s.id}', '${escapeHTML(s.name)}'); document.getElementById('newChatModal').classList.add('hidden');" 
                  style="display:flex; align-items:center; gap:10px; padding:10px; background:#fff; border:2px solid #000; border-radius:10px; cursor:pointer; transition:transform 0.1s;"
                  onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
@@ -72,19 +79,22 @@ function renderRecipientList(students) {
                 <div style="font-weight:bold;">${escapeHTML(s.name)} <small style="color:#666; font-weight:normal;">(${escapeHTML(s.sr_code)})</small></div>
             </div>
         `;
-    }).join('');
+        })
+        .join('');
 }
 
 window.filterRecipients = function () {
     const q = document.getElementById('recipient-search').value.toLowerCase();
-    const filtered = allClassmates.filter(s => s.name.toLowerCase().includes(q) || s.sr_code.toLowerCase().includes(q));
+    const filtered = allClassmates.filter(
+        (s) => s.name.toLowerCase().includes(q) || s.sr_code.toLowerCase().includes(q),
+    );
     renderRecipientList(filtered);
-}
+};
 
 window.openChatModal = async function (partnerId, partnerName) {
     const user = window.user;
     if (!user) return;
-    if (partnerId === user.id) return showToast("Talking to yourself?");
+    if (partnerId === user.id) return showToast('Talking to yourself?');
 
     currentChatPartnerId = partnerId;
     document.getElementById('chat-with-name').innerHTML = `<i class="fas fa-comments"></i> Chat with ${partnerName}`;
@@ -93,12 +103,12 @@ window.openChatModal = async function (partnerId, partnerName) {
 
     await loadChatHistory(partnerId);
     markMessagesAsRead(partnerId);
-}
+};
 
 window.closeChatModal = function () {
     document.getElementById('chatModal').classList.add('hidden');
     currentChatPartnerId = null;
-}
+};
 
 async function loadChatHistory(partnerId) {
     const user = window.user;
@@ -110,7 +120,9 @@ async function loadChatHistory(partnerId) {
     const { data, error } = await window.db
         .from('messages')
         .select('id, sender_id, receiver_id, content, created_at')
-        .or(`and(sender_id.eq.${user.id},receiver_id.eq.${partnerId}),and(sender_id.eq.${partnerId},receiver_id.eq.${user.id})`)
+        .or(
+            `and(sender_id.eq.${user.id},receiver_id.eq.${partnerId}),and(sender_id.eq.${partnerId},receiver_id.eq.${user.id})`,
+        )
         .order('created_at', { ascending: true });
 
     if (error) {
@@ -129,10 +141,12 @@ function renderMessages(messages) {
         container.innerHTML = '<p style="text-align:center; color:#888; margin-top:20px;">No notes yet. Say hi!</p>';
         return;
     }
-    container.innerHTML = messages.map(msg => {
-        const isMe = msg.sender_id === user.id;
-        return `<div class="chat-bubble ${isMe ? 'me' : 'them'}">${escapeHTML(msg.content)}</div>`;
-    }).join('');
+    container.innerHTML = messages
+        .map((msg) => {
+            const isMe = msg.sender_id === user.id;
+            return `<div class="chat-bubble ${isMe ? 'me' : 'them'}">${escapeHTML(msg.content)}</div>`;
+        })
+        .join('');
     container.scrollTop = container.scrollHeight;
 }
 
@@ -157,7 +171,7 @@ window.sendChatMessage = async function (e) {
     input.value = '';
 
     await window.db.from('messages').insert([{ sender_id: user.id, receiver_id: targetId, content: content }]);
-}
+};
 
 function handleIncomingMessage(msg) {
     if (currentChatPartnerId === msg.sender_id) {
@@ -171,7 +185,7 @@ function handleIncomingMessage(msg) {
     } else {
         // Play sound
         const audio = document.getElementById('notif-sound');
-        if (audio) audio.play().catch(e => console.log("Audio blocked:", e));
+        if (audio) audio.play().catch((e) => console.log('Audio blocked:', e));
 
         checkUnreadCount();
 
@@ -188,9 +202,14 @@ function handleIncomingMessage(msg) {
             toast.className = 'toast';
             toast.style.cursor = 'pointer';
             toast.innerHTML = `<b><i class="fas fa-envelope"></i> New Note!</b><br><span style="font-size:0.9rem">Click to read</span>`;
-            toast.onclick = () => { toast.remove(); openInboxModal(); };
+            toast.onclick = () => {
+                toast.remove();
+                openInboxModal();
+            };
             container.appendChild(toast);
-            setTimeout(() => { if (toast.parentNode) toast.remove(); }, 5000);
+            setTimeout(() => {
+                if (toast.parentNode) toast.remove();
+            }, 5000);
         }
     }
 }
@@ -199,7 +218,11 @@ async function checkUnreadCount() {
     const user = window.user;
     if (!user) return;
 
-    const { count } = await window.db.from('messages').select('id', { count: 'exact', head: true }).eq('receiver_id', user.id).eq('is_read', false);
+    const { count } = await window.db
+        .from('messages')
+        .select('id', { count: 'exact', head: true })
+        .eq('receiver_id', user.id)
+        .eq('is_read', false);
     const badge = document.getElementById('msg-badge');
     if (badge) {
         badge.innerText = count;
@@ -220,7 +243,7 @@ window.openInboxModal = async function () {
 
     modal.classList.remove('hidden');
     await refreshInboxList(true); // true = show loading spinner on first open
-}
+};
 
 window.refreshInboxList = async function (showLoader = true) {
     const user = window.user;
@@ -251,7 +274,7 @@ window.refreshInboxList = async function (showLoader = true) {
 
     // 2. Group by conversation partner
     const conversations = {};
-    msgs.forEach(m => {
+    msgs.forEach((m) => {
         const isMe = m.sender_id === user.id;
         const partnerId = isMe ? m.receiver_id : m.sender_id;
 
@@ -266,7 +289,10 @@ window.refreshInboxList = async function (showLoader = true) {
     // 3. Fetch partner details
     const { data: students } = await window.db.from('students').select('id, name, avatar_url').in('id', partnerIds);
 
-    if (!students) { list.innerHTML = '<p>Error loading users.</p>'; return; }
+    if (!students) {
+        list.innerHTML = '<p>Error loading users.</p>';
+        return;
+    }
 
     // 4. Sort: Unread first, then by latest message date
     students.sort((a, b) => {
@@ -282,16 +308,21 @@ window.refreshInboxList = async function (showLoader = true) {
     });
 
     // 5. Render list
-    list.innerHTML = students.map(s => {
-        const conv = conversations[s.id];
-        const isUnread = conv.unreadCount > 0;
-        const bgStyle = isUnread ? 'background:#fff740;' : 'background:#fff;';
-        const avatar = s.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=random`;
-        const date = new Date(conv.lastMessage.created_at).toLocaleDateString();
-        const prefix = conv.lastMessage.sender_id === user.id ? 'You: ' : '';
-        const preview = conv.lastMessage.content.length > 25 ? conv.lastMessage.content.substring(0, 25) + '...' : conv.lastMessage.content;
+    list.innerHTML = students
+        .map((s) => {
+            const conv = conversations[s.id];
+            const isUnread = conv.unreadCount > 0;
+            const bgStyle = isUnread ? 'background:#fff740;' : 'background:#fff;';
+            const avatar =
+                s.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=random`;
+            const date = new Date(conv.lastMessage.created_at).toLocaleDateString();
+            const prefix = conv.lastMessage.sender_id === user.id ? 'You: ' : '';
+            const preview =
+                conv.lastMessage.content.length > 25
+                    ? conv.lastMessage.content.substring(0, 25) + '...'
+                    : conv.lastMessage.content;
 
-        return `
+            return `
             <div onclick="openChatModal('${s.id}', '${escapeHTML(s.name)}'); document.getElementById('inboxModal').classList.add('hidden');" 
                  style="display:flex; align-items:center; gap:10px; padding:10px; ${bgStyle} border:2px solid #000; border-radius:10px; cursor:pointer; transition:transform 0.2s;"
                  onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
@@ -303,8 +334,9 @@ window.refreshInboxList = async function (showLoader = true) {
                 ${isUnread ? `<div style="background:#d63031; color:#fff; font-weight:bold; padding:2px 8px; border-radius:50%; font-size:0.8rem;">${conv.unreadCount}</div>` : ''}
             </div>
         `;
-    }).join('');
-}
+        })
+        .join('');
+};
 
 // --- MESSAGE MANAGER (ADMIN) ---
 window.fetchAdminMessages = async function () {
@@ -315,10 +347,13 @@ window.fetchAdminMessages = async function () {
 
     // 1. Fetch Students Map
     const { data: students, error: sError } = await window.db.from('students').select('id, name');
-    if (sError) { console.error(sError); return; }
+    if (sError) {
+        console.error(sError);
+        return;
+    }
 
     const studentMap = {};
-    students.forEach(s => studentMap[s.id] = s.name);
+    students.forEach((s) => (studentMap[s.id] = s.name));
 
     // 2. Fetch Messages
     const { data: msgs, error } = await window.db
@@ -340,30 +375,32 @@ window.fetchAdminMessages = async function () {
 
     // 3. Group by Conversation
     const conversations = {};
-    msgs.forEach(m => {
+    msgs.forEach((m) => {
         // Create a unique key for the pair (sorted IDs ensures A-B is same as B-A)
         const key = [m.sender_id, m.receiver_id].sort().join('::');
 
         if (!conversations[key]) {
             conversations[key] = {
                 lastMsg: m,
-                count: 0
+                count: 0,
             };
         }
         conversations[key].count++;
     });
 
     // 4. Render List
-    list.innerHTML = Object.keys(conversations).map(key => {
-        const [u1, u2] = key.split('::');
-        const conv = conversations[key];
+    list.innerHTML = Object.keys(conversations)
+        .map((key) => {
+            const [u1, u2] = key.split('::');
+            const conv = conversations[key];
 
-        const name1 = studentMap[u1] || 'Unknown';
-        const name2 = studentMap[u2] || 'Unknown';
-        const date = new Date(conv.lastMsg.created_at).toLocaleDateString();
-        const preview = conv.lastMsg.content.length > 30 ? conv.lastMsg.content.substring(0, 30) + '...' : conv.lastMsg.content;
+            const name1 = studentMap[u1] || 'Unknown';
+            const name2 = studentMap[u2] || 'Unknown';
+            const date = new Date(conv.lastMsg.created_at).toLocaleDateString();
+            const preview =
+                conv.lastMsg.content.length > 30 ? conv.lastMsg.content.substring(0, 30) + '...' : conv.lastMsg.content;
 
-        return `
+            return `
             <div onclick="viewAdminConversation('${u1}', '${u2}')" 
                  style="background:#fff; border:2px solid #000; padding:10px; margin-bottom:8px; border-radius:5px; cursor:pointer; transition:transform 0.1s; display:flex; justify-content:space-between; align-items:center;"
                  onmouseover="this.style.transform='scale(1.01)'" onmouseout="this.style.transform='scale(1)'">
@@ -375,8 +412,9 @@ window.fetchAdminMessages = async function () {
                 <div style="font-size:1.2rem; color:#000;"><i class="fas fa-chevron-right"></i></div>
             </div>
         `;
-    }).join('');
-}
+        })
+        .join('');
+};
 
 window.viewAdminConversation = async function (id1, id2) {
     const list = document.getElementById('admin-message-list');
@@ -385,7 +423,7 @@ window.viewAdminConversation = async function (id1, id2) {
     // Fetch names
     const { data: students } = await window.db.from('students').select('id, name').in('id', [id1, id2]);
     const nameMap = {};
-    if (students) students.forEach(s => nameMap[s.id] = s.name);
+    if (students) students.forEach((s) => (nameMap[s.id] = s.name));
 
     const name1 = nameMap[id1] || 'Unknown';
     const name2 = nameMap[id2] || 'Unknown';
@@ -398,7 +436,8 @@ window.viewAdminConversation = async function (id1, id2) {
         .order('created_at', { ascending: true });
 
     if (error) {
-        list.innerHTML = '<p>Error loading chat.</p><button onclick="fetchAdminMessages()" class="sketch-btn">Back</button>';
+        list.innerHTML =
+            '<p>Error loading chat.</p><button onclick="fetchAdminMessages()" class="sketch-btn">Back</button>';
         return;
     }
 
@@ -410,23 +449,27 @@ window.viewAdminConversation = async function (id1, id2) {
         </div>
     `;
 
-    const body = msgs.map(m => {
-        const senderName = nameMap[m.sender_id] || 'Unknown';
-        const date = new Date(m.created_at).toLocaleString();
-        return `
+    const body = msgs
+        .map((m) => {
+            const senderName = nameMap[m.sender_id] || 'Unknown';
+            const date = new Date(m.created_at).toLocaleString();
+            return `
             <div style="background:#f1f2f6; border:1px solid #ccc; padding:8px; margin-bottom:5px; border-radius:5px; position:relative;">
                 <div style="font-size:0.75rem; color:#666; margin-bottom:3px;"><b>${senderName}</b> • ${date}</div>
                 <div style="font-family:'Patrick Hand'; font-size:1.1rem; padding-right:25px; word-break:break-word;">${m.content}</div>
                 <button onclick="deleteMessage('${m.id}', '${id1}', '${id2}')" class="sketch-btn danger" style="position:absolute; top:5px; right:5px; padding:0 5px; width:20px; height:20px; font-size:0.8rem; line-height:1; display:flex; align-items:center; justify-content:center;">X</button>
             </div>
         `;
-    }).join('');
+        })
+        .join('');
 
-    list.innerHTML = header + `<div style="max-height:350px; overflow-y:auto;">${body || '<p style="text-align:center;">No messages found.</p>'}</div>`;
-}
+    list.innerHTML =
+        header +
+        `<div style="max-height:350px; overflow-y:auto;">${body || '<p style="text-align:center;">No messages found.</p>'}</div>`;
+};
 
 window.deleteConversation = async function (id1, id2) {
-    if (!await showWimpyConfirm('Delete ENTIRE conversation history?')) return;
+    if (!(await showWimpyConfirm('Delete ENTIRE conversation history?'))) return;
 
     const { error } = await window.db
         .from('messages')
@@ -438,10 +481,10 @@ window.deleteConversation = async function (id1, id2) {
         showToast('Conversation deleted.');
         fetchAdminMessages();
     }
-}
+};
 
 window.deleteMessage = async function (id, viewId1, viewId2) {
-    if (!await showWimpyConfirm('Delete this message?')) return;
+    if (!(await showWimpyConfirm('Delete this message?'))) return;
     const { error } = await window.db.from('messages').delete().eq('id', id);
     if (error) showToast('Error: ' + error.message);
     else {
@@ -449,11 +492,16 @@ window.deleteMessage = async function (id, viewId1, viewId2) {
         if (viewId1 && viewId2) viewAdminConversation(viewId1, viewId2);
         else fetchAdminMessages();
     }
-}
+};
 
 window.deleteOldMessages = async function () {
-    if (!await showWimpyConfirm('Delete ALL messages older than 30 days?')) return;
-    const date = new Date(); date.setDate(date.getDate() - 30);
+    if (!(await showWimpyConfirm('Delete ALL messages older than 30 days?'))) return;
+    const date = new Date();
+    date.setDate(date.getDate() - 30);
     const { error } = await window.db.from('messages').delete().lt('created_at', date.toISOString());
-    if (error) showToast('Error: ' + error.message); else { showToast('Old messages cleared.'); fetchAdminMessages(); }
-}
+    if (error) showToast('Error: ' + error.message);
+    else {
+        showToast('Old messages cleared.');
+        fetchAdminMessages();
+    }
+};

@@ -1,12 +1,75 @@
-/* common.css - Shared Wimpy Aesthetics */
+/* common.css - Shared Wimpy Aesthetics v2 */
 
 :root {
-    --paper-color: #fdfbf7;
-    --line-color: #a4b0be;
-    --ink-color: #2f3542;
-    --red-ink: #ff4757;
-    --highlight: #ffee58;
-    --tape-color: rgba(255, 255, 255, 0.4);
+    /* Colors */
+    --color-bg: #f9f5f0;
+    --color-surface: #ffffff;
+    --color-text: #2d3436;
+    --color-text-secondary: #636e72;
+    --color-primary: #2d3436;
+    --color-accent: #0984e3;
+    --color-accent-hover: #0770c2;
+    --color-danger: #d63031;
+    --color-success: #00b894;
+    --color-warning: #fdcb6e;
+    --color-highlight: #fff740;
+    --color-border: #e0d8cc;
+    --color-border-strong: #2d3436;
+
+    /* Typography */
+    --font-body: 'Outfit', sans-serif;
+    --font-accent: 'Patrick Hand', cursive;
+    --font-size-xs: 0.75rem;
+    --font-size-sm: 0.875rem;
+    --font-size-base: 1rem;
+    --font-size-lg: 1.125rem;
+    --font-size-xl: 1.25rem;
+    --font-size-2xl: 1.5rem;
+    --font-size-3xl: 2rem;
+
+    /* Spacing */
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 16px;
+    --space-lg: 24px;
+    --space-xl: 32px;
+    --space-2xl: 48px;
+
+    /* Border Radii */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 12px;
+    --radius-sketchy: 255px 15px 225px 15px / 15px 225px 15px 255px;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.1);
+    --shadow-offset: 3px 3px 0 #000;
+
+    /* Transitions */
+    --transition-fast: 160ms ease-out;
+    --transition-base: 200ms ease-out;
+    --transition-slow: 300ms ease-out;
+
+    /* Easing (from emil-design-eng) */
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+/* --- ACCORDION SLIDE TOGGLE --- */
+.slide-toggle {
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    transition:
+        max-height 350ms cubic-bezier(0.23, 1, 0.32, 1),
+        opacity 300ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.slide-toggle.open {
+    max-height: none;
+    opacity: 1;
 }
 
 /* --- ANIMATIONS --- */
@@ -14,102 +77,57 @@
     0% {
         transform: translate(1px, 1px) rotate(0deg);
     }
-
     10% {
         transform: translate(-1px, -2px) rotate(-1deg);
     }
-
     20% {
         transform: translate(-3px, 0px) rotate(1deg);
     }
-
     30% {
         transform: translate(3px, 2px) rotate(0deg);
     }
-
     40% {
         transform: translate(1px, -1px) rotate(1deg);
     }
-
     50% {
         transform: translate(-1px, 2px) rotate(-1deg);
     }
-
     60% {
         transform: translate(-3px, 1px) rotate(0deg);
     }
-
     70% {
         transform: translate(3px, 1px) rotate(-1deg);
     }
-
     80% {
         transform: translate(-1px, -1px) rotate(1deg);
     }
-
     90% {
         transform: translate(1px, 2px) rotate(0deg);
     }
-
     100% {
         transform: translate(1px, -2px) rotate(-1deg);
     }
 }
 
-@keyframes nervousWrite {
-    0% {
-        transform: scale(1);
-    }
-
-    25% {
-        transform: scale(1.01) rotate(0.5deg);
-    }
-
-    50% {
-        transform: scale(1.01) rotate(-0.5deg);
-    }
-
-    75% {
-        transform: scale(1.01) rotate(0.5deg);
-    }
-
-    100% {
-        transform: scale(1);
-    }
-}
-
 @keyframes slideUp {
     from {
-        transform: translateY(50px);
+        transform: translateY(20px);
         opacity: 0;
     }
-
     to {
         transform: translateY(0);
         opacity: 1;
     }
 }
 
-@keyframes toastIn {
+@keyframes slideInRight {
     from {
-        transform: translateX(100%) rotate(0deg);
+        transform: translateX(100%);
         opacity: 0;
     }
-
     to {
-        transform: translateX(0) rotate(-2deg);
+        transform: translateX(0);
         opacity: 1;
-    }
-}
-
-@keyframes toastOut {
-    from {
-        opacity: 1;
-    }
-
-    to {
-        opacity: 0;
-        transform: translateY(-20px);
     }
 }
 
@@ -117,9 +135,17 @@
     0% {
         transform: rotate(0deg);
     }
-
     100% {
         transform: rotate(360deg);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
     }
 }
 
@@ -137,69 +163,124 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 5px;
-    padding: 8px 15px;
-    background: transparent;
-    color: var(--ink-color, #000);
-    border: 2px solid var(--ink-color, #000);
-    border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
-    font-family: 'Patrick Hand', cursive;
-    font-size: 1.2rem;
+    gap: 6px;
+    padding: var(--space-sm) var(--space-md);
+    background: var(--color-surface);
+    color: var(--color-text);
+    border: 2px solid var(--color-border-strong);
+    border-radius: var(--radius-sketchy);
+    font-family: var(--font-accent);
+    font-size: var(--font-size-lg);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition:
+        transform var(--transition-fast),
+        box-shadow var(--transition-fast),
+        background var(--transition-base);
     text-decoration: none;
-    box-shadow: 2px 2px 0 #000;
+    box-shadow: var(--shadow-offset);
+    line-height: 1.2;
 }
 
 .sketch-btn:hover {
-    background: var(--ink-color, #000);
-    color: #fff;
-    transform: rotate(-2deg) scale(1.05);
-    box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.2);
+    background: var(--color-primary);
+    color: var(--color-surface);
+    transform: translateY(-2px);
+    box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.2);
+}
+
+.sketch-btn:active {
+    transform: scale(0.97);
+    box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.2);
 }
 
 .sketch-btn.danger {
-    background: #d63031 !important;
-    border-color: #d63031 !important;
-    color: #fff !important;
+    background: var(--color-danger) !important;
+    border-color: var(--color-danger) !important;
+    color: var(--color-surface) !important;
 }
 
-.sketch-btn.meet {
-    border-color: #0984e3;
-    color: #0984e3;
+.sketch-btn.primary {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+    color: var(--color-surface);
 }
 
-.sketch-btn.meet:hover {
-    background: #0984e3;
-    color: white;
+.sketch-btn.primary:hover {
+    background: var(--color-accent-hover);
+    border-color: var(--color-accent-hover);
+    color: var(--color-surface);
 }
 
-.sketch-btn.classroom {
-    border-color: #00b894;
-    color: #00b894;
+.sketch-btn.success {
+    background: var(--color-success);
+    border-color: var(--color-success);
+    color: var(--color-surface);
 }
 
-.sketch-btn.classroom:hover {
-    background: #00b894;
-    color: white;
-}
-
-/* Active State for Admin Menu */
-.sketch-btn.active-tool {
-    background: var(--ink-color, #000);
-    color: white;
-    transform: rotate(-2deg);
-    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
-}
-
-/* Full Width Sketch Button (usually used in forms) */
-.sketch-btn-block {
+/* Primary action button (full-width, forms) */
+.btn-primary {
     display: flex;
-    width: 100% !important;
-    padding: 12px;
-    font-size: 1.5rem;
-    margin-top: 15px;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: var(--color-primary);
+    color: var(--color-surface);
+    border: 2px solid var(--color-primary);
+    border-radius: var(--radius-md);
+    font-family: var(--font-body);
+    font-size: var(--font-size-lg);
+    font-weight: 500;
+    cursor: pointer;
+    transition:
+        transform var(--transition-fast),
+        box-shadow var(--transition-fast),
+        background var(--transition-base);
     box-sizing: border-box;
+    line-height: 1.2;
+}
+
+.btn-primary:hover {
+    background: var(--color-surface);
+    color: var(--color-primary);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+.btn-primary:active {
+    transform: scale(0.97);
+}
+
+.btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: transparent;
+    color: var(--color-text);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-family: var(--font-body);
+    font-size: var(--font-size-base);
+    font-weight: 500;
+    cursor: pointer;
+    transition:
+        transform var(--transition-fast),
+        border-color var(--transition-base),
+        background var(--transition-base);
+    line-height: 1.2;
+}
+
+.btn-secondary:hover {
+    border-color: var(--color-border-strong);
+    background: rgba(0, 0, 0, 0.03);
+    transform: translateY(-1px);
+}
+
+.btn-secondary:active {
+    transform: scale(0.97);
 }
 
 /* --- INPUTS --- */
@@ -207,24 +288,41 @@ input,
 textarea,
 select {
     width: 100%;
-    /* Restored full width */
-    margin-bottom: 10px;
-    /* Restored spacing */
-    font-family: 'Patrick Hand', cursive;
-    font-size: 1.2rem;
-    padding: 10px;
-    border: none;
-    border-bottom: 2px solid var(--ink-color, #333);
-    background: transparent;
+    margin-bottom: var(--space-sm);
+    font-family: var(--font-body);
+    font-size: var(--font-size-base);
+    padding: 10px 12px;
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
     outline: none;
     box-sizing: border-box;
-    transition: border-bottom 0.2s;
+    transition:
+        border-color var(--transition-base),
+        box-shadow var(--transition-base);
+    color: var(--color-text);
 }
 
 input:focus,
 textarea:focus {
-    border-bottom: 3px solid #000;
-    animation: nervousWrite 0.3s ease-in-out;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(45, 52, 54, 0.08);
+}
+
+/* Playful input variant (for sticky notes, freedom wall, etc.) */
+.input-accent {
+    font-family: var(--font-accent);
+    font-size: var(--font-size-lg);
+    border: none;
+    border-bottom: 2px solid var(--color-border-strong);
+    background: transparent;
+    border-radius: 0;
+    padding: 8px 4px;
+}
+
+.input-accent:focus {
+    border-bottom-width: 3px;
+    box-shadow: none;
 }
 
 /* --- MODALS --- */
@@ -234,23 +332,28 @@ textarea:focus {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(0, 0, 0, 0.5);
     z-index: 10000;
     display: grid;
     place-items: center;
-    backdrop-filter: blur(3px);
+    backdrop-filter: blur(4px);
+    animation: fadeIn var(--transition-slow) forwards;
 }
 
 .wimpy-modal-box {
-    background: #fff;
-    border: 3px solid #000;
-    border-radius: 2% 6% 5% 4% / 1% 1% 2% 4%;
-    padding: 30px;
+    background: var(--color-surface);
+    border: 2px solid var(--color-border-strong);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
     width: 90%;
     max-width: 400px;
     text-align: center;
-    box-shadow: 4px 4px 0 #000, 8px 8px 0 rgba(0, 0, 0, 0.15);
-    transform: rotate(-1deg);
+    box-shadow: var(--shadow-lg);
+    animation: slideUp 0.25s var(--ease-out) forwards;
+}
+
+.wimpy-modal-box.wide {
+    max-width: 600px;
 }
 
 /* --- TOASTS --- */
@@ -261,35 +364,98 @@ textarea:focus {
     z-index: 20000;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
+    pointer-events: none;
 }
 
 .toast {
-    background: #fff740;
-    color: #2d3436;
-    padding: 15px 25px;
-    padding-bottom: 25px;
-    font-family: 'Patrick Hand', cursive;
-    font-size: 1.3rem;
-    transform: rotate(-2deg);
-    clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 95% 95%, 90% 100%, 85% 95%, 80% 100%, 75% 95%, 70% 100%, 65% 95%, 60% 100%, 55% 95%, 50% 100%, 45% 95%, 40% 100%, 35% 95%, 30% 100%, 25% 95%, 20% 100%, 15% 95%, 10% 100%, 5% 95%, 0% 100%);
-    filter: drop-shadow(3px 3px 0 rgba(0, 0, 0, 0.15));
-    animation: toastIn 0.5s forwards;
+    background: var(--color-highlight);
+    color: var(--color-text);
+    padding: 12px 20px;
+    font-family: var(--font-accent);
+    font-size: var(--font-size-lg);
+    border-radius: var(--radius-md);
+    border: 2px solid var(--color-border-strong);
+    box-shadow: var(--shadow-md);
+    pointer-events: auto;
+    transition:
+        transform var(--transition-base) var(--ease-out),
+        opacity var(--transition-base);
+}
+
+.toast.entering {
+    animation: slideInRight 0.3s var(--ease-out) forwards;
+}
+
+.toast.exiting {
+    opacity: 0;
+    transform: translateY(-10px);
 }
 
 .toast.error {
     background: #ffadad;
+    border-color: var(--color-danger);
 }
 
-.toast::after {
-    content: '';
-    position: absolute;
-    top: -10px;
-    left: 50%;
-    width: 60px;
-    height: 20px;
-    background: rgba(255, 255, 255, 0.4);
-    transform: translateX(-50%) rotate(1deg);
-    border-left: 1px dashed rgba(0, 0, 0, 0.1);
-    border-right: 1px dashed rgba(0, 0, 0, 0.1);
+/* --- CARDS --- */
+.card {
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    box-shadow: var(--shadow-sm);
+    transition:
+        transform var(--transition-fast),
+        box-shadow var(--transition-base);
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.card-strong {
+    border-color: var(--color-border-strong);
+    box-shadow: var(--shadow-offset);
+}
+
+/* Sketchy card for playful sections */
+.sketch-box {
+    background: var(--color-surface);
+    max-width: 650px;
+    margin: 20px auto;
+    padding: var(--space-xl);
+    border: 2px solid var(--color-border-strong);
+    border-radius: var(--radius-lg);
+    box-shadow:
+        var(--shadow-offset),
+        6px 6px 0 rgba(0, 0, 0, 0.06);
+    position: relative;
+    z-index: 100;
+}
+
+.sketch-box.wide-mode {
+    max-width: 95%;
+}
+
+/* --- ACCESSIBILITY --- */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0s;
+        animation-iteration-count: 1;
+        transition-duration: 0s;
+    }
+
+    .wimpy-modal-box {
+        animation: none;
+    }
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
 }

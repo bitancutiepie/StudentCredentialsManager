@@ -1,0 +1,30 @@
+{
+  // Global toggle
+  "enabled": true,
+
+  // Desktop notifications
+  "desktop": {
+    "enabled": true,
+    "events": ["idle", "error", "permission", "question"]
+  },
+
+  // Sound notifications
+  "sound": {
+    "enabled": true,
+    "events": {
+      "idle": "ding.wav",
+      "error": "alert.wav",
+      "permission": "ping.wav",
+      "question": "ping.wav"
+    },
+    "default": "ding.wav"
+  },
+
+  // Smart filtering
+  "filter": {
+    "quietHours": {
+      "enabled": false
+    },
+    "minInterval": 3
+  }
+}

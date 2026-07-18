@@ -28,16 +28,16 @@
 }
 
 /* Enhanced Student List Sections */
-#studentListContainer>div {
+#studentListContainer > div {
     animation: fadeInUp 0.4s ease-out forwards;
     opacity: 0;
 }
 
-#studentListContainer>div:nth-child(1) {
+#studentListContainer > div:nth-child(1) {
     animation-delay: 0.1s;
 }
 
-#studentListContainer>div:nth-child(2) {
+#studentListContainer > div:nth-child(2) {
     animation-delay: 0.2s;
 }
 
@@ -54,13 +54,13 @@
 }
 
 /* Improved Section Dividers */
-#adminDashboard>div[style*="border-bottom"] {
+#adminDashboard > div[style*='border-bottom'] {
     position: relative;
     padding-bottom: 25px;
     margin-bottom: 30px;
 }
 
-#adminDashboard>div[style*="border-bottom"]::after {
+#adminDashboard > div[style*='border-bottom']::after {
     content: '✂';
     position: absolute;
     bottom: -12px;

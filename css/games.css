@@ -289,7 +289,9 @@
     cursor: pointer;
     font-family: 'Permanent Marker', cursive;
     font-size: 1.3rem;
-    transition: background 0.1s, border-color 0.1s;
+    transition:
+        background 0.1s,
+        border-color 0.1s;
 }
 
 .ms-cell:hover:not(.revealed):not(.flagged) {
@@ -308,7 +310,7 @@
 }
 
 .ms-cell.flagged::after {
-    content: "🚩";
+    content: '🚩';
     font-size: 0.9rem;
 }
 
@@ -792,7 +794,6 @@
 }
 
 @keyframes timerPulse {
-
     0%,
     100% {
         transform: scale(1);
@@ -832,7 +833,9 @@
 .battle-creature-card.selected {
     border-color: #7c6cf0 !important;
     background: linear-gradient(145deg, #3d3d5c, #2a2a48);
-    box-shadow: 0 0 0 2px #7c6cf0, 0 8px 25px rgba(108, 92, 231, 0.5);
+    box-shadow:
+        0 0 0 2px #7c6cf0,
+        0 8px 25px rgba(108, 92, 231, 0.5);
     transform: translateY(-6px) scale(1.03);
 }
 
@@ -862,9 +865,6 @@
 .battle-creature-card .battle-card-matchup {
     font-size: 0.75rem;
 }
-
-
-
 
 .battle-card-matchup {
     display: flex;
@@ -1021,7 +1021,6 @@
 }
 
 @keyframes cardFloat {
-
     0%,
     100% {
         transform: translateY(0);
@@ -1058,7 +1057,9 @@
 /* Clash burst text (VS) */
 .battle-clash-text {
     color: #d63031 !important;
-    text-shadow: 0 0 20px rgba(214, 48, 49, 0.6), 3px 3px 0 rgba(0, 0, 0, 0.3) !important;
+    text-shadow:
+        0 0 20px rgba(214, 48, 49, 0.6),
+        3px 3px 0 rgba(0, 0, 0, 0.3) !important;
 }
 
 @keyframes clashBurst {
@@ -1150,7 +1151,6 @@
 }
 
 @keyframes winnerGlow {
-
     0%,
     100% {
         transform: scale(1);
@@ -1186,7 +1186,6 @@
 }
 
 @keyframes drawPulse {
-
     0%,
     100% {
         transform: scale(1);
@@ -1352,7 +1351,9 @@
 .lb-content {
     max-height: 600px;
     overflow-y: auto;
-    transition: max-height 0.4s ease, opacity 0.3s ease;
+    transition:
+        max-height 0.4s ease,
+        opacity 0.3s ease;
     opacity: 1;
 }
 
@@ -1401,7 +1402,9 @@
     height: 100px;
     border-radius: 50%;
     border: 4px solid #ddd;
-    box-shadow: 0 3px 15px rgba(0, 0, 0, 0.12), inset 0 0 0 3px #fff;
+    box-shadow:
+        0 3px 15px rgba(0, 0, 0, 0.12),
+        inset 0 0 0 3px #fff;
     overflow: hidden;
     margin: 8px 0;
 }
@@ -1709,7 +1712,6 @@
     }
 }
 
-
 /* ============================================
    TOURNAMENT BRACKET SYSTEM
    ============================================ */
@@ -1741,7 +1743,6 @@
 }
 
 @keyframes trophySpin {
-
     0%,
     100% {
         transform: rotate(-5deg) scale(1);
@@ -1771,7 +1772,6 @@
 }
 
 @keyframes tourneyBannerPulse {
-
     0%,
     100% {
         box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.2);
@@ -1833,7 +1833,9 @@
     border: 2px solid #dee2e6;
     border-radius: 10px;
     width: 80px;
-    transition: transform 0.2s, border-color 0.2s;
+    transition:
+        transform 0.2s,
+        border-color 0.2s;
     animation: participantPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
@@ -1967,7 +1969,9 @@
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.15);
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition:
+        transform 0.2s,
+        box-shadow 0.2s;
     min-width: 160px;
 }
 
@@ -1978,19 +1982,24 @@
 
 .tourney-match.match-active {
     border-color: #6c5ce7;
-    box-shadow: 0 0 12px rgba(108, 92, 231, 0.35), 3px 3px 0 rgba(108, 92, 231, 0.3);
+    box-shadow:
+        0 0 12px rgba(108, 92, 231, 0.35),
+        3px 3px 0 rgba(108, 92, 231, 0.3);
     animation: matchPulse 1.5s ease-in-out infinite;
 }
 
 @keyframes matchPulse {
-
     0%,
     100% {
-        box-shadow: 0 0 12px rgba(108, 92, 231, 0.35), 3px 3px 0 rgba(108, 92, 231, 0.3);
+        box-shadow:
+            0 0 12px rgba(108, 92, 231, 0.35),
+            3px 3px 0 rgba(108, 92, 231, 0.3);
     }
 
     50% {
-        box-shadow: 0 0 20px rgba(108, 92, 231, 0.5), 3px 3px 0 rgba(108, 92, 231, 0.3);
+        box-shadow:
+            0 0 20px rgba(108, 92, 231, 0.5),
+            3px 3px 0 rgba(108, 92, 231, 0.3);
     }
 }
 
@@ -2010,7 +2019,7 @@
     position: relative;
 }
 
-.tourney-match-player+.tourney-match-player {
+.tourney-match-player + .tourney-match-player {
     border-top: 1.5px solid #eee;
 }
 
@@ -2083,7 +2092,9 @@
     background: linear-gradient(135deg, #fff9db, #ffeaa7);
     border: 4px solid #f1c40f;
     border-radius: 12px;
-    box-shadow: 0 0 30px rgba(241, 196, 15, 0.3), 6px 6px 0 #000;
+    box-shadow:
+        0 0 30px rgba(241, 196, 15, 0.3),
+        6px 6px 0 #000;
     margin: 20px auto;
     max-width: 400px;
     animation: championReveal 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -2095,7 +2106,6 @@
 }
 
 @keyframes crownBounce {
-
     0%,
     100% {
         transform: translateY(0) rotate(-5deg);

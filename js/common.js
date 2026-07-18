@@ -25,7 +25,7 @@ async function getStudentsWithDetails(forceRefresh = false) {
 
     // Return cached data if still fresh
     const now = Date.now();
-    if (!forceRefresh && _studentsCache && (now - _studentsCacheTime) < STUDENTS_CACHE_TTL) {
+    if (!forceRefresh && _studentsCache && now - _studentsCacheTime < STUDENTS_CACHE_TTL) {
         return _studentsCache;
     }
 
@@ -35,7 +35,7 @@ async function getStudentsWithDetails(forceRefresh = false) {
         .select('id, name, avatar_url, sr_code, role, enrollment_status, email, password, full_name');
 
     if (error) {
-        console.error("Error fetching students:", error);
+        console.error('Error fetching students:', error);
         return [];
     }
 
@@ -46,12 +46,12 @@ async function getStudentsWithDetails(forceRefresh = false) {
         .like('subject', 'Receipt-%');
 
     const receiptMap = {};
-    if (receipts) receipts.forEach(r => receiptMap[r.subject] = r.file_url);
+    if (receipts) receipts.forEach((r) => (receiptMap[r.subject] = r.file_url));
 
     // 3. Map together & cache
-    _studentsCache = students.map(s => ({
+    _studentsCache = students.map((s) => ({
         ...s,
-        enrollment_receipt_url: receiptMap[`Receipt-${s.id}`] || null
+        enrollment_receipt_url: receiptMap[`Receipt-${s.id}`] || null,
     }));
     _studentsCacheTime = now;
 
@@ -66,11 +66,11 @@ async function getStudentsWithDetails(forceRefresh = false) {
 function escapeHTML(str) {
     if (!str) return '';
     return String(str)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }
 
 /**
@@ -160,9 +160,9 @@ function showWimpyConfirm(message) {
  */
 async function logout() {
     if (typeof showWimpyConfirm !== 'undefined') {
-        if (!await showWimpyConfirm("Pack up and leave?")) return;
+        if (!(await showWimpyConfirm('Pack up and leave?'))) return;
     } else {
-        if (!confirm("Pack up and leave?")) return;
+        if (!confirm('Pack up and leave?')) return;
     }
     localStorage.removeItem('wimpy_user');
     sessionStorage.removeItem('wimpy_user');
@@ -203,12 +203,15 @@ function copyToClipboard(text) {
         showToast('Clipboard API not supported', 'error');
         return;
     }
-    navigator.clipboard.writeText(text).then(() => {
-        showToast('Copied: ' + text);
-    }).catch(err => {
-        console.error('Copy failed', err);
-        showToast('Failed to copy', 'error');
-    });
+    navigator.clipboard
+        .writeText(text)
+        .then(() => {
+            showToast('Copied: ' + text);
+        })
+        .catch((err) => {
+            console.error('Copy failed', err);
+            showToast('Failed to copy', 'error');
+        });
 }
 
 /**
@@ -229,7 +232,7 @@ function compressImage(file, maxWidth = 800, maxHeight = 800, quality = 0.7) {
 
         const reader = new FileReader();
         reader.readAsDataURL(file);
-        reader.onload = event => {
+        reader.onload = (event) => {
             const img = new Image();
             img.src = event.target.result;
             img.onload = () => {
@@ -257,21 +260,27 @@ function compressImage(file, maxWidth = 800, maxHeight = 800, quality = 0.7) {
                 ctx.drawImage(img, 0, 0, width, height);
 
                 // Convert canvas back to a Blob/File, forcing JPEG for better compression
-                canvas.toBlob((blob) => {
-                    if (!blob) {
-                        reject(new Error('Canvas to Blob failed'));
-                        return;
-                    }
-                    // Create new File object with original name but new extension if it was PNG/etc.
-                    const newFileName = file.name.replace(/\.[^/.]+$/, "") + ".jpg";
-                    const compressedFile = new File([blob], newFileName, {
-                        type: 'image/jpeg',
-                        lastModified: Date.now()
-                    });
-                    
-                    console.log(`Compressed: ${(file.size / 1024).toFixed(2)}KB -> ${(compressedFile.size / 1024).toFixed(2)}KB`);
-                    resolve(compressedFile);
-                }, 'image/jpeg', quality);
+                canvas.toBlob(
+                    (blob) => {
+                        if (!blob) {
+                            reject(new Error('Canvas to Blob failed'));
+                            return;
+                        }
+                        // Create new File object with original name but new extension if it was PNG/etc.
+                        const newFileName = file.name.replace(/\.[^/.]+$/, '') + '.jpg';
+                        const compressedFile = new File([blob], newFileName, {
+                            type: 'image/jpeg',
+                            lastModified: Date.now(),
+                        });
+
+                        console.log(
+                            `Compressed: ${(file.size / 1024).toFixed(2)}KB -> ${(compressedFile.size / 1024).toFixed(2)}KB`,
+                        );
+                        resolve(compressedFile);
+                    },
+                    'image/jpeg',
+                    quality,
+                );
             };
             img.onerror = (error) => reject(error);
         };
@@ -292,18 +301,15 @@ async function trackActivity() {
     const lastTracked = sessionStorage.getItem('last_track_time');
 
     // Throttle: Only update every 2 minutes
-    if (lastTracked && (now - new Date(lastTracked)) < 120000) return;
+    if (lastTracked && now - new Date(lastTracked) < 120000) return;
 
     try {
-        await window.db
-            .from('students')
-            .update({ last_login: now.toISOString() })
-            .eq('id', user.id);
+        await window.db.from('students').update({ last_login: now.toISOString() }).eq('id', user.id);
 
         sessionStorage.setItem('last_track_time', now.toISOString());
-        console.log("Activity tracked for:", user.name);
+        console.log('Activity tracked for:', user.name);
     } catch (err) {
-        console.warn("Presence tracking failed:", err);
+        console.warn('Presence tracking failed:', err);
     }
 }
 
@@ -311,22 +317,22 @@ async function trackActivity() {
  * Helper to format timestamp as "X ago"
  */
 function timeAgo(dateString) {
-    if (!dateString) return "Unknown";
+    if (!dateString) return 'Unknown';
     const date = new Date(dateString);
     const now = new Date();
     const seconds = Math.floor((now - date) / 1000);
 
     let interval = seconds / 31536000;
-    if (interval > 1) return Math.floor(interval) + "y ago";
+    if (interval > 1) return Math.floor(interval) + 'y ago';
     interval = seconds / 2592000;
-    if (interval > 1) return Math.floor(interval) + "mo ago";
+    if (interval > 1) return Math.floor(interval) + 'mo ago';
     interval = seconds / 86400;
-    if (interval > 1) return Math.floor(interval) + "d ago";
+    if (interval > 1) return Math.floor(interval) + 'd ago';
     interval = seconds / 3600;
-    if (interval > 1) return Math.floor(interval) + "h ago";
+    if (interval > 1) return Math.floor(interval) + 'h ago';
     interval = seconds / 60;
-    if (interval > 1) return Math.floor(interval) + "m ago";
-    return "Just now";
+    if (interval > 1) return Math.floor(interval) + 'm ago';
+    return 'Just now';
 }
 
 /**
@@ -359,7 +365,8 @@ window.showAnnouncementPopup = async function (data) {
         document.body.appendChild(overlay);
     }
 
-    const avatar = admin_avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(admin_name)}&background=random`;
+    const avatar =
+        admin_avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(admin_name)}&background=random`;
 
     overlay.innerHTML = `
         <div class="announcement-pop-card" id="announcement-${id}" style="
@@ -456,11 +463,11 @@ window.showAnnouncementPopup = async function (data) {
  */
 window.loadAnnouncementComments = async function (announcementId) {
     if (!announcementId) {
-        console.warn("No announcementId provided to loadAnnouncementComments");
+        console.warn('No announcementId provided to loadAnnouncementComments');
         return;
     }
 
-    console.log("Loading comments for ID:", announcementId, "Type:", typeof announcementId);
+    console.log('Loading comments for ID:', announcementId, 'Type:', typeof announcementId);
 
     const list = document.getElementById(`comment-list-${announcementId}`);
     if (!list || !window.db) return;
@@ -473,31 +480,34 @@ window.loadAnnouncementComments = async function (announcementId) {
             .order('created_at', { ascending: true });
 
         if (error) {
-            console.error("Supabase Error loading comments:", error);
+            console.error('Supabase Error loading comments:', error);
             throw error;
         }
 
         if (!data || data.length === 0) {
-            list.innerHTML = '<p style="font-style: italic; color: #666; font-family: \'Patrick Hand\';">No comments yet. Be the first!</p>';
+            list.innerHTML =
+                '<p style="font-style: italic; color: #666; font-family: \'Patrick Hand\';">No comments yet. Be the first!</p>';
         } else {
             console.log(`Found ${data.length} comments.`);
-            list.innerHTML = data.map(c => {
-                let sender = "Someone";
-                let msg = (c.content || "");
-                if (msg.includes(":::")) {
-                    const parts = msg.split(":::");
-                    sender = parts[0];
-                    msg = parts.slice(1).join(":::"); // Handle msg containing :::
-                }
-                return `
+            list.innerHTML = data
+                .map((c) => {
+                    let sender = 'Someone';
+                    let msg = c.content || '';
+                    if (msg.includes(':::')) {
+                        const parts = msg.split(':::');
+                        sender = parts[0];
+                        msg = parts.slice(1).join(':::'); // Handle msg containing :::
+                    }
+                    return `
                     <div style="background: rgba(0,0,0,0.05); padding: 5px 10px; border-radius: 5px; font-family: 'Patrick Hand'; font-size: 1.1rem; margin-bottom: 5px;">
                         <b style="color: #d63031;">${escapeHTML(sender)}:</b> ${escapeHTML(msg)}
                     </div>
                 `;
-            }).join('');
+                })
+                .join('');
         }
     } catch (err) {
-        console.error("Failed to load comments exception:", err);
+        console.error('Failed to load comments exception:', err);
         list.innerHTML = `<p style="color: red; font-size: 0.8rem;">Error loading comments. Check console.</p>`;
     }
 };
@@ -516,14 +526,16 @@ window.postAnnouncementComment = async function (announcementId) {
 
     try {
         // 1. Save to Database
-        const { error } = await window.db.from('notes').insert([{
-            content: combinedContent,
-            color: 'COMMENT:' + announcementId,
-            x_pos: 0,
-            y_pos: 0,
-            rotation: 0,
-            likes: 0
-        }]);
+        const { error } = await window.db.from('notes').insert([
+            {
+                content: combinedContent,
+                color: 'COMMENT:' + announcementId,
+                x_pos: 0,
+                y_pos: 0,
+                rotation: 0,
+                likes: 0,
+            },
+        ]);
 
         if (error) throw error;
 
@@ -535,24 +547,24 @@ window.postAnnouncementComment = async function (announcementId) {
                 payload: {
                     announcementId: announcementId,
                     sender: sender,
-                    message: msg
-                }
+                    message: msg,
+                },
             });
         }
 
         // 3. Update locally
         const list = document.getElementById(`comment-list-${announcementId}`);
         if (list) {
-            if (list.innerText.includes("No comments yet")) list.innerHTML = '';
+            if (list.innerText.includes('No comments yet')) list.innerHTML = '';
             const div = document.createElement('div');
-            div.style.cssText = "background: rgba(0,0,0,0.05); padding: 5px 10px; border-radius: 5px; font-family: 'Patrick Hand'; font-size: 1.1rem;";
+            div.style.cssText =
+                "background: rgba(0,0,0,0.05); padding: 5px 10px; border-radius: 5px; font-family: 'Patrick Hand'; font-size: 1.1rem;";
             div.innerHTML = `<b style="color: #d63031;">${escapeHTML(sender)}:</b> ${escapeHTML(msg)}`;
             list.appendChild(div);
             list.parentElement.scrollTop = list.parentElement.scrollHeight;
         }
-
     } catch (err) {
-        console.error("Comment failed:", err);
+        console.error('Comment failed:', err);
     }
 };
 
@@ -562,9 +574,10 @@ window.handleIncomingComment = function (payload) {
     const { announcementId, sender, message } = payload;
     const list = document.getElementById(`comment-list-${announcementId}`);
     if (list) {
-        if (list.innerText.includes("No comments yet")) list.innerHTML = '';
+        if (list.innerText.includes('No comments yet')) list.innerHTML = '';
         const div = document.createElement('div');
-        div.style.cssText = "background: rgba(0,0,0,0.05); padding: 5px 10px; border-radius: 5px; font-family: 'Patrick Hand'; font-size: 1.1rem;";
+        div.style.cssText =
+            "background: rgba(0,0,0,0.05); padding: 5px 10px; border-radius: 5px; font-family: 'Patrick Hand'; font-size: 1.1rem;";
         div.innerHTML = `<b style="color: #d63031;">${escapeHTML(sender)}:</b> ${escapeHTML(message)}`;
         list.appendChild(div);
         // Scroll to bottom if it's the current open popup
@@ -594,22 +607,22 @@ window.checkActiveAnnouncements = async function () {
             // Check if it's still valid based on its stored duration (x_pos)
             const createdAt = new Date(ann.created_at).getTime();
             const durationMins = parseInt(ann.x_pos) || 10;
-            const expiresAt = createdAt + (durationMins * 60 * 1000);
+            const expiresAt = createdAt + durationMins * 60 * 1000;
             const now = Date.now();
 
             if (now < expiresAt) {
                 window.showAnnouncementPopup({
                     id: ann.id,
                     message: ann.content,
-                    admin_name: "Admin",
-                    admin_avatar: ""
+                    admin_name: 'Admin',
+                    admin_avatar: '',
                 });
             }
         }
     } catch (err) {
-        console.error("Failed to check active announcements:", err);
+        console.error('Failed to check active announcements:', err);
     }
-}
+};
 
 // --- GLOBAL HAMILAW UTILITY ---
 window.triggerGlobalShock = function (senderName) {
@@ -618,10 +631,10 @@ window.triggerGlobalShock = function (senderName) {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const source = audioCtx.createBufferSource();
 
-        fetch('soundShock.wav')
-            .then(response => response.arrayBuffer())
-            .then(data => audioCtx.decodeAudioData(data))
-            .then(buffer => {
+        fetch('assets/audio/soundShock.wav')
+            .then((response) => response.arrayBuffer())
+            .then((data) => audioCtx.decodeAudioData(data))
+            .then((buffer) => {
                 source.buffer = buffer;
 
                 // Gain node to boost volume beyond 1.0
@@ -641,15 +654,15 @@ window.triggerGlobalShock = function (senderName) {
                 source2.connect(gainNode2);
                 gainNode2.connect(audioCtx.destination);
                 source2.start(audioCtx.currentTime + 0.05);
-
-            }).catch(e => {
+            })
+            .catch((e) => {
                 // Fallback to basic audio if Web Audio fails
-                const fallback = new Audio('soundShock.wav');
+                const fallback = new Audio('assets/audio/soundShock.wav');
                 fallback.volume = 1.0;
                 fallback.play();
             });
     } catch (e) {
-        console.error("Failed to play amplified shock sound:", e);
+        console.error('Failed to play amplified shock sound:', e);
     }
 
     // Try both IDs (binder vs landing page use different IDs)
@@ -667,7 +680,7 @@ window.triggerGlobalShock = function (senderName) {
     if (img) {
         // Switch index.html's pat.png to monster.png if it's a Hamilaw shock
         if (img.src && img.src.includes('pat.png')) {
-            img.src = 'monster.png';
+            img.src = 'assets/images/monster.png';
         }
         img.style.animation = 'shake 0.1s infinite';
     }
@@ -707,4 +720,4 @@ window.triggerGlobalShock = function (senderName) {
             img.src = 'assets/images/pat.png';
         }
     }, 1500);
-}
+};

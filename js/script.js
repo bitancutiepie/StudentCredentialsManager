@@ -59,10 +59,10 @@ const initApp = async () => {
         await trackActivity();
 
         // IF ADMIN: Check if they should see the choice menu or go straight to binder
-        const isMain = (user.sr_code === 'ADMIN');
-        const isLegacy = (user.role === 'admin');
-        const isGranular = (user.role && user.role.startsWith('admin:tools:'));
-        const hasBlacklist = (isGranular && user.role.split(':')[2].split(',').includes('blacklist'));
+        const isMain = user.sr_code === 'ADMIN';
+        const isLegacy = user.role === 'admin';
+        const isGranular = user.role && user.role.startsWith('admin:tools:');
+        const hasBlacklist = isGranular && user.role.split(':')[2].split(',').includes('blacklist');
 
         // DIFFERENT APPROACH: Only show Admin Landing (Black List Option) if they actually have permission.
         // Legacy Admins ('admin') go straight to binder.
@@ -81,7 +81,6 @@ const initApp = async () => {
             window.location.href = 'web2.html';
             return;
         }
-
 
         // IF STUDENT: Check for mandatory full name
         if (user.sr_code !== 'ADMIN' && (!user.full_name || user.full_name === '')) {
@@ -127,13 +126,13 @@ const initApp = async () => {
             });
 
             publicChannel.on('broadcast', { event: 'system_reload' }, () => {
-                showToast("📦 System Update: Refreshing in 3s...", "info");
+                showToast('📦 System Update: Refreshing in 3s...', 'info');
                 setTimeout(() => location.reload(true), 3000);
             });
 
             publicChannel.subscribe();
         } catch (e) {
-            console.warn("Realtime initialization delayed:", e);
+            console.warn('Realtime initialization delayed:', e);
         }
     }
 };
@@ -144,7 +143,7 @@ function loadLandingPageContent() {
     if (document.getElementById('avatarInput')) return; // Prevent duplicate injection
 
     const avatarLabel = document.createElement('div');
-    avatarLabel.innerText = "Upload Profile Picture (Optional):";
+    avatarLabel.innerText = 'Upload Profile Picture (Optional):';
     avatarLabel.id = 'avatarLabel';
     avatarLabel.className = 'hidden';
     avatarLabel.style.marginTop = '10px';
@@ -188,12 +187,12 @@ function loadLandingPageContent() {
 
     // Set initial text for toggleAuth based on isLoginMode
     if (toggleAuth && isLoginMode) {
-        toggleAuth.innerHTML = "Magpapalista? <b>Come here mga kosa click this</b> (Register Here)";
+        toggleAuth.innerHTML = 'Magpapalista? <b>Come here mga kosa click this</b> (Register Here)';
     }
 }
 
 if (document.readyState === 'loading') {
-    document.addEventListener("DOMContentLoaded", initApp);
+    document.addEventListener('DOMContentLoaded', initApp);
 } else {
     initApp();
 }
@@ -234,7 +233,10 @@ toggleAuth.addEventListener('click', () => {
     isLoginMode = !isLoginMode;
     authForm.reset();
 
-    if (authModeMessage) authModeMessage.innerText = isLoginMode ? 'Enter your credentials to log in.' : 'Fill out the form to create a new account.';
+    if (authModeMessage)
+        authModeMessage.innerText = isLoginMode
+            ? 'Enter your credentials to log in.'
+            : 'Fill out the form to create a new account.';
     if (isLoginMode) {
         submitBtn.innerText = 'ENTER →';
         nameInput.classList.add('hidden');
@@ -248,7 +250,7 @@ toggleAuth.addEventListener('click', () => {
             keepLoggedInContainer.classList.remove('hidden');
             keepLoggedInContainer.style.display = 'flex';
         }
-        toggleAuth.innerHTML = "Magpapalista? <b>Come here mga kosa click this</b> (Register Here)";
+        toggleAuth.innerHTML = 'Magpapalista? <b>Come here mga kosa click this</b> (Register Here)';
     } else {
         submitBtn.innerText = 'SIGN UP';
         nameInput.classList.remove('hidden');
@@ -262,7 +264,7 @@ toggleAuth.addEventListener('click', () => {
             keepLoggedInContainer.classList.add('hidden');
             keepLoggedInContainer.style.display = 'none';
         }
-        toggleAuth.innerHTML = "Already a member? <b>Login</b>";
+        toggleAuth.innerHTML = 'Already a member? <b>Login</b>';
     }
 });
 
@@ -325,15 +327,15 @@ async function handleRegister(name, srCode, password, file) {
             avatarUrl = data.publicUrl;
         }
     }
-    const { error } = await supabaseClient
-        .from('students')
-        .insert([{
+    const { error } = await supabaseClient.from('students').insert([
+        {
             name: name,
             sr_code: srCode,
             password: password,
             avatar_url: avatarUrl,
-            email: generatedEmail // Added email here
-        }]);
+            email: generatedEmail, // Added email here
+        },
+    ]);
     if (error) throw error;
     showToast('Success! You are in.');
     fetchMembers();
@@ -341,11 +343,7 @@ async function handleRegister(name, srCode, password, file) {
 }
 
 async function handleLogin(srCode, password) {
-    const { data, error } = await supabaseClient
-        .from('students')
-        .select('*')
-        .eq('sr_code', srCode)
-        .single();
+    const { data, error } = await supabaseClient.from('students').select('*').eq('sr_code', srCode).single();
 
     if (error || !data) {
         showToast('Who are you? Name not found.', 'error');
@@ -363,16 +361,13 @@ async function handleLogin(srCode, password) {
 
         // Update Supabase silently
         try {
-            await supabaseClient
-                .from('students')
-                .update({ email: autoEmail })
-                .eq('id', data.id);
+            await supabaseClient.from('students').update({ email: autoEmail }).eq('id', data.id);
 
             // Update local data variable so the session has it too
             data.email = autoEmail;
-            console.log("System auto-corrected missing email.");
+            console.log('System auto-corrected missing email.');
         } catch (err) {
-            console.warn("Auto-email fix failed:", err);
+            console.warn('Auto-email fix failed:', err);
         }
     }
     // ----------------------------------------
@@ -385,7 +380,7 @@ async function handleLogin(srCode, password) {
         email: data.email,
         role: data.role,
         full_name: data.full_name,
-        enrollment_status: data.enrollment_status || 'Not Enrolled'
+        enrollment_status: data.enrollment_status || 'Not Enrolled',
     });
 
     const keepLoggedIn = document.getElementById('keepLoggedIn').checked;
@@ -402,10 +397,10 @@ async function handleLogin(srCode, password) {
     // === ADMIN CHECK ===
 
     // Check Permissions
-    const isMain = (data.sr_code === 'ADMIN');
-    const isLegacy = (data.role === 'admin');
-    const isGranular = (data.role && data.role.startsWith('admin:tools:'));
-    const hasBlacklist = (isGranular && data.role.split(':')[2].split(',').includes('blacklist'));
+    const isMain = data.sr_code === 'ADMIN';
+    const isLegacy = data.role === 'admin';
+    const isGranular = data.role && data.role.startsWith('admin:tools:');
+    const hasBlacklist = isGranular && data.role.split(':')[2].split(',').includes('blacklist');
 
     // DIFFERENT APPROACH: Legacy Admins do NOT get the Landing Page anymore.
     if (isMain || hasBlacklist) {
@@ -439,10 +434,7 @@ window.saveFullName = async function () {
     btn.disabled = true;
 
     try {
-        const { error } = await supabaseClient
-            .from('students')
-            .update({ full_name: fullName })
-            .eq('id', user.id);
+        const { error } = await supabaseClient.from('students').update({ full_name: fullName }).eq('id', user.id);
 
         if (error) throw error;
 
@@ -453,59 +445,155 @@ window.saveFullName = async function () {
         else sessionStorage.setItem('wimpy_user', userPayload);
 
         showToast('Identification saved! Welcome.');
-        setTimeout(() => window.location.href = 'web2.html', 1000);
+        setTimeout(() => (window.location.href = 'web2.html'), 1000);
     } catch (err) {
         showToast('Error saving name: ' + err.message, 'error');
         btn.innerText = 'SAVE & CONTINUE →';
         btn.disabled = false;
     }
+};
+
+// --- SMOOTH VIEW TRANSITION HELPER ---
+const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const easeOut = 'cubic-bezier(0.23, 1, 0.32, 1)';
+
+function fadeToView(fromEl, toEl) {
+    if (!fromEl || !toEl) return;
+
+    if (prefersReducedMotion) {
+        fromEl.classList.add('hidden');
+        fromEl.style.cssText = '';
+        toEl.classList.remove('hidden');
+        toEl.style.cssText = '';
+        return;
+    }
+
+    fromEl.style.transition = `opacity 180ms ${easeOut}, transform 180ms ${easeOut}, filter 180ms ${easeOut}`;
+    fromEl.style.opacity = '0';
+    fromEl.style.transform = 'translateY(-8px) scale(0.98)';
+    fromEl.style.filter = 'blur(3px)';
+    fromEl.style.pointerEvents = 'none';
+
+    setTimeout(() => {
+        fromEl.classList.add('hidden');
+        fromEl.style.cssText = '';
+
+        toEl.classList.remove('hidden');
+        toEl.style.opacity = '0';
+        toEl.style.transform = 'translateY(10px) scale(0.97)';
+        toEl.style.filter = 'blur(4px)';
+        toEl.style.transition = `opacity 300ms ${easeOut}, transform 300ms ${easeOut}, filter 300ms ${easeOut}`;
+
+        void toEl.offsetWidth;
+
+        toEl.style.opacity = '1';
+        toEl.style.transform = 'translateY(0) scale(1)';
+        toEl.style.filter = 'blur(0)';
+
+        setTimeout(() => {
+            toEl.style.cssText = '';
+        }, 350);
+    }, 180);
+}
+
+function slideToggle(el) {
+    if (!el) return;
+
+    if (prefersReducedMotion) {
+        el.classList.toggle('open');
+        el.style.cssText = '';
+        if (el.classList.contains('open')) {
+            el.style.maxHeight = el.scrollHeight + 'px';
+            el.style.opacity = '1';
+        }
+        return;
+    }
+
+    if (el.classList.contains('open')) {
+        el.style.transition = `max-height 350ms ${easeOut}, opacity 300ms ${easeOut}`;
+        el.style.maxHeight = el.scrollHeight + 'px';
+        void el.offsetWidth;
+        el.style.maxHeight = '0';
+        el.style.opacity = '0';
+        el.classList.remove('open');
+        el.addEventListener(
+            'transitionend',
+            () => {
+                el.style.transition = '';
+            },
+            { once: true },
+        );
+    } else {
+        el.classList.add('open');
+        el.style.maxHeight = el.scrollHeight + 'px';
+        el.style.opacity = '1';
+        el.style.transition = `max-height 350ms ${easeOut}, opacity 300ms ${easeOut}`;
+        el.addEventListener(
+            'transitionend',
+            () => {
+                if (el.classList.contains('open')) {
+                    el.style.maxHeight = '';
+                    el.style.opacity = '';
+                }
+                el.style.transition = '';
+            },
+            { once: true },
+        );
+    }
 }
 
 // --- ADMIN CHOICE HANDLING ---
 window.chooseAdminPath = function (path) {
-    if (adminChoiceModal) adminChoiceModal.classList.add('hidden');
-
-    if (path === 'manage') {
-        showAdminPanel('Bitancutiepie (Admin)');
-    } else if (path === 'dashboard') {
-        window.location.href = 'web2.html';
-    }
-}
+    if (!adminChoiceModal) return;
+    adminChoiceModal.style.transition = `opacity 180ms ${easeOut}, transform 180ms ${easeOut}, filter 180ms ${easeOut}`;
+    adminChoiceModal.style.opacity = '0';
+    adminChoiceModal.style.transform = 'translateY(-8px) scale(0.98)';
+    adminChoiceModal.style.filter = 'blur(3px)';
+    setTimeout(() => {
+        adminChoiceModal.classList.add('hidden');
+        adminChoiceModal.style.transition = '';
+        adminChoiceModal.style.opacity = '';
+        adminChoiceModal.style.transform = '';
+        adminChoiceModal.style.filter = '';
+        if (path === 'manage') {
+            showAdminPanel('Bitancutiepie (Admin)');
+        } else if (path === 'dashboard') {
+            window.location.href = 'web2.html';
+        }
+    }, 180);
+};
 
 async function showAdminPanel(name) {
-    // SECURITY: Double check against DB before showing sensitive panel
     const storedUser = localStorage.getItem('wimpy_user') || sessionStorage.getItem('wimpy_user');
     if (!storedUser) return;
     const u = JSON.parse(storedUser);
 
-    // Verify against DB (Client-side barrier)
     const { data } = await supabaseClient.from('students').select('role, sr_code').eq('id', u.id).single();
 
-    // Check Permissions
-    const isMainAdmin = (data && data.sr_code === 'ADMIN');
-    const isLegacyAdmin = (data && data.role === 'admin');
-    const hasBlacklistPerm = (data && data.role && data.role.startsWith('admin:tools:') && data.role.split(':')[2].split(',').includes('blacklist'));
+    const isMainAdmin = data && data.sr_code === 'ADMIN';
+    const hasBlacklistPerm =
+        data &&
+        data.role &&
+        data.role.startsWith('admin:tools:') &&
+        data.role.split(':')[2].split(',').includes('blacklist');
 
-    // STRICT CHECK: Only Main Admin or Explicit Blacklist Permission
-    // We removed isLegacyAdmin from this check to "different approach" the access.
     if (!data || (!isMainAdmin && !hasBlacklistPerm)) {
-        showToast("Nice try. Access Denied (Blacklist Restricted).", "error");
+        showToast('Nice try. Access Denied (Blacklist Restricted).', 'error');
         setTimeout(() => window.location.reload(), 1000);
         return;
     }
 
-    authSection.classList.add('hidden');
-    studentDashboard.classList.add('hidden');
-    adminDashboard.classList.remove('hidden');
     adminNameDisplay.innerText = name;
-    fetchStudents();
-    fetchRequests(); // Load requests when admin panel opens
-    fetchAdminFiles(); // Load files
+    fadeToView(authSection, adminDashboard);
+    studentDashboard.classList.add('hidden');
 
-    // Toggle Mobile Navs
-    const fixedNav = document.getElementById('fixed-action-buttons');
+    fetchStudents();
+    fetchRequests();
+    fetchAdminFiles();
+
+    const chipBar = document.getElementById('floating-chip-bar');
     const adminNav = document.getElementById('admin-mobile-nav');
-    if (fixedNav) fixedNav.classList.add('hidden');
+    if (chipBar) chipBar.classList.add('hidden');
     if (adminNav) adminNav.classList.remove('hidden');
 }
 
@@ -516,34 +604,35 @@ async function fetchStudents() {
     displayStudents(allStudents);
 }
 
-searchInput.addEventListener('input', debounce((e) => {
-    const searchTerm = e.target.value.toLowerCase();
-    const autocompleteDropdown = document.getElementById('autocompleteDropdown');
+searchInput.addEventListener(
+    'input',
+    debounce((e) => {
+        const searchTerm = e.target.value.toLowerCase();
+        const autocompleteDropdown = document.getElementById('autocompleteDropdown');
 
-    // Filter students
-    const filtered = allStudents.filter(student =>
-        student.name.toLowerCase().includes(searchTerm) ||
-        student.sr_code.toLowerCase().includes(searchTerm)
-    );
+        // Filter students
+        const filtered = allStudents.filter(
+            (student) =>
+                student.name.toLowerCase().includes(searchTerm) || student.sr_code.toLowerCase().includes(searchTerm),
+        );
 
-    // Update the main list
-    displayStudents(filtered);
+        // Update the main list
+        displayStudents(filtered);
 
-    // Show autocomplete dropdown if there's a search term
-    if (searchTerm.length > 0) {
-        showAutocomplete(filtered, searchTerm);
-    } else {
-        hideAutocomplete();
-    }
-}, 300));
+        // Show autocomplete dropdown if there's a search term
+        if (searchTerm.length > 0) {
+            showAutocomplete(filtered, searchTerm);
+        } else {
+            hideAutocomplete();
+        }
+    }, 300),
+);
 
 // Hide autocomplete when clicking outside
 document.addEventListener('click', (e) => {
     const autocompleteDropdown = document.getElementById('autocompleteDropdown');
     const searchInput = document.getElementById('searchInput');
-    if (autocompleteDropdown && searchInput &&
-        !autocompleteDropdown.contains(e.target) &&
-        e.target !== searchInput) {
+    if (autocompleteDropdown && searchInput && !autocompleteDropdown.contains(e.target) && e.target !== searchInput) {
         hideAutocomplete();
     }
 });
@@ -563,8 +652,10 @@ function showAutocomplete(students, searchTerm) {
     // Limit to top 5 results for autocomplete
     const topResults = students.slice(0, 5);
 
-    topResults.forEach(student => {
-        const avatar = student.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random`;
+    topResults.forEach((student) => {
+        const avatar =
+            student.avatar_url ||
+            `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random`;
 
         const item = document.createElement('div');
         item.className = 'autocomplete-item';
@@ -601,12 +692,11 @@ function highlightMatch(text, search) {
     return text.replace(regex, '<strong style="background: #fff740; padding: 0 2px;">$1</strong>');
 }
 
-
 function displayStudents(students) {
     if (!studentListContainer) return;
 
     studentListContainer.innerHTML = '';
-    const validStudents = students.filter(s => s.sr_code !== 'ADMIN');
+    const validStudents = students.filter((s) => s.sr_code !== 'ADMIN');
 
     if (validStudents.length === 0) {
         studentListContainer.innerHTML = '<p style="text-align:center; color:#666;">No students found.</p>';
@@ -615,10 +705,10 @@ function displayStudents(students) {
 
     // Filter groups and sort alphabetically by name
     const notEnrolled = validStudents
-        .filter(s => !s.enrollment_status || s.enrollment_status === 'Not Enrolled')
+        .filter((s) => !s.enrollment_status || s.enrollment_status === 'Not Enrolled')
         .sort((a, b) => a.name.localeCompare(b.name));
     const enrolled = validStudents
-        .filter(s => s.enrollment_status === 'Enrolled')
+        .filter((s) => s.enrollment_status === 'Enrolled')
         .sort((a, b) => a.name.localeCompare(b.name));
 
     // Helper function to render a section
@@ -636,14 +726,16 @@ function displayStudents(students) {
         const grid = document.createElement('div');
         grid.style.cssText = 'display: flex; flex-wrap: wrap; gap: 10px;';
 
-        list.forEach(student => {
-            const avatar = student.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random`;
+        list.forEach((student) => {
+            const avatar =
+                student.avatar_url ||
+                `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random`;
 
             const chip = document.createElement('div');
             chip.className = 'member-tag';
             chip.style.cssText = `cursor: pointer; padding: 5px 10px; font-size: 0.9rem; background: #fff; border: 2px solid ${color}; display: flex; align-items: center; gap: 8px; transition: transform 0.2s;`;
-            chip.onmouseover = () => chip.style.transform = 'scale(1.05)';
-            chip.onmouseout = () => chip.style.transform = 'scale(1)';
+            chip.onmouseover = () => (chip.style.transform = 'scale(1.05)');
+            chip.onmouseout = () => (chip.style.transform = 'scale(1)');
             chip.onclick = () => openStudentDetails(student.id);
 
             chip.innerHTML = `
@@ -663,7 +755,8 @@ function displayStudents(students) {
     renderSection('Enrolled', enrolled, '#00b894');
 
     if (notEnrolled.length === 0 && enrolled.length === 0) {
-        studentListContainer.innerHTML = '<p style="text-align:center; color:#666;">No students found (Filtered by Enrolled/Not Enrolled).</p>';
+        studentListContainer.innerHTML =
+            '<p style="text-align:center; color:#666;">No students found (Filtered by Enrolled/Not Enrolled).</p>';
     }
 }
 
@@ -676,11 +769,11 @@ async function deleteStudent(id) {
     // Check ADMIN, Legacy admin, OR Granular Admin (admin:tools:...)
     // This allows anyone with ANY admin tool to delete students (Restoring access)
     // Ideally use hasPermission('blacklist'), but we are allowing all granular admins for now.
-    const isAuthorized = (u.sr_code === 'ADMIN') || (u.role === 'admin') || (u.role && u.role.startsWith('admin:tools:'));
+    const isAuthorized = u.sr_code === 'ADMIN' || u.role === 'admin' || (u.role && u.role.startsWith('admin:tools:'));
 
     if (!isAuthorized) return showToast('You are not authorized.', 'error');
 
-    if (!await showWimpyConfirm('Scratch this person out specifically?')) return;
+    if (!(await showWimpyConfirm('Scratch this person out specifically?'))) return;
     const { error } = await supabaseClient.from('students').delete().eq('id', id);
     if (error) showToast('Could not delete.', 'error');
     else {
@@ -699,18 +792,18 @@ async function loginAsUser(name, code, avatarUrl, id) {
     const u = JSON.parse(storedUser);
 
     // Check ADMIN, Legacy admin, OR Granular Admin
-    const isAuthorized = (u.sr_code === 'ADMIN') || (u.role === 'admin') || (u.role && u.role.startsWith('admin:tools:'));
+    const isAuthorized = u.sr_code === 'ADMIN' || u.role === 'admin' || (u.role && u.role.startsWith('admin:tools:'));
 
     if (!isAuthorized) {
         return showToast('Nice try, impersonator.', 'error');
     }
 
-    if (!await showWimpyConfirm('Switch view to ' + name + '?')) return;
+    if (!(await showWimpyConfirm('Switch view to ' + name + '?'))) return;
     const targetUserPayload = JSON.stringify({
         id: id,
         name: name,
         sr_code: code,
-        avatar_url: avatarUrl
+        avatar_url: avatarUrl,
     });
     localStorage.removeItem('wimpy_user');
     sessionStorage.setItem('wimpy_user', targetUserPayload);
@@ -724,7 +817,7 @@ async function loginAsUser(name, code, avatarUrl, id) {
 window.updateStudentEnrollment = async function (id, status, file, btn) {
     if (btn) {
         btn.disabled = true;
-        btn.innerText = "Saving...";
+        btn.innerText = 'Saving...';
     }
 
     let updateData = { enrollment_status: status };
@@ -745,21 +838,23 @@ window.updateStudentEnrollment = async function (id, status, file, btn) {
 
             // WORKAROUND: Save to shared_files table instead of students table
             await supabaseClient.from('shared_files').delete().eq('subject', `Receipt-${id}`);
-            await supabaseClient.from('shared_files').insert([{
-                title: 'Enrollment Receipt',
-                subject: `Receipt-${id}`,
-                file_url: finalReceiptUrl,
-                file_type: file.type
-            }]);
+            await supabaseClient.from('shared_files').insert([
+                {
+                    title: 'Enrollment Receipt',
+                    subject: `Receipt-${id}`,
+                    file_url: finalReceiptUrl,
+                    file_type: file.type,
+                },
+            ]);
 
             // Update local cache
-            const s = allStudents.find(st => st.id == id);
+            const s = allStudents.find((st) => st.id == id);
             if (s) s.enrollment_receipt_url = finalReceiptUrl;
         } catch (err) {
-            if (typeof showToast !== 'undefined') showToast("Upload failed: " + err.message, "error");
+            if (typeof showToast !== 'undefined') showToast('Upload failed: ' + err.message, 'error');
             if (btn) {
                 btn.disabled = false;
-                btn.innerText = "Update Enrollment";
+                btn.innerText = 'Update Enrollment';
             }
             return { error: err };
         }
@@ -768,18 +863,22 @@ window.updateStudentEnrollment = async function (id, status, file, btn) {
     const { error } = await supabaseClient.from('students').update(updateData).eq('id', id);
 
     if (error) {
-        if (typeof showToast !== 'undefined') showToast("Error: " + error.message, "error");
+        if (typeof showToast !== 'undefined') showToast('Error: ' + error.message, 'error');
     } else {
-        if (typeof showToast !== 'undefined') showToast("Enrollment updated!");
-        const s = allStudents.find(st => st.id == id);
+        if (typeof showToast !== 'undefined') showToast('Enrollment updated!');
+        const s = allStudents.find((st) => st.id == id);
         if (s) {
             s.enrollment_status = status;
             // AUTO-DELETE RECEIPT if status is changed to Not Enrolled
             if (status === 'Not Enrolled' && s.enrollment_receipt_url) {
-                if (await showWimpyConfirm(`Removing Enrollment? This will also DELETE the receipt for ${s.name}. proceed?`)) {
+                if (
+                    await showWimpyConfirm(
+                        `Removing Enrollment? This will also DELETE the receipt for ${s.name}. proceed?`,
+                    )
+                ) {
                     await supabaseClient.from('shared_files').delete().eq('subject', `Receipt-${id}`);
                     delete s.enrollment_receipt_url;
-                    if (typeof showToast !== 'undefined') showToast("Receipt removed.");
+                    if (typeof showToast !== 'undefined') showToast('Receipt removed.');
                 }
             }
         }
@@ -789,26 +888,28 @@ window.updateStudentEnrollment = async function (id, status, file, btn) {
 
     if (btn) {
         btn.disabled = false;
-        btn.innerText = "Update Enrollment";
+        btn.innerText = 'Update Enrollment';
     }
     return { error, receiptUrl: finalReceiptUrl };
 };
 
 // --- STUDENT DETAILS MODAL ---
 window.openStudentDetails = function (id) {
-    const student = allStudents.find(s => s.id == id);
+    const student = allStudents.find((s) => s.id == id);
     if (!student) return;
 
     const modal = document.getElementById('studentDetailsModal');
     const content = document.getElementById('studentDetailsContent');
-    const avatar = student.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random`;
+    const avatar =
+        student.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random`;
 
     const safeName = student.name.replace(/'/g, "\\'");
     const safeCode = student.sr_code.replace(/'/g, "\\'");
     const safeAvatar = (student.avatar_url || '').replace(/'/g, "\\'");
     const currentStatus = student.enrollment_status || 'Not Enrolled';
 
-    const receiptLink = student.enrollment_receipt_url ? `
+    const receiptLink = student.enrollment_receipt_url
+        ? `
         <div style="display:flex; align-items:center; gap:10px; margin-top:5px;">
             <a href="#" onclick="viewFullImage('${student.enrollment_receipt_url}')" style="color:#0984e3; font-size:0.9rem; text-decoration:none;">
                 <i class="fas fa-receipt"></i> View Current Receipt
@@ -816,7 +917,8 @@ window.openStudentDetails = function (id) {
             <button onclick="deleteReceipt('${student.id}')" class="sketch-btn danger" style="padding:2px 8px; font-size:0.8rem; width:auto; margin:0;" title="Delete Receipt">
                 <i class="fas fa-trash"></i>
             </button>
-        </div>` : '';
+        </div>`
+        : '';
 
     content.innerHTML = `
         <img src="${avatar}" style="width:100px; height:100px; border-radius:50%; border:3px solid #000; margin-bottom:15px; object-fit:cover;">
@@ -866,7 +968,7 @@ window.openStudentDetails = function (id) {
         </div>
     `;
     modal.classList.remove('hidden');
-}
+};
 
 window.saveEnrollment = async function (id) {
     const select = document.getElementById(`statusSelect-${id}`);
@@ -886,34 +988,31 @@ window.deleteReceipt = async function (studentId) {
     const storedUser = localStorage.getItem('wimpy_user') || sessionStorage.getItem('wimpy_user');
     if (storedUser) {
         const u = JSON.parse(storedUser);
-        const isAuthorized = (u.sr_code === 'ADMIN') || (u.role === 'admin') || (u.role && u.role.startsWith('admin:tools:'));
+        const isAuthorized =
+            u.sr_code === 'ADMIN' || u.role === 'admin' || (u.role && u.role.startsWith('admin:tools:'));
         if (!isAuthorized) return showToast('Only Admin can delete receipts.', 'error');
     }
 
-    if (!await showWimpyConfirm('Delete this student\'s enrollment receipt?')) return;
+    if (!(await showWimpyConfirm("Delete this student's enrollment receipt?"))) return;
 
-    const { error } = await supabaseClient
-        .from('shared_files')
-        .delete()
-        .eq('subject', `Receipt-${studentId}`);
+    const { error } = await supabaseClient.from('shared_files').delete().eq('subject', `Receipt-${studentId}`);
 
     if (error) {
         showToast('Error deleting receipt.', 'error');
     } else {
         showToast('Receipt deleted.');
         // Update local cache
-        const s = allStudents.find(st => st.id == studentId);
+        const s = allStudents.find((st) => st.id == studentId);
         if (s) delete s.enrollment_receipt_url;
 
         openStudentDetails(studentId); // Refresh modal
         fetchMembers(); // Refresh list
     }
-}
-
+};
 
 window.closeStudentDetails = function () {
     document.getElementById('studentDetailsModal').classList.add('hidden');
-}
+};
 
 // --- PORTAL POP-UP LOGIC ---
 // --- PORTAL POP-UP LOGIC ---
@@ -923,9 +1022,9 @@ function openPortalWindow() {
     const left = (window.screen.width - width) / 2;
     const top = (window.screen.height - height) / 2;
     window.open(
-        "https://dione.batstate-u.edu.ph/student/#/",
-        "BatStatePortal",
-        `width=${width},height=${height},top=${top},left=${left},resizable=yes,scrollbars=yes,status=yes`
+        'https://dione.batstate-u.edu.ph/student/#/',
+        'BatStatePortal',
+        `width=${width},height=${height},top=${top},left=${left},resizable=yes,scrollbars=yes,status=yes`,
     );
 }
 
@@ -936,26 +1035,29 @@ window.launchTurboTiling = function (srCode, password, name) {
     const screenH = window.screen.availHeight;
 
     // 1. Calculate Sizes
-    const remoteWidth = Math.floor(screenW * 0.30);
-    const portalWidth = Math.floor(screenW * 0.70);
+    const remoteWidth = Math.floor(screenW * 0.3);
+    const portalWidth = Math.floor(screenW * 0.7);
 
     // 2. Open Portal Window (Right Side)
     const portalWin = window.open(
-        "https://dione.batstate-u.edu.ph/student/#/",
-        "BatStatePortal",
-        `width=${portalWidth},height=${screenH},left=${remoteWidth},top=0,resizable=yes,scrollbars=yes`
+        'https://dione.batstate-u.edu.ph/student/#/',
+        'BatStatePortal',
+        `width=${portalWidth},height=${screenH},left=${remoteWidth},top=0,resizable=yes,scrollbars=yes`,
     );
 
     // Prepare student data for the remote
-    const studentData = allStudents.map(s => ({
-        id: s.id,
-        name: s.name,
-        sr_code: s.sr_code,
-        password: s.password,
-        enrollment_status: s.enrollment_status || 'Not Enrolled',
-        enrollment_receipt_url: s.enrollment_receipt_url || '',
-        avatar_url: s.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=random`
-    })).filter(s => s.sr_code !== 'ADMIN');
+    const studentData = allStudents
+        .map((s) => ({
+            id: s.id,
+            name: s.name,
+            sr_code: s.sr_code,
+            password: s.password,
+            enrollment_status: s.enrollment_status || 'Not Enrolled',
+            enrollment_receipt_url: s.enrollment_receipt_url || '',
+            avatar_url:
+                s.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=random`,
+        }))
+        .filter((s) => s.sr_code !== 'ADMIN');
 
     // 3. Open Remote Control Window (Left Side) using a Data URI
     const remoteHTML = `
@@ -1011,7 +1113,7 @@ window.launchTurboTiling = function (srCode, password, name) {
             </div>
 
             <div class="card" id="student-display">
-                <img id="display-avatar" src="${studentData.find(s => s.sr_code === srCode)?.avatar_url}" class="current-avatar">
+                <img id="display-avatar" src="${studentData.find((s) => s.sr_code === srCode)?.avatar_url}" class="current-avatar">
                 <div>
                     <small>LOGGING IN AS:</small>
                     <div id="display-name" style="font-size: 1.4rem; font-weight: bold;">${name}</div>
@@ -1169,17 +1271,21 @@ function showToast(msg) {
     `;
 
     const remoteWin = window.open(
-        "",
-        "TurboRemote",
-        `width = ${remoteWidth}, height = ${screenH}, left = 0, top = 0, resizable = yes, scrollbars = yes`
+        '',
+        'TurboRemote',
+        `width = ${remoteWidth}, height = ${screenH}, left = 0, top = 0, resizable = yes, scrollbars = yes`,
     );
     remoteWin.document.write(remoteHTML);
-}
+};
 
 // --- PORTAL AUTOMATION HELPER ---
 window.openPortalWithHelper = function (srCode, password, name) {
     // SECURITY: Use the Tiling method for guaranteed cookie success
-    if (confirm("Launch TURBO TILING? \\n\\nThis will open the portal and login tools side-by-side for 100% login success.")) {
+    if (
+        confirm(
+            'Launch TURBO TILING? \\n\\nThis will open the portal and login tools side-by-side for 100% login success.',
+        )
+    ) {
         launchTurboTiling(srCode, password, name);
     } else {
         // Fallback to standard popup if they cancel
@@ -1187,7 +1293,9 @@ window.openPortalWithHelper = function (srCode, password, name) {
     }
 };
 
-window.openTurboSplitView = function () { console.warn("Split View disabled due to Portal cookie policy. Using Turbo Tiling instead."); };
+window.openTurboSplitView = function () {
+    console.warn('Split View disabled due to Portal cookie policy. Using Turbo Tiling instead.');
+};
 
 // --- OTHER FEATURES ---
 async function fetchMembers() {
@@ -1206,11 +1314,13 @@ async function fetchMembers() {
 
         // Create a lookup map for statuses
         const statusMap = {};
-        if (statuses) statuses.forEach(s => statusMap[s.user_id] = s.status);
+        if (statuses) statuses.forEach((s) => (statusMap[s.user_id] = s.status));
 
         // --- ADMIN SECTION ---
-        const mainAdmin = students.find(s => s.sr_code === 'ADMIN');
-        const coAdmins = students.filter(s => s.sr_code !== 'ADMIN' && (s.role === 'admin' || (s.role && s.role.startsWith('admin:tools:'))));
+        const mainAdmin = students.find((s) => s.sr_code === 'ADMIN');
+        const coAdmins = students.filter(
+            (s) => s.sr_code !== 'ADMIN' && (s.role === 'admin' || (s.role && s.role.startsWith('admin:tools:'))),
+        );
 
         const adminList = document.getElementById('adminList');
         const adminSection = document.getElementById('adminSection');
@@ -1225,9 +1335,11 @@ async function fetchMembers() {
                 const tag = document.createElement('div');
                 tag.className = 'member-tag';
                 tag.style.cssText = 'cursor: pointer; border-color: #d63031; background: #fff0f0;';
-                tag.onclick = () => showPublicProfile(mainAdmin.name, mainAdmin.avatar_url, "System Administrator");
+                tag.onclick = () => showPublicProfile(mainAdmin.name, mainAdmin.avatar_url, 'System Administrator');
 
-                const safeAvatar = mainAdmin.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(mainAdmin.name)}&background=random`;
+                const safeAvatar =
+                    mainAdmin.avatar_url ||
+                    `https://ui-avatars.com/api/?name=${encodeURIComponent(mainAdmin.name)}&background=random`;
 
                 tag.innerHTML = `
                     <div style="position:relative;">
@@ -1247,20 +1359,24 @@ async function fetchMembers() {
             coAdminList.innerHTML = '';
             if (coAdmins.length > 0) {
                 coAdminSection.classList.remove('hidden');
-                coAdmins.sort((a, b) => a.name.localeCompare(b.name)).forEach(admin => {
-                    const tag = document.createElement('div');
-                    tag.className = 'member-tag';
-                    tag.style.cssText = 'cursor: pointer; border-color: #0984e3; background: #f0f8ff;';
-                    tag.onclick = () => showPublicProfile(admin.name, admin.avatar_url, "Co-Administrator");
+                coAdmins
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .forEach((admin) => {
+                        const tag = document.createElement('div');
+                        tag.className = 'member-tag';
+                        tag.style.cssText = 'cursor: pointer; border-color: #0984e3; background: #f0f8ff;';
+                        tag.onclick = () => showPublicProfile(admin.name, admin.avatar_url, 'Co-Administrator');
 
-                    const safeAvatar = admin.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(admin.name)}&background=random`;
+                        const safeAvatar =
+                            admin.avatar_url ||
+                            `https://ui-avatars.com/api/?name=${encodeURIComponent(admin.name)}&background=random`;
 
-                    tag.innerHTML = `
+                        tag.innerHTML = `
                         <img src="${safeAvatar}" style="width:24px; height:24px; border-radius:50%; object-fit:cover; border:1px solid #0984e3; flex-shrink: 0;">
                         <span style="font-weight:bold; color: #0984e3;">${admin.name}</span>
                     `;
-                    coAdminList.appendChild(tag);
-                });
+                        coAdminList.appendChild(tag);
+                    });
             } else {
                 coAdminSection.classList.add('hidden');
             }
@@ -1269,10 +1385,18 @@ async function fetchMembers() {
         const publicMemberList = document.getElementById('publicMemberList');
         if (publicMemberList) {
             publicMemberList.innerHTML = '';
-            publicMemberList.className = 'compact-member-grid hidden'; // Helper class + Default hidden state
+            publicMemberList.classList.remove('member-tags', 'hidden');
+            publicMemberList.classList.add('compact-member-grid', 'open');
 
             // Filter valid members first (Exclude Admin/Principal)
-            const validMembers = students.filter(s => s.sr_code !== 'ADMIN' && s.role !== 'admin' && !(s.role && s.role.startsWith('admin:tools:')) && s.name !== 'Principal User' && !s.name.includes('Admin'));
+            const validMembers = students.filter(
+                (s) =>
+                    s.sr_code !== 'ADMIN' &&
+                    s.role !== 'admin' &&
+                    !(s.role && s.role.startsWith('admin:tools:')) &&
+                    s.name !== 'Principal User' &&
+                    !s.name.includes('Admin'),
+            );
 
             // Update Badge with Animation
             const badge = document.getElementById('memberCountBadge');
@@ -1284,16 +1408,19 @@ async function fetchMembers() {
             }
 
             if (validMembers.length === 0) {
-                publicMemberList.innerHTML = '<span style="font-style:italic; width:100%; text-align:center;">No members yet...</span>';
+                publicMemberList.innerHTML =
+                    '<span style="font-style:italic; width:100%; text-align:center;">No members yet...</span>';
             } else {
-                validMembers.forEach(student => {
+                validMembers.forEach((student) => {
                     const userStatus = statusMap[student.id] || 'Member';
 
                     const tag = document.createElement('div');
                     tag.className = 'compact-member-item';
                     tag.onclick = () => showPublicProfile(student.name, student.avatar_url, userStatus);
 
-                    const safeAvatar = student.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random`;
+                    const safeAvatar =
+                        student.avatar_url ||
+                        `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random`;
                     const firstName = student.name.split(' ')[0]; // Use first name for compactness
 
                     tag.innerHTML = `
@@ -1309,6 +1436,9 @@ async function fetchMembers() {
                     publicMemberList.appendChild(tag);
                 });
             }
+
+            publicMemberList.style.maxHeight = publicMemberList.scrollHeight + 'px';
+            publicMemberList.style.opacity = '1';
         }
 
         // --- POPULATE ENROLLMENT BOARD (Right Side) ---
@@ -1316,8 +1446,14 @@ async function fetchMembers() {
         const notEnrolledList = document.getElementById('not-enrolled-list');
 
         if (enrolledList && notEnrolledList) {
-            const enrolled = students.filter(s => s.enrollment_status === 'Enrolled');
-            const notEnrolled = students.filter(s => s.enrollment_status !== 'Enrolled' && s.sr_code !== 'ADMIN' && s.role !== 'admin' && !(s.role && s.role.startsWith('admin:tools:')));
+            const enrolled = students.filter((s) => s.enrollment_status === 'Enrolled');
+            const notEnrolled = students.filter(
+                (s) =>
+                    s.enrollment_status !== 'Enrolled' &&
+                    s.sr_code !== 'ADMIN' &&
+                    s.role !== 'admin' &&
+                    !(s.role && s.role.startsWith('admin:tools:')),
+            );
 
             // Update Counts
             const countIn = document.getElementById('count-in');
@@ -1326,7 +1462,8 @@ async function fetchMembers() {
             if (countOut) countOut.innerText = notEnrolled.length;
 
             const generateTag = (s, isEnrolled) => {
-                const safeAvatar = s.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=random`;
+                const safeAvatar =
+                    s.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=random`;
                 const hasReceipt = s.enrollment_receipt_url;
                 const safeName = s.name.replace(/'/g, "\\'");
                 const cursorStyle = hasReceipt ? 'cursor: pointer;' : 'cursor: default;';
@@ -1336,8 +1473,12 @@ async function fetchMembers() {
                     ? `onmouseenter="showReceiptHover(event, '${s.enrollment_receipt_url}')" onmousemove="moveReceiptHover(event)" onmouseleave="hideReceiptHover()"`
                     : '';
 
-                const tagAction = hasReceipt ? `onclick="openReceiptPreview('${safeName}', '${s.enrollment_receipt_url}')" title="View Receipt"` : '';
-                const icon = hasReceipt ? `<i class="fas fa-receipt" style="font-size:0.8rem; color:#0984e3; margin-left:5px;"></i>` : '';
+                const tagAction = hasReceipt
+                    ? `onclick="openReceiptPreview('${safeName}', '${s.enrollment_receipt_url}')" title="View Receipt"`
+                    : '';
+                const icon = hasReceipt
+                    ? `<i class="fas fa-receipt" style="font-size:0.8rem; color:#0984e3; margin-left:5px;"></i>`
+                    : '';
 
                 return `
                     <div class="member-tag" style="${cursorStyle}" ${tagAction} ${hoverEvents}>
@@ -1348,8 +1489,12 @@ async function fetchMembers() {
                  `;
             };
 
-            enrolledList.innerHTML = enrolled.length ? enrolled.map(s => generateTag(s, true)).join('') : '<div style="width:100%; text-align:center; color:#666;">None yet</div>';
-            notEnrolledList.innerHTML = notEnrolled.length ? notEnrolled.map(s => generateTag(s, false)).join('') : '<div style="width:100%; text-align:center; color:#666;">Everyone is in!</div>';
+            enrolledList.innerHTML = enrolled.length
+                ? enrolled.map((s) => generateTag(s, true)).join('')
+                : '<div style="width:100%; text-align:center; color:#666;">None yet</div>';
+            notEnrolledList.innerHTML = notEnrolled.length
+                ? notEnrolled.map((s) => generateTag(s, false)).join('')
+                : '<div style="width:100%; text-align:center; color:#666;">Everyone is in!</div>';
         }
     } finally {
         if (refreshIcon) {
@@ -1380,7 +1525,8 @@ function showPublicProfile(name, avatarUrl, status) {
     if (!modal) {
         modal = document.createElement('div');
         modal.id = 'publicProfileModal';
-        modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:3000; display:flex; justify-content:center; align-items:center;';
+        modal.style.cssText =
+            'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:3000; display:flex; justify-content:center; align-items:center;';
         modal.onclick = (e) => {
             if (e.target === modal) modal.style.display = 'none';
         };
@@ -1388,9 +1534,10 @@ function showPublicProfile(name, avatarUrl, status) {
     }
 
     // Add Contact Button if Admin
-    const contactBtn = (status === 'System Administrator')
-        ? `<button onclick="openRequestModal()" style="margin-top:10px; background:#0984e3; color:#fff; border: 2px solid #000; font-size: 1rem;"><i class="fas fa-paper-plane"></i> Contact Admin</button>`
-        : '';
+    const contactBtn =
+        status === 'System Administrator'
+            ? `<button onclick="openRequestModal()" style="margin-top:10px; background:#0984e3; color:#fff; border: 2px solid #000; font-size: 1rem;"><i class="fas fa-paper-plane"></i> Contact Admin</button>`
+            : '';
 
     const safeAvatar = avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
     modal.innerHTML = `
@@ -1429,7 +1576,7 @@ async function fetchRecentLogins() {
     container.innerHTML = '';
     const now = new Date();
 
-    data.forEach(student => {
+    data.forEach((student) => {
         const lastSeen = new Date(student.last_login);
         const diffMinutes = Math.floor((now - lastSeen) / 60000);
         const isOnline = diffMinutes < 5;
@@ -1448,10 +1595,12 @@ async function fetchRecentLogins() {
             transition: transform 0.2s;
             overflow: hidden;
         `;
-        row.onmouseover = () => row.style.transform = 'scale(1.02) rotate(-1deg)';
-        row.onmouseout = () => row.style.transform = 'scale(1) rotate(0deg)';
+        row.onmouseover = () => (row.style.transform = 'scale(1.02) rotate(-1deg)');
+        row.onmouseout = () => (row.style.transform = 'scale(1) rotate(0deg)');
 
-        const safeAvatar = student.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random`;
+        const safeAvatar =
+            student.avatar_url ||
+            `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random`;
 
         const statusBadge = isOnline
             ? '<span style="background: #00b894; color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.6rem; font-weight: bold; border: 1px solid #000;">ONLINE</span>'
@@ -1477,7 +1626,7 @@ async function fetchRecentLogins() {
 function setupRealtimeSpotted() {
     supabaseClient
         .channel('public:students_spotted')
-        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'students' }, payload => {
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'students' }, (payload) => {
             // Only refresh if last_login changed
             if (payload.new.last_login !== payload.old.last_login) {
                 fetchRecentLogins();
@@ -1496,21 +1645,22 @@ window.toggleAllSpotted = function () {
     const btnText = document.getElementById('spottedBtnText');
     if (!list || !btnText) return;
 
-    if (list.classList.contains('hidden')) {
-        list.classList.remove('hidden');
-        btnText.innerText = "Hide History";
-        fetchAllSpotted();
+    const isOpen = list.classList.contains('open');
+    slideToggle(list);
+    if (isOpen) {
+        btnText.innerText = 'View Full History';
     } else {
-        list.classList.add('hidden');
-        btnText.innerText = "View Full History";
+        btnText.innerText = 'Hide History';
+        fetchAllSpotted();
     }
-}
+};
 
 async function fetchAllSpotted() {
     const container = document.getElementById('allSpottedList');
     if (!container) return;
 
-    container.innerHTML = '<div style="grid-column: 1/-1; text-align:center; font-size:0.8rem;">Loading everyone...</div>';
+    container.innerHTML =
+        '<div style="grid-column: 1/-1; text-align:center; font-size:0.8rem;">Loading everyone...</div>';
 
     const { data, error } = await supabaseClient
         .from('students')
@@ -1524,14 +1674,16 @@ async function fetchAllSpotted() {
         return;
     }
 
-    container.innerHTML = data.map(v => {
-        const avatar = v.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(v.name)}&background=random`;
-        const lastSeen = new Date(v.last_login);
-        const isOnline = (new Date() - lastSeen) < 300000; // 5 mins
+    container.innerHTML = data
+        .map((v) => {
+            const avatar =
+                v.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(v.name)}&background=random`;
+            const lastSeen = new Date(v.last_login);
+            const isOnline = new Date() - lastSeen < 300000; // 5 mins
 
-        const timeStr = lastSeen.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const timeStr = lastSeen.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-        return `
+            return `
             <div title="${escapeHTML(v.name)} | Seen: ${lastSeen.toLocaleString()}" 
                  style="position:relative; display:flex; flex-direction:column; align-items:center; gap:2px; transition: transform 0.2s; cursor: help;"
                  onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
@@ -1543,9 +1695,9 @@ async function fetchAllSpotted() {
                 ${isOnline ? '<div style="position:absolute; top:2px; right:12px; width:8px; height:8px; background:#00b894; border:1px solid #fff; border-radius:50%;"></div>' : ''}
             </div>
         `;
-    }).join('');
+        })
+        .join('');
 }
-
 
 // --- DRAGGABLE NOTES ---
 async function postNote() {
@@ -1557,12 +1709,23 @@ async function postNote() {
     // Wimpy Theme: Use 'plain' or 'lined' instead of colors
     const styles = ['plain', 'lined'];
     const randomStyle = styles[Math.floor(Math.random() * styles.length)];
-    const { error } = await supabaseClient.from('notes').insert([{ content: text, x_pos: randomX, y_pos: randomY, rotation: rotation, color: randomStyle, likes: 0 }]);
+    const { error } = await supabaseClient
+        .from('notes')
+        .insert([{ content: text, x_pos: randomX, y_pos: randomY, rotation: rotation, color: randomStyle, likes: 0 }]);
     if (error) showToast('Failed to stick note.', 'error');
-    else { showToast('Note posted!'); noteInput.value = ''; fetchNotes(); }
+    else {
+        showToast('Note posted!');
+        noteInput.value = '';
+        fetchNotes();
+    }
 }
 window.fetchNotes = async function () {
-    const { data, error } = await supabaseClient.from('notes').select('*').neq('color', 'CHAT_HIDDEN').neq('color', 'FILE_VIEW').neq('color', 'WORDLE_WORD');
+    const { data, error } = await supabaseClient
+        .from('notes')
+        .select('*')
+        .neq('color', 'CHAT_HIDDEN')
+        .neq('color', 'FILE_VIEW')
+        .neq('color', 'WORDLE_WORD');
     if (error) return;
 
     // Check if Admin (for delete capability)
@@ -1574,13 +1737,13 @@ window.fetchNotes = async function () {
     }
 
     const fragment = document.createDocumentFragment();
-    data.forEach(note => {
+    data.forEach((note) => {
         const div = createNoteElement(note, isAdmin);
         fragment.appendChild(div);
     });
     noteLayer.appendChild(fragment);
     setTimeout(resolveCollisions, 200);
-}
+};
 
 function createNoteElement(note, isAdmin) {
     const div = document.createElement('div');
@@ -1603,7 +1766,7 @@ function createNoteElement(note, isAdmin) {
         const btn = document.createElement('button');
         btn.className = 'delete-note-btn';
         btn.innerHTML = '<i class="fas fa-times"></i>';
-        btn.title = "Delete Note";
+        btn.title = 'Delete Note';
         btn.style.display = 'flex';
         btn.style.width = '20px';
         btn.style.padding = '0';
@@ -1625,14 +1788,15 @@ function createNoteElement(note, isAdmin) {
 
     likeBtn.innerHTML = `<i class="fas fa-heart"></i> <span class="like-count">${note.likes || 0}</span>`;
     likeBtn.onmousedown = (e) => e.stopPropagation();
-    likeBtn.onclick = (e) => { e.stopPropagation(); toggleLike(note.id); };
+    likeBtn.onclick = (e) => {
+        e.stopPropagation();
+        toggleLike(note.id);
+    };
     div.appendChild(likeBtn);
 
     makeDraggable(div, note.id);
     return div;
 }
-
-
 
 window.toggleLike = async function (id) {
     let likedNotes = [];
@@ -1652,8 +1816,10 @@ window.toggleLike = async function (id) {
 
         if (isLiked) {
             // Unlike
-            const newLiked = likedNotes.filter(n => n !== id);
-            try { localStorage.setItem('liked_notes', JSON.stringify(newLiked)); } catch (e) { }
+            const newLiked = likedNotes.filter((n) => n !== id);
+            try {
+                localStorage.setItem('liked_notes', JSON.stringify(newLiked));
+            } catch (e) {}
             btn.classList.remove('liked');
             countSpan.innerText = Math.max(0, count - 1);
 
@@ -1661,15 +1827,19 @@ window.toggleLike = async function (id) {
             const success = await updateLikesInDb(id, -1);
             if (!success) {
                 // Revert UI
-                try { localStorage.setItem('liked_notes', JSON.stringify(likedNotes)); } catch (e) { } // Put back
+                try {
+                    localStorage.setItem('liked_notes', JSON.stringify(likedNotes));
+                } catch (e) {} // Put back
                 btn.classList.add('liked');
                 countSpan.innerText = count;
-                showToast("Connection failed. Like not saved.", "error");
+                showToast('Connection failed. Like not saved.', 'error');
             }
         } else {
             // Like
             likedNotes.push(id);
-            try { localStorage.setItem('liked_notes', JSON.stringify(likedNotes)); } catch (e) { }
+            try {
+                localStorage.setItem('liked_notes', JSON.stringify(likedNotes));
+            } catch (e) {}
             btn.classList.add('liked');
             countSpan.innerText = count + 1;
 
@@ -1677,15 +1847,17 @@ window.toggleLike = async function (id) {
             const success = await updateLikesInDb(id, 1);
             if (!success) {
                 // Revert UI
-                const revertedLiked = likedNotes.filter(n => n !== id);
-                try { localStorage.setItem('liked_notes', JSON.stringify(revertedLiked)); } catch (e) { }
+                const revertedLiked = likedNotes.filter((n) => n !== id);
+                try {
+                    localStorage.setItem('liked_notes', JSON.stringify(revertedLiked));
+                } catch (e) {}
                 btn.classList.remove('liked');
                 countSpan.innerText = count;
-                showToast("Connection failed. Like not saved.", "error");
+                showToast('Connection failed. Like not saved.', 'error');
             }
         }
     }
-}
+};
 
 async function updateLikesInDb(id, change) {
     try {
@@ -1693,7 +1865,7 @@ async function updateLikesInDb(id, change) {
         const { data, error: fetchError } = await supabaseClient.from('notes').select('likes').eq('id', id).single();
 
         if (fetchError) {
-            console.error("Error fetching like count:", fetchError.message, fetchError.details || '');
+            console.error('Error fetching like count:', fetchError.message, fetchError.details || '');
             return false;
         }
 
@@ -1701,12 +1873,12 @@ async function updateLikesInDb(id, change) {
         const { error: updateError } = await supabaseClient.from('notes').update({ likes: newCount }).eq('id', id);
 
         if (updateError) {
-            console.error("Error updating like count:", updateError.message, updateError.details || '');
+            console.error('Error updating like count:', updateError.message, updateError.details || '');
             return false;
         }
         return true;
     } catch (err) {
-        console.error("Unexpected error updating likes:", err);
+        console.error('Unexpected error updating likes:', err);
         return false;
     }
 }
@@ -1715,7 +1887,7 @@ async function updateLikesInDb(id, change) {
 function setupRealtimeNotes() {
     supabaseClient
         .channel('public:notes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'notes' }, payload => {
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'notes' }, (payload) => {
             // IGNORE CHAT MESSAGES
             if (payload.new && (payload.new.color === 'CHAT_HIDDEN' || payload.new.color === 'FILE_VIEW')) return;
             // Also ignore deletes of hidden notes if possible, but difficult to know color of deleted row.
@@ -1760,7 +1932,7 @@ function resolveCollisions() {
 
     const boardRect = board.getBoundingClientRect();
     const padding = 10;
-    let rects = notes.map(n => n.getBoundingClientRect());
+    let rects = notes.map((n) => n.getBoundingClientRect());
 
     for (let iter = 0; iter < 3; iter++) {
         let movedInThisPass = false;
@@ -1776,10 +1948,13 @@ function resolveCollisions() {
 
                 if (overlapX > 0 && overlapY > 0) {
                     movedInThisPass = true;
-                    let dx = (r1.left + r1.width / 2) - (r2.left + r2.width / 2);
-                    let dy = (r1.top + r1.height / 2) - (r2.top + r2.height / 2);
+                    let dx = r1.left + r1.width / 2 - (r2.left + r2.width / 2);
+                    let dy = r1.top + r1.height / 2 - (r2.top + r2.height / 2);
 
-                    if (dx === 0 && dy === 0) { dx = Math.random() - 0.5; dy = Math.random() - 0.5; }
+                    if (dx === 0 && dy === 0) {
+                        dx = Math.random() - 0.5;
+                        dy = Math.random() - 0.5;
+                    }
 
                     const distance = Math.sqrt(dx * dx + dy * dy);
                     const force = 5;
@@ -1809,23 +1984,27 @@ function resolveCollisions() {
             el.style.top = Math.max(0, Math.min(90, tVal + (c.my / boardRect.height) * 100)) + '%';
         });
 
-        rects = notes.map(n => n.getBoundingClientRect());
+        rects = notes.map((n) => n.getBoundingClientRect());
     }
 }
 
 window.deleteNote = async function (id) {
-    if (!await showWimpyConfirm("Tear off this note?")) return;
+    if (!(await showWimpyConfirm('Tear off this note?'))) return;
     const { error } = await supabaseClient.from('notes').delete().eq('id', id);
-    if (error) showToast("Could not delete note.", "error");
+    if (error) showToast('Could not delete note.', 'error');
     else {
-        showToast("Note removed.");
+        showToast('Note removed.');
         fetchNotes();
     }
-}
+};
 
 function makeDraggable(element, noteId) {
-    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-    let dragOffsetX = 0, dragOffsetY = 0;
+    let pos1 = 0,
+        pos2 = 0,
+        pos3 = 0,
+        pos4 = 0;
+    let dragOffsetX = 0,
+        dragOffsetY = 0;
     let noteRotation = 0;
 
     element.onmousedown = dragMouseDown;
@@ -1859,7 +2038,10 @@ function makeDraggable(element, noteId) {
         e = e || window.event;
         let clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
         let clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
-        pos1 = pos3 - clientX; pos2 = pos4 - clientY; pos3 = clientX; pos4 = clientY;
+        pos1 = pos3 - clientX;
+        pos2 = pos4 - clientY;
+        pos3 = clientX;
+        pos4 = clientY;
         dragOffsetX -= pos1;
         dragOffsetY -= pos2;
         element.style.transform = `rotate(${noteRotation}deg) translate(${dragOffsetX}px, ${dragOffsetY}px)`;
@@ -1881,7 +2063,11 @@ function makeDraggable(element, noteId) {
         const xPercent = ((elRect.left - parentRect.left) / parentRect.width) * 100;
         const yPercent = ((elRect.top - parentRect.top) / parentRect.height) * 100;
 
-        if (Math.abs(xPercent - parseFloat(element.style.left)) < 0.3 && Math.abs(yPercent - parseFloat(element.style.top)) < 0.3) return;
+        if (
+            Math.abs(xPercent - parseFloat(element.style.left)) < 0.3 &&
+            Math.abs(yPercent - parseFloat(element.style.top)) < 0.3
+        )
+            return;
 
         element.style.left = Math.max(0, Math.min(95, xPercent)) + '%';
         element.style.top = Math.max(0, Math.min(95, yPercent)) + '%';
@@ -1921,17 +2107,17 @@ window.openFreedomWall = function () {
         const input = document.getElementById('fw-landing-input');
         if (input) input.focus();
     }, 100);
-}
+};
 window.closeFreedomWall = function () {
     document.getElementById('freedomWallModal').classList.add('hidden');
-}
+};
 
 // --- COLOR SELECTION ---
 window.selectColor = function (el, color) {
-    document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
+    document.querySelectorAll('.color-option').forEach((opt) => opt.classList.remove('selected'));
     el.classList.add('selected');
     document.getElementById('fw-landing-color').value = color;
-}
+};
 
 window.postLandingNote = async function () {
     const input = document.getElementById('fw-landing-input');
@@ -1948,25 +2134,32 @@ window.postLandingNote = async function () {
     const rotation = Math.floor(Math.random() * 20) - 10;
     const selectedColor = document.getElementById('fw-landing-color').value || 'white';
 
-    const { error } = await supabaseClient.from('notes').insert([{ content: text, x_pos: randomX, y_pos: randomY, rotation: rotation, color: selectedColor, likes: 0 }]);
+    const { error } = await supabaseClient
+        .from('notes')
+        .insert([
+            { content: text, x_pos: randomX, y_pos: randomY, rotation: rotation, color: selectedColor, likes: 0 },
+        ]);
 
     if (btn) btn.disabled = false;
 
     if (error) showToast('Failed to post.', 'error');
-    else { showToast('Note posted!'); input.value = ''; fetchNotes(); }
-}
+    else {
+        showToast('Note posted!');
+        input.value = '';
+        fetchNotes();
+    }
+};
 
 // logout removed (in common.js)
 
 // Function to return to the admin choice modal from the admin dashboard
 function returnToAdminChoice() {
-    adminDashboard.classList.add('hidden');
-    // Show landing page again (which has admin controls)
     const authSection = document.getElementById('authSection');
-    if (authSection) authSection.classList.remove('hidden');
+    if (!authSection) return;
 
-    // Reset Mobile Navs
-    const fixedNav = document.getElementById('fixed-action-buttons');
+    fadeToView(adminDashboard, authSection);
+
+    const fixedNav = document.getElementById('floating-chip-bar');
     const adminNav = document.getElementById('admin-mobile-nav');
     if (fixedNav) fixedNav.classList.remove('hidden');
     if (adminNav) adminNav.classList.add('hidden');
@@ -1977,10 +2170,12 @@ function showWelcomeNote() {
     // if (localStorage.getItem('wimpy_update_seen_v2')) return;
 
     const modal = document.createElement('div');
-    modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; display:flex; justify-content:center; align-items:flex-start; overflow-y: auto; padding: 20px; box-sizing: border-box;';
+    modal.style.cssText =
+        'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; display:flex; justify-content:center; align-items:flex-start; overflow-y: auto; padding: 20px; box-sizing: border-box;';
     const note = document.createElement('div');
     note.className = 'sketch-box';
-    note.style.cssText = 'width:100%; max-width:600px; margin: 40px auto; text-align:center; transform:rotate(-1deg); background:#fdfbf7; border:3px solid #000; padding:20px; box-shadow:10px 10px 0 rgba(0,0,0,0.2); position:relative;';
+    note.style.cssText =
+        'width:100%; max-width:600px; margin: 40px auto; text-align:center; transform:rotate(-1deg); background:#fdfbf7; border:3px solid #000; padding:20px; box-shadow:10px 10px 0 rgba(0,0,0,0.2); position:relative;';
     note.innerHTML = `
         <style>
             .update-flex {
@@ -2060,14 +2255,18 @@ function showWelcomeNote() {
 // Click to Zoom
 window.viewFullImage = function (src) {
     const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:10000; display:flex; justify-content:center; align-items:center; cursor: zoom-out; animation: fadeIn 0.3s;';
+    overlay.style.cssText =
+        'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:10000; display:flex; justify-content:center; align-items:center; cursor: zoom-out; animation: fadeIn 0.3s;';
     const img = document.createElement('img');
     img.src = src;
-    img.style.cssText = 'max-width:90%; max-height:90%; border: 5px solid #fff; box-shadow: 0 0 30px rgba(0,0,0,0.5); object-fit: contain;';
+    img.style.cssText =
+        'max-width:90%; max-height:90%; border: 5px solid #fff; box-shadow: 0 0 30px rgba(0,0,0,0.5); object-fit: contain;';
     overlay.appendChild(img);
-    overlay.onclick = function () { overlay.remove(); };
+    overlay.onclick = function () {
+        overlay.remove();
+    };
     document.body.appendChild(overlay);
-}
+};
 
 // --- CONGRATS MESSAGE ---
 window.showCongratsMessage = function (prevModal) {
@@ -2099,8 +2298,12 @@ window.showCongratsMessage = function (prevModal) {
             var timeLeft = animationEnd - Date.now();
             if (timeLeft <= 0) return clearInterval(interval);
             var particleCount = 50 * (timeLeft / duration);
-            confetti(Object.assign({}, defaults, { particleCount, origin: { x: random(0.1, 0.3), y: Math.random() - 0.2 } }));
-            confetti(Object.assign({}, defaults, { particleCount, origin: { x: random(0.7, 0.9), y: Math.random() - 0.2 } }));
+            confetti(
+                Object.assign({}, defaults, { particleCount, origin: { x: random(0.1, 0.3), y: Math.random() - 0.2 } }),
+            );
+            confetti(
+                Object.assign({}, defaults, { particleCount, origin: { x: random(0.7, 0.9), y: Math.random() - 0.2 } }),
+            );
         }, 250);
     };
 
@@ -2112,7 +2315,7 @@ window.showCongratsMessage = function (prevModal) {
     } else {
         startConfetti();
     }
-}
+};
 
 // --- NEW FEATURE: CHECK RECENT UPLOADS ---
 async function fetchNewUploads() {
@@ -2139,7 +2342,7 @@ async function fetchNewUploads() {
         .limit(3); // Only show top 3
 
     if (error) {
-        console.error("Error fetching updates:", error);
+        console.error('Error fetching updates:', error);
         return;
     }
 
@@ -2147,7 +2350,7 @@ async function fetchNewUploads() {
     if (data && data.length > 0) {
         container.classList.remove('hidden'); // Show the container
 
-        list.innerHTML = data.map(file => window.generateFileCard(file, true)).join('');
+        list.innerHTML = data.map((file) => window.generateFileCard(file, true)).join('');
     } else {
         container.classList.add('hidden'); // Keep hidden if empty
     }
@@ -2186,9 +2389,12 @@ async function fetchLandingGallery() {
 
     galleryItems = data; // Store for lightbox
     section.classList.remove('hidden');
-    container.innerHTML = data.map((item, index) => {
-        const deleteBtn = isAdmin ? `<button onclick="event.stopPropagation(); deleteAdminFile(${item.id})" class="sketch-btn danger" style="position:absolute; top:-10px; right:-10px; width:30px !important; height:30px !important; border-radius:50% !important; padding:0 !important; display:flex; align-items:center; justify-content:center; z-index:20; font-size:0.9rem;">X</button>` : '';
-        return `
+    container.innerHTML = data
+        .map((item, index) => {
+            const deleteBtn = isAdmin
+                ? `<button onclick="event.stopPropagation(); deleteAdminFile(${item.id})" class="sketch-btn danger" style="position:absolute; top:-10px; right:-10px; width:30px !important; height:30px !important; border-radius:50% !important; padding:0 !important; display:flex; align-items:center; justify-content:center; z-index:20; font-size:0.9rem;">X</button>`
+                : '';
+            return `
         <div class="polaroid-card" onclick="openGalleryLightbox(${index})" 
              tabindex="0" role="button" aria-label="View photo: ${item.title}"
              onkeydown="if(event.key==='Enter'||event.key===' ') openGalleryLightbox(${index})">
@@ -2197,7 +2403,9 @@ async function fetchLandingGallery() {
             <img src="${item.file_url}" alt="${item.title}" loading="lazy">
             <div class="polaroid-caption">${item.title}</div>
         </div>
-    `}).join('');
+    `;
+        })
+        .join('');
 
     // startGallerySlideshow(); // Disabled for Masonry Layout
 }
@@ -2209,54 +2417,89 @@ window.openGalleryLightbox = function (startIndex) {
 
     const overlay = document.createElement('div');
     overlay.id = 'galleryLightbox';
-    overlay.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:10000; display:flex; justify-content:center; align-items:center; flex-direction:column; animation: fadeIn 0.3s;';
+    overlay.style.cssText =
+        'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:10000; display:flex; justify-content:center; align-items:center; flex-direction:column; animation: fadeIn 0.3s;';
 
     const imgContainer = document.createElement('div');
-    imgContainer.style.cssText = 'position:relative; max-width:90%; max-height:80%; display:flex; justify-content:center; align-items:center;';
+    imgContainer.style.cssText =
+        'position:relative; max-width:90%; max-height:80%; display:flex; justify-content:center; align-items:center;';
 
     const img = document.createElement('img');
-    img.style.cssText = 'max-width:100%; max-height:80vh; border: 5px solid #fff; box-shadow: 0 0 30px rgba(0,0,0,0.5); object-fit: contain; transition: opacity 0.2s;';
+    img.style.cssText =
+        'max-width:100%; max-height:80vh; border: 5px solid #fff; box-shadow: 0 0 30px rgba(0,0,0,0.5); object-fit: contain; transition: opacity 0.2s;';
 
     const caption = document.createElement('div');
-    caption.style.cssText = 'color:#fff; font-family:"Patrick Hand"; font-size:1.5rem; margin-top:15px; text-align:center; text-shadow: 1px 1px 2px #000;';
+    caption.style.cssText =
+        'color:#fff; font-family:"Patrick Hand"; font-size:1.5rem; margin-top:15px; text-align:center; text-shadow: 1px 1px 2px #000;';
 
     // Navigation Buttons
-    const btnStyle = 'position:absolute; top:50%; transform:translateY(-50%) !important; background:rgba(255,255,255,0.1); color:#fff; border:2px solid #fff; width:50px; height:50px; border-radius:50%; font-size:1.5rem; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:0.2s; animation: none !important;';
+    const btnStyle =
+        'position:absolute; top:50%; transform:translateY(-50%) !important; background:rgba(255,255,255,0.1); color:#fff; border:2px solid #fff; width:50px; height:50px; border-radius:50%; font-size:1.5rem; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:0.2s; animation: none !important;';
 
     const prevBtn = document.createElement('button');
     prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
     prevBtn.style.cssText = btnStyle + 'left:20px;';
-    prevBtn.onmouseover = () => { prevBtn.style.background = '#fff'; prevBtn.style.color = '#000'; prevBtn.style.setProperty('transform', 'translateY(-50%) scale(1.1)', 'important'); };
-    prevBtn.onmouseout = () => { prevBtn.style.background = 'rgba(255,255,255,0.1)'; prevBtn.style.color = '#fff'; prevBtn.style.setProperty('transform', 'translateY(-50%)', 'important'); };
+    prevBtn.onmouseover = () => {
+        prevBtn.style.background = '#fff';
+        prevBtn.style.color = '#000';
+        prevBtn.style.setProperty('transform', 'translateY(-50%) scale(1.1)', 'important');
+    };
+    prevBtn.onmouseout = () => {
+        prevBtn.style.background = 'rgba(255,255,255,0.1)';
+        prevBtn.style.color = '#fff';
+        prevBtn.style.setProperty('transform', 'translateY(-50%)', 'important');
+    };
 
     const nextBtn = document.createElement('button');
     nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
     nextBtn.style.cssText = btnStyle + 'right:20px;';
-    nextBtn.onmouseover = () => { nextBtn.style.background = '#fff'; nextBtn.style.color = '#000'; nextBtn.style.setProperty('transform', 'translateY(-50%) scale(1.1)', 'important'); };
-    nextBtn.onmouseout = () => { nextBtn.style.background = 'rgba(255,255,255,0.1)'; nextBtn.style.color = '#fff'; nextBtn.style.setProperty('transform', 'translateY(-50%)', 'important'); };
+    nextBtn.onmouseover = () => {
+        nextBtn.style.background = '#fff';
+        nextBtn.style.color = '#000';
+        nextBtn.style.setProperty('transform', 'translateY(-50%) scale(1.1)', 'important');
+    };
+    nextBtn.onmouseout = () => {
+        nextBtn.style.background = 'rgba(255,255,255,0.1)';
+        nextBtn.style.color = '#fff';
+        nextBtn.style.setProperty('transform', 'translateY(-50%)', 'important');
+    };
 
     const closeBtn = document.createElement('button');
     closeBtn.innerHTML = '<i class="fas fa-times"></i>';
-    closeBtn.style.cssText = 'position:absolute; top:20px; right:20px; background:transparent; color:#fff; border:none; font-size:2rem; cursor:pointer; animation: none !important; transform: none !important;';
+    closeBtn.style.cssText =
+        'position:absolute; top:20px; right:20px; background:transparent; color:#fff; border:none; font-size:2rem; cursor:pointer; animation: none !important; transform: none !important;';
 
     const updateImage = (idx) => {
         img.style.opacity = '0.5';
         setTimeout(() => {
             img.src = galleryItems[idx].file_url;
             caption.innerText = `${galleryItems[idx].title} (${idx + 1}/${galleryItems.length})`;
-            img.onload = () => img.style.opacity = '1';
+            img.onload = () => (img.style.opacity = '1');
         }, 150);
     };
 
     // Event Listeners
-    const next = (e) => { if (e) e.stopPropagation(); currentIndex = (currentIndex + 1) % galleryItems.length; updateImage(currentIndex); };
-    const prev = (e) => { if (e) e.stopPropagation(); currentIndex = (currentIndex - 1 + galleryItems.length) % galleryItems.length; updateImage(currentIndex); };
-    const close = () => { document.removeEventListener('keydown', keyHandler); overlay.remove(); };
+    const next = (e) => {
+        if (e) e.stopPropagation();
+        currentIndex = (currentIndex + 1) % galleryItems.length;
+        updateImage(currentIndex);
+    };
+    const prev = (e) => {
+        if (e) e.stopPropagation();
+        currentIndex = (currentIndex - 1 + galleryItems.length) % galleryItems.length;
+        updateImage(currentIndex);
+    };
+    const close = () => {
+        document.removeEventListener('keydown', keyHandler);
+        overlay.remove();
+    };
 
     prevBtn.onclick = prev;
     nextBtn.onclick = next;
     closeBtn.onclick = close;
-    overlay.onclick = (e) => { if (e.target === overlay) close(); };
+    overlay.onclick = (e) => {
+        if (e.target === overlay) close();
+    };
 
     const keyHandler = (e) => {
         if (e.key === 'ArrowLeft') prev();
@@ -2269,7 +2512,7 @@ window.openGalleryLightbox = function (startIndex) {
     overlay.append(closeBtn, prevBtn, imgContainer, nextBtn, caption);
     document.body.appendChild(overlay);
     updateImage(currentIndex);
-}
+};
 
 // --- CUSTOM WIMPY POP-UP ---
 // showWimpyConfirm removed (in common.js)
@@ -2277,7 +2520,7 @@ window.openGalleryLightbox = function (startIndex) {
 // --- WIDE MODE TOGGLE ---
 function toggleWideMode() {
     const boxes = document.querySelectorAll('.sketch-box');
-    boxes.forEach(box => {
+    boxes.forEach((box) => {
         box.classList.toggle('wide-mode');
     });
 }
@@ -2289,10 +2532,7 @@ async function fetchRequests() {
 
     container.innerHTML = '<p>Checking suggestion box...</p>';
 
-    const { data, error } = await supabaseClient
-        .from('requests')
-        .select('*')
-        .order('created_at', { ascending: false });
+    const { data, error } = await supabaseClient.from('requests').select('*').order('created_at', { ascending: false });
 
     if (error) return console.error(error);
 
@@ -2301,7 +2541,9 @@ async function fetchRequests() {
         return;
     }
 
-    container.innerHTML = data.map(req => `
+    container.innerHTML = data
+        .map(
+            (req) => `
         <div class="student-strip" style="flex-direction:column; align-items:flex-start; gap:5px; background:#fffde7;">
             <div style="width:100%; display:flex; justify-content:space-between; border-bottom:1px dashed #ccc; padding-bottom:5px;">
                 <strong><i class="fas fa-user"></i> ${req.sender || 'Anonymous'}</strong>
@@ -2310,7 +2552,9 @@ async function fetchRequests() {
             <p style="margin:10px 0; font-family:'Patrick Hand'; font-size:1.2rem; white-space: pre-wrap;">${req.content}</p>
             <button onclick="deleteRequest(${req.id})" class="btn-icon btn-delete" style="align-self:flex-end; font-size:0.9rem;"><i class="fas fa-trash"></i> Dismiss</button>
         </div>
-    `).join('');
+    `,
+        )
+        .join('');
 }
 
 window.deleteRequest = async function (id) {
@@ -2320,10 +2564,10 @@ window.deleteRequest = async function (id) {
         if (u.sr_code !== 'ADMIN' && u.role !== 'admin') return showToast('Unauthorized action.', 'error');
     }
 
-    if (!await showWimpyConfirm('Burn this note?')) return;
+    if (!(await showWimpyConfirm('Burn this note?'))) return;
     await supabaseClient.from('requests').delete().eq('id', id);
     fetchRequests();
-}
+};
 
 // --- ADMIN FILE MANAGER (To delete memories/uploads) ---
 async function fetchAdminFiles() {
@@ -2346,7 +2590,9 @@ async function fetchAdminFiles() {
         return;
     }
 
-    container.innerHTML = data.map(file => `
+    container.innerHTML = data
+        .map(
+            (file) => `
         <div class="student-strip" style="justify-content:space-between; align-items:center; background:#f0f8ff;">
             <div style="display:flex; flex-direction:column; gap:2px; overflow:hidden; text-align:left;">
                 <strong>${file.title}</strong>
@@ -2357,7 +2603,9 @@ async function fetchAdminFiles() {
                 <button onclick="deleteAdminFile(${file.id})" class="btn-icon btn-delete"><i class="fas fa-trash"></i></button>
             </div>
         </div>
-    `).join('');
+    `,
+        )
+        .join('');
 }
 
 window.deleteAdminFile = async function (id) {
@@ -2367,7 +2615,7 @@ window.deleteAdminFile = async function (id) {
         if (u.sr_code !== 'ADMIN' && u.role !== 'admin') return showToast('Unauthorized action.', 'error');
     }
 
-    if (!await showWimpyConfirm('Delete this file permanently?')) return;
+    if (!(await showWimpyConfirm('Delete this file permanently?'))) return;
     const { error } = await supabaseClient.from('shared_files').delete().eq('id', id);
     if (error) showToast('Error deleting file.', 'error');
     else {
@@ -2376,7 +2624,7 @@ window.deleteAdminFile = async function (id) {
         fetchNewUploads(); // Refresh the public list too
         fetchLandingGallery(); // Refresh gallery if applicable
     }
-}
+};
 
 // --- FILE PREVIEWER MODAL ---
 window.openFilePreview = function (url, title) {
@@ -2446,14 +2694,17 @@ window.openFilePreview = function (url, title) {
         </div>
     `;
     document.body.insertAdjacentHTML('beforeend', modalHtml);
-}
+};
 
 // --- REUSABLE FILE CARD GENERATOR (For Web2.html) ---
 window.generateFileCard = function (file, isNew = false) {
-    const safeUrl = (file.file_url || '').replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;");
-    const safeTitle = (file.title || 'File').replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;");
+    const safeUrl = (file.file_url || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    const safeTitle = (file.title || 'File').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
     const subject = file.subject || 'General';
-    const badgeHtml = (isNew && subject !== 'General') ? `<div style="font-size: 0.8rem; background: #d63031; color: white; padding: 2px 6px; border-radius: 4px; transform: rotate(5deg);">NEW!</div>` : '';
+    const badgeHtml =
+        isNew && subject !== 'General'
+            ? `<div style="font-size: 0.8rem; background: #d63031; color: white; padding: 2px 6px; border-radius: 4px; transform: rotate(5deg);">NEW!</div>`
+            : '';
 
     // Icon Logic
     let icon = 'fa-file-alt';
@@ -2492,7 +2743,7 @@ window.generateFileCard = function (file, isNew = false) {
             ${badgeHtml}
         </div>
     `;
-}
+};
 
 // --- GALLERY SCROLL LOGIC ---
 window.scrollGallery = function (direction) {
@@ -2501,7 +2752,7 @@ window.scrollGallery = function (direction) {
         const scrollAmount = 300;
         container.scrollBy({ left: direction * scrollAmount, behavior: 'smooth' });
     }
-}
+};
 
 // --- AUTO SCROLL SLIDESHOW ---
 function startGallerySlideshow() {
@@ -2567,16 +2818,16 @@ window.uploadGalleryItemIndex = async function (e) {
 
         if (uploadError) throw uploadError;
 
-        const { data: urlData } = supabaseClient.storage
-            .from('class-resources')
-            .getPublicUrl(fileName);
+        const { data: urlData } = supabaseClient.storage.from('class-resources').getPublicUrl(fileName);
 
-        const { error: dbError } = await supabaseClient.from('shared_files').insert([{
-            title: captionInput.value || 'Untitled',
-            subject: 'LandingGallery',
-            file_url: urlData.publicUrl,
-            file_type: file.type
-        }]);
+        const { error: dbError } = await supabaseClient.from('shared_files').insert([
+            {
+                title: captionInput.value || 'Untitled',
+                subject: 'LandingGallery',
+                file_url: urlData.publicUrl,
+                file_type: file.type,
+            },
+        ]);
 
         if (dbError) throw dbError;
 
@@ -2590,27 +2841,30 @@ window.uploadGalleryItemIndex = async function (e) {
         btn.disabled = false;
         btn.innerText = originalText;
     }
-}
+};
 
 // --- MEMBER LIST TOGGLE ---
 window.toggleMemberList = function () {
     const list = document.getElementById('publicMemberList');
     const icon = document.getElementById('memberToggleIcon');
+    if (!list) return;
 
-    if (list) list.classList.toggle('hidden');
+    const isOpen = list.classList.contains('open');
+    slideToggle(list);
     if (icon) {
-        icon.style.transform = list.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
+        icon.style.transition = 'transform 300ms cubic-bezier(0.23, 1, 0.32, 1)';
+        icon.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
     }
-}
+};
 
 // --- CLASS LIST MODAL ---
 window.openClassList = function () {
     document.getElementById('classListModal').classList.remove('hidden');
     fetchMembers(); // Refresh data when opening
-}
+};
 window.closeClassList = function () {
     document.getElementById('classListModal').classList.add('hidden');
-}
+};
 
 // --- PUBLIC REQUEST MODAL ---
 window.openRequestModal = function () {
@@ -2619,90 +2873,107 @@ window.openRequestModal = function () {
     if (profileModal) profileModal.style.display = 'none';
 
     document.getElementById('requestModal').classList.remove('hidden');
-}
+};
 
 window.closeRequestModal = function () {
     document.getElementById('requestModal').classList.add('hidden');
     document.getElementById('req-content').value = '';
-}
+};
 
 window.submitRequest = async function () {
     const content = document.getElementById('req-content').value;
     if (!content) return showToast('Write something first!', 'error');
 
-    const { error } = await supabaseClient.from('requests').insert([{
-        content: content,
-        sender: 'Anonymous (Public)'
-    }]);
+    const { error } = await supabaseClient.from('requests').insert([
+        {
+            content: content,
+            sender: 'Anonymous (Public)',
+        },
+    ]);
 
     if (error) showToast('Error sending: ' + error.message, 'error');
     else {
         showToast('Request sent to Admin!');
         closeRequestModal();
     }
-}
+};
 
 // --- ADMIN LIST TOGGLE ---
 window.toggleAdminList = function () {
     const list = document.getElementById('adminList');
     const icon = document.getElementById('adminToggleIcon');
+    if (!list) return;
 
-    if (list) list.classList.toggle('hidden');
+    const isOpen = list.classList.contains('open');
+    slideToggle(list);
     if (icon) {
-        icon.style.transform = list.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
+        icon.style.transition = 'transform 300ms cubic-bezier(0.23, 1, 0.32, 1)';
+        icon.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
     }
-}
+};
 
 // --- CO-ADMIN LIST TOGGLE ---
 window.toggleCoAdminList = function () {
     const list = document.getElementById('coAdminList');
     const icon = document.getElementById('coAdminToggleIcon');
+    if (!list) return;
 
-    if (list) list.classList.toggle('hidden');
+    const isOpen = list.classList.contains('open');
+    slideToggle(list);
     if (icon) {
-        icon.style.transform = list.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
+        icon.style.transition = 'transform 300ms cubic-bezier(0.23, 1, 0.32, 1)';
+        icon.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
     }
-}
+};
 
 // --- ADMIN FREEDOM WALL TOOLS ---
 window.autoArrangeNotes = async function () {
     const { data, error } = await supabaseClient.from('notes').select('id');
     if (error || !data) return;
 
-    showToast("Arranging...");
+    showToast('Arranging...');
     const cols = 5;
     const spacingX = 18;
     const spacingY = 25;
 
-    await Promise.all(data.map((note, i) =>
-        supabaseClient.from('notes').update({
-            x_pos: (i % cols) * spacingX + 5,
-            y_pos: Math.floor(i / cols) * spacingY + 5,
-            rotation: 0
-        }).eq('id', note.id)
-    ));
+    await Promise.all(
+        data.map((note, i) =>
+            supabaseClient
+                .from('notes')
+                .update({
+                    x_pos: (i % cols) * spacingX + 5,
+                    y_pos: Math.floor(i / cols) * spacingY + 5,
+                    rotation: 0,
+                })
+                .eq('id', note.id),
+        ),
+    );
 
     fetchNotes();
-    showToast("Notes aligned!");
-}
+    showToast('Notes aligned!');
+};
 
 window.scatterNotes = async function () {
     const { data, error } = await supabaseClient.from('notes').select('id');
     if (error || !data) return;
 
-    showToast("Scattering...");
-    await Promise.all(data.map(note =>
-        supabaseClient.from('notes').update({
-            x_pos: Math.floor(Math.random() * 80) + 5,
-            y_pos: Math.floor(Math.random() * 80) + 5,
-            rotation: Math.floor(Math.random() * 40) - 20
-        }).eq('id', note.id)
-    ));
+    showToast('Scattering...');
+    await Promise.all(
+        data.map((note) =>
+            supabaseClient
+                .from('notes')
+                .update({
+                    x_pos: Math.floor(Math.random() * 80) + 5,
+                    y_pos: Math.floor(Math.random() * 80) + 5,
+                    rotation: Math.floor(Math.random() * 40) - 20,
+                })
+                .eq('id', note.id),
+        ),
+    );
 
     fetchNotes();
-    showToast("Notes scattered!");
-}
-
+    showToast('Notes scattered!');
+};
 
 // --- INSTANT GALLERY UPLOAD (ADMIN) ---
 window.handleInstantGalleryUpload = async function (e) {
@@ -2716,10 +2987,10 @@ window.handleInstantGalleryUpload = async function (e) {
     const file = e.target.files[0];
     if (!file) return;
 
-    const caption = prompt("Enter a caption for this photo:", "New Memory");
+    const caption = prompt('Enter a caption for this photo:', 'New Memory');
     if (caption === null) return; // User cancelled
 
-    showToast("Uploading photo...");
+    showToast('Uploading photo...');
 
     try {
         const compressedFile = await compressImage(file, 1500, 1500, 0.8);
@@ -2730,16 +3001,16 @@ window.handleInstantGalleryUpload = async function (e) {
 
         if (uploadError) throw uploadError;
 
-        const { data: urlData } = supabaseClient.storage
-            .from('class-resources')
-            .getPublicUrl(fileName);
+        const { data: urlData } = supabaseClient.storage.from('class-resources').getPublicUrl(fileName);
 
-        const { error: dbError } = await supabaseClient.from('shared_files').insert([{
-            title: caption || 'Untitled',
-            subject: 'LandingGallery',
-            file_url: urlData.publicUrl,
-            file_type: file.type
-        }]);
+        const { error: dbError } = await supabaseClient.from('shared_files').insert([
+            {
+                title: caption || 'Untitled',
+                subject: 'LandingGallery',
+                file_url: urlData.publicUrl,
+                file_type: file.type,
+            },
+        ]);
 
         if (dbError) throw dbError;
 
@@ -2749,7 +3020,7 @@ window.handleInstantGalleryUpload = async function (e) {
         console.error(err);
         showToast('Upload failed: ' + err.message, 'error');
     }
-}
+};
 
 // --- HOVER PREVIEW FOR RECEIPT ---
 window.showReceiptHover = function (e, url) {
@@ -2757,7 +3028,8 @@ window.showReceiptHover = function (e, url) {
     if (!tooltip) {
         tooltip = document.createElement('div');
         tooltip.id = 'receipt-hover-preview';
-        tooltip.style.cssText = 'position: fixed; z-index: 10000; background: #fff; padding: 5px; border: 2px solid #000; box-shadow: 5px 5px 0 rgba(0,0,0,0.2); pointer-events: none; transform: rotate(-2deg); animation: fadeIn 0.2s;';
+        tooltip.style.cssText =
+            'position: fixed; z-index: 10000; background: #fff; padding: 5px; border: 2px solid #000; box-shadow: 5px 5px 0 rgba(0,0,0,0.2); pointer-events: none; transform: rotate(-2deg); animation: fadeIn 0.2s;';
         // Added position:relative container for the overlay
         tooltip.innerHTML = `
             <div style="position: relative;">
@@ -2774,16 +3046,16 @@ window.showReceiptHover = function (e, url) {
 
     // Initial position
     updateHoverPosition(e);
-}
+};
 
 window.moveReceiptHover = function (e) {
     updateHoverPosition(e);
-}
+};
 
 window.hideReceiptHover = function () {
     const tooltip = document.getElementById('receipt-hover-preview');
     if (tooltip) tooltip.remove();
-}
+};
 
 function updateHoverPosition(e) {
     const tooltip = document.getElementById('receipt-hover-preview');
@@ -2804,7 +3076,8 @@ window.openReceiptPreview = function (name, url) {
 
     const box = document.createElement('div');
     box.className = 'wimpy-modal-box';
-    box.style.cssText = 'width: 95%; max-width: 500px; padding: 0; overflow: hidden; border-radius: 5px; background: #fff; border: 3px solid #000;';
+    box.style.cssText =
+        'width: 95%; max-width: 500px; padding: 0; overflow: hidden; border-radius: 5px; background: #fff; border: 3px solid #000;';
 
     box.innerHTML = `
         <div style="background: #2d3436; color: #fff; padding: 15px; text-align: center; border-bottom: 3px solid #000; position: relative;">
@@ -2830,7 +3103,7 @@ window.openReceiptPreview = function (name, url) {
 
     overlay.appendChild(box);
     document.body.appendChild(overlay);
-}
+};
 
 // --- GLOBAL PASTE LISTENER (For Image Uploads) ---
 document.addEventListener('paste', function (e) {
@@ -2860,13 +3133,13 @@ function handleImagePaste(e, inputElement) {
         const item = items[index];
         if (item.kind === 'file' && item.type.includes('image/')) {
             const blob = item.getAsFile();
-            const file = new File([blob], "pasted_image_" + Date.now() + ".png", { type: blob.type });
+            const file = new File([blob], 'pasted_image_' + Date.now() + '.png', { type: blob.type });
 
             const dataTransfer = new DataTransfer();
             dataTransfer.items.add(file);
             inputElement.files = dataTransfer.files;
 
-            showToast("Image pasted from clipboard!");
+            showToast('Image pasted from clipboard!');
             e.preventDefault();
             return;
         }

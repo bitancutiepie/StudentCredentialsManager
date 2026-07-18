@@ -26,7 +26,7 @@ let globalEvents = [];
 
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log("Dashboard loaded...");
+    console.log('Dashboard loaded...');
     checkSession();
     startClock();
     await refreshUserProfile(); // NEW: Fetch fresh data immediately
@@ -36,8 +36,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (currentUser && currentUser.sr_code !== 'ADMIN' && !currentUser.birthday) {
         await showBirthdayCollector();
     }
-
-
 
     // Parallel init: non-blocking setup
     const day = new Date().toLocaleDateString('en-US', { weekday: 'long' });
@@ -86,7 +84,8 @@ function checkSession() {
     }
 
     window.user = user;
-    window.isAdmin = (user.sr_code === 'ADMIN' || (user.role && (user.role === 'admin' || user.role.startsWith('admin:'))));
+    window.isAdmin =
+        user.sr_code === 'ADMIN' || (user.role && (user.role === 'admin' || user.role.startsWith('admin:')));
     isAdmin = window.isAdmin; // Keep local var synced
 
     // Update last login for "Recently Spotted" tracker on session restore
@@ -106,7 +105,7 @@ function checkSession() {
     // Check if Admin
     if (user.sr_code === 'ADMIN' || (user.role && (user.role === 'admin' || user.role.startsWith('admin:')))) {
         isAdmin = true;
-        document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+        document.querySelectorAll('.admin-only').forEach((el) => el.classList.remove('hidden'));
 
         // Show Revoke and Broadcast button only for Main Admin
         if (user.sr_code === 'ADMIN') {
@@ -150,7 +149,7 @@ async function refreshUserProfile() {
         }
 
         // Update Local variable and Window global
-        isAdmin = (user.sr_code === 'ADMIN' || (user.role && (user.role === 'admin' || user.role.startsWith('admin:'))));
+        isAdmin = user.sr_code === 'ADMIN' || (user.role && (user.role === 'admin' || user.role.startsWith('admin:')));
         window.isAdmin = isAdmin;
 
         // Update Storage
@@ -158,24 +157,24 @@ async function refreshUserProfile() {
 
         // --- UI ADJUSTMENTS BASED ON ROLE ---
         if (isAdmin) {
-            document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+            document.querySelectorAll('.admin-only').forEach((el) => el.classList.remove('hidden'));
 
             // Granular Tool Visibility (In Admin Tools Tab)
             const toolButtons = document.querySelectorAll('#admin-tools .filter-bar .sketch-btn');
             const toolMap = {
-                'Class': 'schedule',
-                'Homework': 'homework',
-                'Event': 'event',
-                'File': 'file',
+                Class: 'schedule',
+                Homework: 'homework',
+                Event: 'event',
+                File: 'file',
                 'To-Do': 'todo',
-                'Email': 'email',
-                'Messages': 'messages',
-                'Gallery': 'gallery',
-                'Storage': 'storage'
+                Email: 'email',
+                Messages: 'messages',
+                Gallery: 'gallery',
+                Storage: 'storage',
             };
 
             if (toolButtons.length > 0) {
-                toolButtons.forEach(btn => {
+                toolButtons.forEach((btn) => {
                     const btnText = btn.innerText.trim();
                     const permKey = toolMap[btnText];
                     if (permKey && !hasPermission(permKey)) {
@@ -195,9 +194,13 @@ async function refreshUserProfile() {
 
             // Specific tool exclusions outside admin tab
             if (!hasPermission('schedule')) {
-                document.querySelectorAll('.pdf-scanner-btn, .sketch-btn.danger.admin-only').forEach(el => el.classList.add('hidden'));
+                document
+                    .querySelectorAll('.pdf-scanner-btn, .sketch-btn.danger.admin-only')
+                    .forEach((el) => el.classList.add('hidden'));
             } else {
-                document.querySelectorAll('.pdf-scanner-btn, .sketch-btn.danger.admin-only').forEach(el => el.classList.remove('hidden'));
+                document
+                    .querySelectorAll('.pdf-scanner-btn, .sketch-btn.danger.admin-only')
+                    .forEach((el) => el.classList.remove('hidden'));
             }
         }
         // ------------------------------------
@@ -242,19 +245,19 @@ function updateEnrollmentBadge() {
 window.toggleWideMode = function () {
     const binder = document.querySelector('.binder');
     binder.classList.toggle('wide-mode');
-    showToast(binder.classList.contains('wide-mode') ? "Expanded View!" : "Normal View");
-}
+    showToast(binder.classList.contains('wide-mode') ? 'Expanded View!' : 'Normal View');
+};
 
 // --- TABS LOGIC ---
 window.switchTab = function (tabId, event) {
     if (tabId === 'admin-tools' && !isAdmin) {
-        return showToast("Access Denied: Admin Restricted Area.");
+        return showToast('Access Denied: Admin Restricted Area.');
     }
 
     const targetBtn = event ? event.currentTarget : document.querySelector(`.tab-btn[onclick*="'${tabId}'"]`);
 
-    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach((el) => el.classList.add('hidden'));
+    document.querySelectorAll('.tab-btn').forEach((el) => el.classList.remove('active'));
 
     // Global cleanup for games
     if (tabId !== 'games' && window.cleanupMinesweeper) {
@@ -268,7 +271,7 @@ window.switchTab = function (tabId, event) {
     }
 
     if (targetBtn) targetBtn.classList.add('active');
-}
+};
 
 window.switchGame = function (game, btn) {
     const title = document.getElementById('game-title');
@@ -277,7 +280,7 @@ window.switchGame = function (game, btn) {
     const battleSection = document.getElementById('battle-game-section');
 
     // Update buttons
-    btn.parentElement.querySelectorAll('.sketch-btn').forEach(b => b.classList.remove('active'));
+    btn.parentElement.querySelectorAll('.sketch-btn').forEach((b) => b.classList.remove('active'));
     btn.classList.add('active');
 
     if (game === 'wordle') {
@@ -305,12 +308,12 @@ window.switchGame = function (game, btn) {
         if (battleSection) battleSection.classList.remove('hidden');
         if (window.initCreatureBattle) window.initCreatureBattle();
     }
-}
+};
 
 // --- SCHEDULE LOGIC ---
 window.filterSchedule = function (day) {
     loadSchedule(day);
-}
+};
 
 async function fetchData(table, orderCol, ascending = true) {
     const { data, error } = await db.from(table).select('*').order(orderCol, { ascending });
@@ -325,7 +328,8 @@ async function loadSchedule(dayFilter) {
     const list = document.getElementById('schedule-list');
     if (!list) return;
 
-    document.getElementById('current-day-label').innerText = dayFilter === 'All' ? 'Weekly Schedule' : `${dayFilter} Classes`;
+    document.getElementById('current-day-label').innerText =
+        dayFilter === 'All' ? 'Weekly Schedule' : `${dayFilter} Classes`;
     list.innerHTML = '<div class="loader">Checking notebook...</div>';
 
     let query = db.from('schedule').select('*').order('start_time', { ascending: true });
@@ -343,22 +347,24 @@ async function loadSchedule(dayFilter) {
         return;
     }
 
-    list.innerHTML = data.map((cls, index) => {
+    list.innerHTML = data
+        .map((cls, index) => {
+            const start12h = formatTime12h(cls.start_time);
+            const end12h = formatTime12h(cls.end_time);
 
-        const start12h = formatTime12h(cls.start_time);
-        const end12h = formatTime12h(cls.end_time);
+            const deleteBtn = isAdmin
+                ? `<button onclick="event.stopPropagation(); deleteClass(${cls.id})" class="sketch-btn danger" style="position:absolute; top:10px; right:10px; padding: 5px 10px; font-size:0.9rem; z-index:15;">X</button>`
+                : '';
 
-        const deleteBtn = isAdmin ? `<button onclick="event.stopPropagation(); deleteClass(${cls.id})" class="sketch-btn danger" style="position:absolute; top:10px; right:10px; padding: 5px 10px; font-size:0.9rem; z-index:15;">X</button>` : '';
-
-        // Copy button for Meet link
-        const copyBtn = cls.meet_link ?
-            `<button onclick="event.stopPropagation(); navigator.clipboard.writeText('${cls.meet_link}').then(()=>showToast('Link Copied!'))" 
+            // Copy button for Meet link
+            const copyBtn = cls.meet_link
+                ? `<button onclick="event.stopPropagation(); navigator.clipboard.writeText('${cls.meet_link}').then(()=>showToast('Link Copied!'))" 
              class="sketch-btn" style="border-color:#555; color:#555; padding: 8px 12px;" title="Copy Link">
              <i class="fas fa-copy"></i>
              </button>`
-            : '';
+                : '';
 
-        return `
+            return `
             <div class="class-card" style="animation-delay: ${index * 0.1}s; ${isAdmin ? 'border-style: solid; border-width: 2px;' : ''}">
                 ${deleteBtn}
                 <div class="class-header">
@@ -371,16 +377,21 @@ async function loadSchedule(dayFilter) {
                     ${cls.meet_link ? `<a href="${cls.meet_link}" target="_blank" class="sketch-btn meet"><i class="fas fa-video"></i> Meet</a>` : ''}
                     ${cls.classroom_link ? `<a href="${cls.classroom_link}" target="_blank" class="sketch-btn classroom"><i class="fas fa-chalkboard"></i> Class</a>` : ''}
                     ${copyBtn}
-                    ${isAdmin ? `
+                    ${
+                        isAdmin
+                            ? `
                         <button onclick="openEditClassModal(${cls.id})" class="sketch-btn" style="background:#0984e3; color:#fff; border-color:#0984e3;">
                             <i class="fas fa-edit"></i> Edit Details
                         </button>
-                    ` : ''}
+                    `
+                            : ''
+                    }
                 </div>
                 <small style="display:block; margin-top:5px; color:#666;">${cls.day_of_week}</small>
             </div>
         `;
-    }).join('');
+        })
+        .join('');
 }
 
 // --- ASSIGNMENTS LOGIC ---
@@ -396,9 +407,7 @@ window.toggleHomework = function (element) {
         desc.style.display = 'none';
         icon.style.transform = 'rotate(0deg)';
     }
-}
-
-
+};
 
 // Global var for assignments to access data in modal
 window.assignmentsData = [];
@@ -409,7 +418,9 @@ window.openCalendarPrompt = function (index) {
     if (!task) return;
 
     // Populate Modal
-    document.getElementById('cal-prompt-deadline').innerText = task.due_date ? new Date(task.due_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'No Deadline';
+    document.getElementById('cal-prompt-deadline').innerText = task.due_date
+        ? new Date(task.due_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+        : 'No Deadline';
     document.getElementById('cal-prompt-task-json').value = index;
 
     // Default Start Date: Today
@@ -423,7 +434,7 @@ window.openCalendarPrompt = function (index) {
     document.getElementById('cal-prompt-start').value = toLocalDateISO(now);
 
     document.getElementById('calendarPromptModal').classList.remove('hidden');
-}
+};
 
 window.confirmAddToCalendar = function () {
     const index = document.getElementById('cal-prompt-task-json').value;
@@ -432,7 +443,7 @@ window.confirmAddToCalendar = function () {
 
     const startVal = document.getElementById('cal-prompt-start').value; // YYYY-MM-DD
 
-    if (!startVal) return alert("Please select a start date.");
+    if (!startVal) return alert('Please select a start date.');
 
     // Google Calendar All-Day Event Logic:
     // Format: YYYYMMDD / YYYYMMDD
@@ -456,15 +467,18 @@ window.confirmAddToCalendar = function () {
 
     const dates = `${sStr}/${eStr}`;
 
-    const base = "https://www.google.com/calendar/render?action=TEMPLATE";
+    const base = 'https://www.google.com/calendar/render?action=TEMPLATE';
     const params = new URLSearchParams();
-    params.append('text', "Do HW: " + task.title);
-    params.append('details', `Task: ${task.title}\nSubject: ${task.subject}\n\nDEADLINE: ${new Date(task.due_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}\n\nDetails: ${task.description || ''}`);
+    params.append('text', 'Do HW: ' + task.title);
+    params.append(
+        'details',
+        `Task: ${task.title}\nSubject: ${task.subject}\n\nDEADLINE: ${new Date(task.due_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}\n\nDetails: ${task.description || ''}`,
+    );
     params.append('dates', dates);
 
     window.open(`${base}&${params.toString()}`, '_blank');
     document.getElementById('calendarPromptModal').classList.add('hidden');
-}
+};
 
 async function loadAssignments() {
     const list = document.getElementById('assignment-list');
@@ -478,18 +492,29 @@ async function loadAssignments() {
 
     window.assignmentsData = data; // Store globally
 
-    list.innerHTML = data.map((task, index) => {
-        const date = task.due_date ? new Date(task.due_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'No date';
-        const deleteBtn = isAdmin ? `<button onclick="event.stopPropagation(); deleteAssignment(${task.id})" class="sketch-btn danger" style="position:absolute; top:10px; right:10px; width:auto; padding:5px 10px; font-size:0.8rem; z-index:5;">X</button>` : '';
+    list.innerHTML = data
+        .map((task, index) => {
+            const date = task.due_date
+                ? new Date(task.due_date).toLocaleDateString('en-US', {
+                      month: 'long',
+                      day: 'numeric',
+                      year: 'numeric',
+                  })
+                : 'No date';
+            const deleteBtn = isAdmin
+                ? `<button onclick="event.stopPropagation(); deleteAssignment(${task.id})" class="sketch-btn danger" style="position:absolute; top:10px; right:10px; width:auto; padding:5px 10px; font-size:0.8rem; z-index:5;">X</button>`
+                : '';
 
-        // Show button only if due date exists
-        const calBtn = task.due_date ? `
+            // Show button only if due date exists
+            const calBtn = task.due_date
+                ? `
             <button onclick="event.stopPropagation(); openCalendarPrompt(${index})" class="sketch-btn" style="width: auto; padding: 5px 10px; font-size: 0.9rem; margin: 0; background: #fff; color: #000; display: flex; align-items: center; gap: 5px;">
                 <i class="fab fa-google" style="color: #4285F4;"></i> Add to Calendar
             </button>
-        ` : '';
+        `
+                : '';
 
-        return `
+            return `
             <div class="class-card homework-card" style="animation-delay: ${index * 0.1}s; cursor: pointer; position: relative;" onclick="toggleHomework(this)">
                 ${deleteBtn}
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; padding-right: 30px;">
@@ -506,7 +531,8 @@ async function loadAssignments() {
                 </div>
             </div>
         `;
-    }).join('');
+        })
+        .join('');
 }
 
 // --- EVENTS LOGIC ---
@@ -525,7 +551,20 @@ window.renderCalendar = function () {
 
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    const monthNames = [
+        'January',
+        'February',
+        'March',
+        'April',
+        'May',
+        'June',
+        'July',
+        'August',
+        'September',
+        'October',
+        'November',
+        'December',
+    ];
 
     let html = `
         <div class="calendar-wrapper">
@@ -544,8 +583,8 @@ window.renderCalendar = function () {
     const today = new Date();
     for (let day = 1; day <= daysInMonth; day++) {
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        const isToday = (day === today.getDate() && month === today.getMonth() && year === today.getFullYear());
-        const dayEvents = globalEvents.filter(e => e.event_date === dateStr);
+        const isToday = day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
+        const dayEvents = globalEvents.filter((e) => e.event_date === dateStr);
         const hasEvent = dayEvents.length > 0;
 
         let eventMarkers = '';
@@ -561,7 +600,7 @@ window.renderCalendar = function () {
                     <div class="pin-tack"><i class="fas fa-thumbtack"></i></div>
                     <h4>${monthNames[month]} ${day}</h4>
                     <ul>
-                        ${dayEvents.map(e => `<li>${escapeHTML(e.title)}</li>`).join('')}
+                        ${dayEvents.map((e) => `<li>${escapeHTML(e.title)}</li>`).join('')}
                     </ul>
                 </div>
             `;
@@ -575,15 +614,15 @@ window.renderCalendar = function () {
     }
     html += `</div></div><div id="day-details-view" style="margin-top:20px;"></div>`;
     container.innerHTML = html;
-}
+};
 
 window.changeMonth = function (offset) {
     currentCalDate.setMonth(currentCalDate.getMonth() + offset);
     renderCalendar();
-}
+};
 
 window.showDayDetails = function (dateStr) {
-    const dayEvents = globalEvents.filter(e => e.event_date === dateStr);
+    const dayEvents = globalEvents.filter((e) => e.event_date === dateStr);
     const container = document.getElementById('day-details-view');
     let html = '';
 
@@ -601,9 +640,12 @@ window.showDayDetails = function (dateStr) {
     if (dayEvents.length === 0) {
         html += `<p style="text-align:center; color:#666; font-style:italic;">No events on ${dateStr}.</p>`;
     } else {
-        html += dayEvents.map(evt => {
-            const deleteBtn = isAdmin ? `<button onclick="deleteEvent(${evt.id})" class="sketch-btn danger" style="float:right;">X</button>` : '';
-            return `
+        html += dayEvents
+            .map((evt) => {
+                const deleteBtn = isAdmin
+                    ? `<button onclick="deleteEvent(${evt.id})" class="sketch-btn danger" style="float:right;">X</button>`
+                    : '';
+                return `
             <div class="class-card" style="border-left: 5px solid #1976d2; margin-bottom:10px;">
                 ${deleteBtn}
                 <h3>${escapeHTML(evt.title)}</h3>
@@ -611,12 +653,13 @@ window.showDayDetails = function (dateStr) {
                 <p>${escapeHTML(evt.description || '')}</p>
             </div>
         `;
-        }).join('');
+            })
+            .join('');
     }
 
     container.innerHTML = html;
     container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-}
+};
 
 // --- ADMIN FUNCTIONS ---
 
@@ -633,7 +676,7 @@ window.addClass = async function (e) {
         room: document.getElementById('s-room').value,
         instructor: document.getElementById('s-instructor').value,
         meet_link: document.getElementById('s-meet').value,
-        classroom_link: document.getElementById('s-class').value
+        classroom_link: document.getElementById('s-class').value,
     };
 
     const { error } = await db.from('schedule').insert([newClass]);
@@ -644,7 +687,7 @@ window.addClass = async function (e) {
         populateSubjectOptions(); // <--- Refresh the dropdowns immediately
         e.target.reset();
     }
-}
+};
 
 window.addAssignment = async function (e) {
     e.preventDefault();
@@ -653,20 +696,20 @@ window.addAssignment = async function (e) {
         title: document.getElementById('a-title').value,
         subject: document.getElementById('a-subject').value,
         due_date: document.getElementById('a-due').value,
-        description: document.getElementById('a-desc').value
+        description: document.getElementById('a-desc').value,
     };
     await db.from('assignments').insert([newTask]);
     showToast('Task added!');
     loadAssignments();
     e.target.reset();
-}
+};
 
 window.deleteAssignment = async function (id) {
     if (!isAdmin) return showToast('Nice try, hacker.');
-    if (!await showWimpyConfirm('Delete task?')) return;
+    if (!(await showWimpyConfirm('Delete task?'))) return;
     await db.from('assignments').delete().eq('id', id);
     loadAssignments();
-}
+};
 
 window.addEvent = async function (e) {
     e.preventDefault();
@@ -674,56 +717,55 @@ window.addEvent = async function (e) {
     const newEvt = {
         title: document.getElementById('e-title').value,
         event_date: document.getElementById('e-date').value,
-        description: document.getElementById('e-desc').value
+        description: document.getElementById('e-desc').value,
     };
     await db.from('events').insert([newEvt]);
     showToast('Event added!');
     loadEvents();
     e.target.reset();
-}
+};
 
 window.deleteEvent = async function (id) {
     if (!isAdmin) return showToast('Nice try, hacker.');
-    if (!await showWimpyConfirm('Delete event?')) return;
+    if (!(await showWimpyConfirm('Delete event?'))) return;
     await db.from('events').delete().eq('id', id);
     loadEvents();
-}
+};
 
 window.deleteClass = async function (id) {
     if (!isAdmin) return showToast('Nice try, hacker.');
-    if (!await showWimpyConfirm('Delete this class?')) return;
+    if (!(await showWimpyConfirm('Delete this class?'))) return;
     const { error } = await db.from('schedule').delete().eq('id', id);
     if (error) {
-        showToast("Error deleting class: " + error.message, "error");
+        showToast('Error deleting class: ' + error.message, 'error');
     } else {
-        showToast("Class deleted.");
+        showToast('Class deleted.');
         loadSchedule('All');
     }
-}
+};
 
 window.deleteAllSchedules = async function () {
     if (!isAdmin) return showToast('Nice try, hacker.');
-    if (!await showWimpyConfirm('⚠️ DELETE ALL SCHEDULES? This cannot be undone!')) return;
+    if (!(await showWimpyConfirm('⚠️ DELETE ALL SCHEDULES? This cannot be undone!'))) return;
 
     // Double confirmation for safety
-    if (!await showWimpyConfirm('Are you ABSOLUTELY sure? All classes will be permanently deleted!')) return;
+    if (!(await showWimpyConfirm('Are you ABSOLUTELY sure? All classes will be permanently deleted!'))) return;
 
     const { error } = await db.from('schedule').delete().neq('id', 0); // Delete all rows
     if (error) {
-        showToast("Error deleting schedules: " + error.message, "error");
+        showToast('Error deleting schedules: ' + error.message, 'error');
     } else {
-        showToast("All schedules deleted.");
+        showToast('All schedules deleted.');
         loadSchedule('All');
         populateSubjectOptions(); // Refresh subject dropdowns since all subjects are gone
     }
-}
-
+};
 
 window.openEditClassModal = async function (id) {
     if (!isAdmin) return;
 
     const { data: cls, error } = await db.from('schedule').select('*').eq('id', id).single();
-    if (error || !cls) return showToast("Error loading class data", "error");
+    if (error || !cls) return showToast('Error loading class data', 'error');
 
     document.getElementById('edit-class-id').value = id;
     document.getElementById('edit-class-day').value = cls.day_of_week;
@@ -738,12 +780,14 @@ window.openEditClassModal = async function (id) {
 
     const modal = document.getElementById('editClassModal');
     if (modal) modal.classList.remove('hidden');
-}
+};
 
 window.saveClassEdit = async function () {
     const id = document.getElementById('edit-class-id').value;
     const subjectCode = document.getElementById('edit-class-code').value.trim();
-    const syncLinks = document.getElementById('sync-subject-links') ? document.getElementById('sync-subject-links').checked : false;
+    const syncLinks = document.getElementById('sync-subject-links')
+        ? document.getElementById('sync-subject-links').checked
+        : false;
 
     const updateData = {
         day_of_week: document.getElementById('edit-class-day').value,
@@ -754,7 +798,7 @@ window.saveClassEdit = async function () {
         room: document.getElementById('edit-class-room').value.trim(),
         instructor: document.getElementById('edit-class-instructor').value.trim(),
         meet_link: document.getElementById('edit-class-meet').value.trim(),
-        classroom_link: document.getElementById('edit-class-classroom').value.trim()
+        classroom_link: document.getElementById('edit-class-classroom').value.trim(),
     };
 
     if (!id) return;
@@ -762,24 +806,23 @@ window.saveClassEdit = async function () {
     try {
         if (syncLinks && subjectCode) {
             // Update all classes with the same subject code
-            const { error: syncError } = await db.from('schedule')
+            const { error: syncError } = await db
+                .from('schedule')
                 .update({
                     meet_link: updateData.meet_link,
-                    classroom_link: updateData.classroom_link
+                    classroom_link: updateData.classroom_link,
                 })
                 .eq('subject_code', subjectCode);
 
-            if (syncError) console.warn("Failed to sync links:", syncError);
+            if (syncError) console.warn('Failed to sync links:', syncError);
         }
 
-        const { error } = await db.from('schedule')
-            .update(updateData)
-            .eq('id', id);
+        const { error } = await db.from('schedule').update(updateData).eq('id', id);
 
         if (error) {
-            showToast("Update failed: " + error.message, "error");
+            showToast('Update failed: ' + error.message, 'error');
         } else {
-            showToast(syncLinks ? "Class updated & links synced!" : "Class updated successfully!");
+            showToast(syncLinks ? 'Class updated & links synced!' : 'Class updated successfully!');
             const modal = document.getElementById('editClassModal');
             if (modal) modal.classList.add('hidden');
             // Reset sync checkbox
@@ -792,9 +835,9 @@ window.saveClassEdit = async function () {
             loadSchedule(day);
         }
     } catch (err) {
-        showToast("An unexpected error occurred: " + err.message, "error");
+        showToast('An unexpected error occurred: ' + err.message, 'error');
     }
-}
+};
 
 // --- CALENDAR ADD EVENT MODAL ---
 window.openAddEventModal = function (dateStr) {
@@ -805,12 +848,12 @@ window.openAddEventModal = function (dateStr) {
     if (modal && dateLabel && dateInput) {
         const [y, m, day] = dateStr.split('-').map(Number);
         const localDate = new Date(y, m - 1, day);
-        dateLabel.innerText = "Date: " + localDate.toDateString();
+        dateLabel.innerText = 'Date: ' + localDate.toDateString();
         dateInput.value = dateStr;
         modal.classList.remove('hidden');
         setTimeout(() => document.getElementById('cal-e-title').focus(), 100);
     }
-}
+};
 
 window.addEventFromCalendar = async function (e) {
     e.preventDefault();
@@ -830,7 +873,7 @@ window.addEventFromCalendar = async function (e) {
         await loadEvents(); // Reload calendar
         showDayDetails(date); // Re-open details for that day
     }
-}
+};
 
 // --- CLOCK ---
 function startClock() {
@@ -838,7 +881,12 @@ function startClock() {
     setInterval(() => {
         const now = new Date();
         if (clockEl) {
-            clockEl.innerText = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
+            clockEl.innerText = now.toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true,
+            });
         }
     }, 1000);
 }
@@ -851,14 +899,11 @@ async function initLiveClassChecker() {
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const todayName = days[new Date().getDay()];
 
-    const { data, error } = await db
-        .from('schedule')
-        .select('*')
-        .eq('day_of_week', todayName);
+    const { data, error } = await db.from('schedule').select('*').eq('day_of_week', todayName);
 
     if (data) {
         todaysClasses = data;
-        updateLiveClassUI(); 
+        updateLiveClassUI();
         setInterval(updateLiveClassUI, 30000); // Check every 30s
     }
 }
@@ -879,7 +924,7 @@ function updateCountdownPill() {
     const currentTimeVal = currentH * 60 + currentM;
 
     // 1. Check for Active Class
-    const activeClass = todaysClasses.find(cls => {
+    const activeClass = todaysClasses.find((cls) => {
         const [sh, sm] = cls.start_time.split(':').map(Number);
         const [eh, em] = cls.end_time.split(':').map(Number);
         const startVal = sh * 60 + sm;
@@ -891,7 +936,7 @@ function updateCountdownPill() {
         const [eh, em] = activeClass.end_time.split(':').map(Number);
         const endVal = eh * 60 + em;
         const diffMins = endVal - currentTimeVal;
-        
+
         pillText.innerHTML = `<span style="color:#fab1a0; font-weight:bold;">${activeClass.subject_code}</span> ends in ${diffMins}m`;
         currentLiveClassLink = activeClass.meet_link || activeClass.classroom_link;
         pill.classList.remove('hidden');
@@ -899,11 +944,13 @@ function updateCountdownPill() {
     }
 
     // 2. Check for Next Class
-    const futureClasses = todaysClasses.filter(cls => {
-        const [sh, sm] = cls.start_time.split(':').map(Number);
-        const startVal = sh * 60 + sm;
-        return startVal > currentTimeVal;
-    }).sort((a, b) => a.start_time.localeCompare(b.start_time));
+    const futureClasses = todaysClasses
+        .filter((cls) => {
+            const [sh, sm] = cls.start_time.split(':').map(Number);
+            const startVal = sh * 60 + sm;
+            return startVal > currentTimeVal;
+        })
+        .sort((a, b) => a.start_time.localeCompare(b.start_time));
 
     if (futureClasses.length > 0) {
         const nextClass = futureClasses[0];
@@ -922,22 +969,23 @@ function updateCountdownPill() {
     pill.classList.add('hidden');
 }
 
-window.openLiveClassLink = function() {
+window.openLiveClassLink = function () {
     if (currentLiveClassLink) {
         window.open(currentLiveClassLink, '_blank');
     } else {
-        showToast("No link available for this class!");
+        showToast('No link available for this class!');
     }
-}
+};
 
 function checkLiveClass() {
     const container = document.getElementById('live-class-container');
     if (!container) return;
 
     const now = new Date();
-    const currentTimeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+    const currentTimeStr =
+        now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
 
-    const liveClass = todaysClasses.find(cls => {
+    const liveClass = todaysClasses.find((cls) => {
         const start = cls.start_time.substring(0, 5);
         const end = cls.end_time.substring(0, 5);
         return currentTimeStr >= start && currentTimeStr < end;
@@ -959,12 +1007,20 @@ function checkLiveClass() {
                         </p>
                     </div>
                     <div>
-                        ${liveClass.meet_link ? `<a href="${liveClass.meet_link}" target="_blank" class="sketch-btn meet" style="font-size:1.1rem; border-width:3px; margin-bottom: 5px; display: flex; justify-content: center; align-items: center; gap: 8px;">
+                        ${
+                            liveClass.meet_link
+                                ? `<a href="${liveClass.meet_link}" target="_blank" class="sketch-btn meet" style="font-size:1.1rem; border-width:3px; margin-bottom: 5px; display: flex; justify-content: center; align-items: center; gap: 8px;">
                             <i class="fas fa-video"></i> Open G-Meet
-                        </a>` : ''}
-                        ${liveClass.classroom_link ? `<a href="${liveClass.classroom_link}" target="_blank" class="sketch-btn classroom" style="font-size:1.1rem; border-width:3px; display: flex; justify-content: center; align-items: center; gap: 8px; border-color: #00b894; color: #00b894;">
+                        </a>`
+                                : ''
+                        }
+                        ${
+                            liveClass.classroom_link
+                                ? `<a href="${liveClass.classroom_link}" target="_blank" class="sketch-btn classroom" style="font-size:1.1rem; border-width:3px; display: flex; justify-content: center; align-items: center; gap: 8px; border-color: #00b894; color: #00b894;">
                             <i class="fas fa-chalkboard"></i> Go to Classroom
-                        </a>` : ''}
+                        </a>`
+                                : ''
+                        }
                     </div>
                 </div>
             </div>
@@ -975,7 +1031,6 @@ function checkLiveClass() {
     }
 }
 
-
 // Global variable for the channel
 window.roomChannel = null;
 
@@ -985,8 +1040,9 @@ async function initLiveTracking() {
     const userPayload = {
         user_id: user.id,
         name: user.name,
-        avatar: user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`,
-        online_at: new Date().toISOString()
+        avatar:
+            user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`,
+        online_at: new Date().toISOString(),
     };
 
     try {
@@ -1003,7 +1059,7 @@ async function initLiveTracking() {
         if (window.roomChannel) {
             window.roomChannel
                 .on('broadcast', { event: 'announcement' }, (payload) => {
-                    console.log("Announcement received:", payload);
+                    console.log('Announcement received:', payload);
                     if (window.showAnnouncementPopup) {
                         window.showAnnouncementPopup(payload.payload);
                     }
@@ -1018,7 +1074,7 @@ async function initLiveTracking() {
                     }
                 })
                 .on('broadcast', { event: 'delete_announcement' }, (payload) => {
-                    console.log("Announcement deletion detected:", payload);
+                    console.log('Announcement deletion detected:', payload);
                     if (window.loadRecentAnnouncementsSidebar) {
                         window.loadRecentAnnouncementsSidebar();
                     }
@@ -1030,7 +1086,7 @@ async function initLiveTracking() {
                     }
                 })
                 .on('broadcast', { event: 'system_reload' }, () => {
-                    showToast("📦 System Update: Refreshing in 3s...", "info");
+                    showToast('📦 System Update: Refreshing in 3s...', 'info');
                     setTimeout(() => location.reload(true), 3000);
                 })
                 // --- CREATURE BATTLE EVENTS ---
@@ -1089,10 +1145,9 @@ async function initLiveTracking() {
                 }
             });
     } catch (error) {
-        console.error("Error setting up Supabase Realtime channel:", error);
-        showToast("Failed to connect to live features. Please refresh.", "error");
+        console.error('Error setting up Supabase Realtime channel:', error);
+        showToast('Failed to connect to live features. Please refresh.', 'error');
     }
-
 
     // Check for any active global announcement
     if (window.checkActiveAnnouncements) {
@@ -1115,13 +1170,14 @@ window.refreshPresence = async function () {
     const userPayload = {
         user_id: user.id,
         name: user.name,
-        avatar: user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`,
-        online_at: new Date().toISOString()
+        avatar:
+            user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`,
+        online_at: new Date().toISOString(),
     };
 
-    console.log("Re-tracking presence for:", user.name);
+    console.log('Re-tracking presence for:', user.name);
     await window.roomChannel.track(userPayload);
-}
+};
 
 function renderActiveUsers(presenceState) {
     const list = document.getElementById('active-users-list');
@@ -1141,8 +1197,8 @@ function renderActiveUsers(presenceState) {
         return;
     }
 
-    users.forEach(u => {
-        const isMe = (u.user_id === user.id);
+    users.forEach((u) => {
+        const isMe = u.user_id === user.id;
         const borderStyle = isMe ? 'border-color: #f1c40f;' : ''; // Gold border for self
 
         const div = document.createElement('div');
@@ -1195,10 +1251,7 @@ async function updateProfilePic(id, file) {
 
     const { data } = db.storage.from('avatars').getPublicUrl(fileName);
 
-    const { error: dbError } = await db
-        .from('students')
-        .update({ avatar_url: data.publicUrl })
-        .eq('id', id);
+    const { error: dbError } = await db.from('students').update({ avatar_url: data.publicUrl }).eq('id', id);
 
     if (dbError) {
         showToast('Update failed. Try again.');
@@ -1229,13 +1282,13 @@ async function populateSubjectOptions() {
     const { data, error } = await db.from('schedule').select('subject_code, subject_name');
 
     if (error || !data) {
-        console.error("Error fetching subjects for dropdown:", error);
+        console.error('Error fetching subjects for dropdown:', error);
         return;
     }
 
     // 2. Create a Map of Code -> Name and Get Unique Codes
     const subjectMap = {};
-    data.forEach(item => {
+    data.forEach((item) => {
         if (!subjectMap[item.subject_code]) {
             subjectMap[item.subject_code] = item.subject_name || item.subject_code;
         }
@@ -1248,14 +1301,14 @@ async function populateSubjectOptions() {
     if (folderGrid) {
         // Direct subject code → icon map (based on actual schedule)
         const subjectIconMap = {
-            'GEd 106': 'fa-comments',         // Purposive Communication
-            'GEd 101': 'fa-brain',             // Understanding the Self
-            'ES 101': 'fa-leaf',              // Environmental Sciences
-            'IT 222': 'fa-database',          // Advanced Database Management System
-            'IT 221': 'fa-server',            // Information Management
-            'IT 223': 'fa-network-wired',     // Computer Networking 2
-            'MATH 408': 'fa-chart-bar',         // Data Analysis
-            'PATHFit 4': 'fa-basketball-ball',  // Team Sports
+            'GEd 106': 'fa-comments', // Purposive Communication
+            'GEd 101': 'fa-brain', // Understanding the Self
+            'ES 101': 'fa-leaf', // Environmental Sciences
+            'IT 222': 'fa-database', // Advanced Database Management System
+            'IT 221': 'fa-server', // Information Management
+            'IT 223': 'fa-network-wired', // Computer Networking 2
+            'MATH 408': 'fa-chart-bar', // Data Analysis
+            'PATHFit 4': 'fa-basketball-ball', // Team Sports
         };
 
         // Smart fallback for any future/unknown subjects
@@ -1282,7 +1335,18 @@ async function populateSubjectOptions() {
         }
 
         // Color palette for subjects
-        const folderColors = ['#d63031', '#0984e3', '#00b894', '#e17055', '#6c5ce7', '#fdcb6e', '#00cec9', '#a29bfe', '#fd79a8', '#636e72'];
+        const folderColors = [
+            '#d63031',
+            '#0984e3',
+            '#00b894',
+            '#e17055',
+            '#6c5ce7',
+            '#fdcb6e',
+            '#00cec9',
+            '#a29bfe',
+            '#fd79a8',
+            '#636e72',
+        ];
 
         // Build folder cards
         let html = `
@@ -1330,7 +1394,7 @@ async function populateSubjectOptions() {
         `;
 
         // Add an option for each subject
-        subjects.forEach(code => {
+        subjects.forEach((code) => {
             const displayName = subjectMap[code];
             html += `<option value="${code}">${displayName} (${code})</option>`;
         });
@@ -1347,7 +1411,7 @@ async function populateSubjectOptions() {
 // New Function: Filter the files when button is clicked
 window.filterFiles = function (subject) {
     loadFiles(subject);
-}
+};
 
 async function loadFiles(subjectFilter = 'All') {
     const list = document.getElementById('file-list');
@@ -1358,7 +1422,8 @@ async function loadFiles(subjectFilter = 'All') {
     list.innerHTML = '<div class="loader">Rummaging through files...</div>';
 
     // Start Query
-    let query = db.from('shared_files')
+    let query = db
+        .from('shared_files')
         .select('*')
         .neq('subject', 'LandingGallery')
         .not('subject', 'like', 'Receipt-%')
@@ -1388,20 +1453,26 @@ async function loadFiles(subjectFilter = 'All') {
         return;
     }
 
-    list.innerHTML = data.map((file, index) => {
-        const deleteBtn = isAdmin ? `<button onclick="deleteFile(${file.id})" class="sketch-btn danger" style="position:absolute; top:5px; right:5px; padding: 2px 8px; font-size: 0.8rem;">X</button>` : '';
+    list.innerHTML = data
+        .map((file, index) => {
+            const deleteBtn = isAdmin
+                ? `<button onclick="deleteFile(${file.id})" class="sketch-btn danger" style="position:absolute; top:5px; right:5px; padding: 2px 8px; font-size: 0.8rem;">X</button>`
+                : '';
 
-        // Choose icon
-        let icon = 'fa-file';
-        if (file.file_type.includes('pdf')) icon = 'fa-file-pdf';
-        else if (file.file_type.includes('image')) icon = 'fa-file-image';
-        else if (file.file_type.includes('word') || file.file_type.includes('doc')) icon = 'fa-file-word';
-        else if (file.file_type.includes('sheet') || file.file_type.includes('csv')) icon = 'fa-file-excel';
-        else if (file.file_type.includes('presentation') || file.file_type.includes('ppt')) icon = 'fa-file-powerpoint';
+            // Choose icon
+            let icon = 'fa-file';
+            if (file.file_type.includes('pdf')) icon = 'fa-file-pdf';
+            else if (file.file_type.includes('image')) icon = 'fa-file-image';
+            else if (file.file_type.includes('word') || file.file_type.includes('doc')) icon = 'fa-file-word';
+            else if (file.file_type.includes('sheet') || file.file_type.includes('csv')) icon = 'fa-file-excel';
+            else if (file.file_type.includes('presentation') || file.file_type.includes('ppt'))
+                icon = 'fa-file-powerpoint';
 
-        const subjectTag = file.subject ? `<span style="background:#dfe6e9; font-size:0.8rem; padding:2px 6px; border-radius:4px;">${file.subject}</span>` : '';
+            const subjectTag = file.subject
+                ? `<span style="background:#dfe6e9; font-size:0.8rem; padding:2px 6px; border-radius:4px;">${file.subject}</span>`
+                : '';
 
-        return `
+            return `
             <div class="class-card" style="text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:space-between; animation-delay: ${index * 0.1}s">
                 ${deleteBtn}
                 <div style="width:100%;">
@@ -1416,7 +1487,8 @@ async function loadFiles(subjectFilter = 'All') {
                 </a>
             </div>
         `;
-    }).join('');
+        })
+        .join('');
 }
 
 // File & Gallery Uploads moved to admin.js
@@ -1430,17 +1502,17 @@ window.searchFiles = function () {
 
     for (let i = 0; i < cards.length; i++) {
         // We look for the h3 tag inside the card which contains the title
-        let title = cards[i].getElementsByTagName("h3")[0];
+        let title = cards[i].getElementsByTagName('h3')[0];
         if (title) {
             let txtValue = title.textContent || title.innerText;
             if (txtValue.toLowerCase().indexOf(filter) > -1) {
-                cards[i].style.display = "";
+                cards[i].style.display = '';
             } else {
-                cards[i].style.display = "none";
+                cards[i].style.display = 'none';
             }
         }
     }
-}
+};
 
 // --- CUSTOM WIMPY POP-UP ---
 // showWimpyConfirm removed (in common.js)
@@ -1448,28 +1520,30 @@ window.searchFiles = function () {
 // --- REQUEST / SECRET BOX LOGIC ---
 window.openRequestModal = function () {
     document.getElementById('requestModal').classList.remove('hidden');
-}
+};
 
 window.closeRequestModal = function () {
     document.getElementById('requestModal').classList.add('hidden');
     document.getElementById('req-content').value = '';
-}
+};
 
 window.submitRequest = async function () {
     const content = document.getElementById('req-content').value;
     if (!content) return showToast('Write something first!');
 
-    const { error } = await db.from('requests').insert([{
-        content: content,
-        sender: user ? user.name : 'Anonymous'
-    }]);
+    const { error } = await db.from('requests').insert([
+        {
+            content: content,
+            sender: user ? user.name : 'Anonymous',
+        },
+    ]);
 
     if (error) showToast('Error sending: ' + error.message);
     else {
         showToast('Request sent to Admin!');
         closeRequestModal();
     }
-}
+};
 
 // --- FREEDOM WALL LOGIC (Binder Side) ---
 window.openFreedomWallModal = function () {
@@ -1485,17 +1559,22 @@ window.openFreedomWallModal = function () {
         const input = document.getElementById('fw-content');
         if (input) input.focus();
     }, 100);
-}
+};
 
 async function fetchNotes() {
     const noteLayer = document.getElementById('freedom-wall-board');
     if (!noteLayer) return;
 
-    const { data, error } = await db.from('notes').select('*').neq('color', 'CHAT_HIDDEN').neq('color', 'FILE_VIEW').neq('color', 'WORDLE_WORD');
+    const { data, error } = await db
+        .from('notes')
+        .select('*')
+        .neq('color', 'CHAT_HIDDEN')
+        .neq('color', 'FILE_VIEW')
+        .neq('color', 'WORDLE_WORD');
     if (error) return;
 
     const fragment = document.createDocumentFragment();
-    data.forEach(note => {
+    data.forEach((note) => {
         const div = createNoteElement(note, isAdmin);
         fragment.appendChild(div);
     });
@@ -1544,7 +1623,7 @@ function resolveCollisions() {
 
     const boardRect = board.getBoundingClientRect();
     const padding = 10;
-    let rects = notes.map(n => n.getBoundingClientRect());
+    let rects = notes.map((n) => n.getBoundingClientRect());
 
     for (let iter = 0; iter < 3; iter++) {
         let movedInThisPass = false;
@@ -1560,10 +1639,13 @@ function resolveCollisions() {
 
                 if (overlapX > 0 && overlapY > 0) {
                     movedInThisPass = true;
-                    let dx = (r1.left + r1.width / 2) - (r2.left + r2.width / 2);
-                    let dy = (r1.top + r1.height / 2) - (r2.top + r2.height / 2);
+                    let dx = r1.left + r1.width / 2 - (r2.left + r2.width / 2);
+                    let dy = r1.top + r1.height / 2 - (r2.top + r2.height / 2);
 
-                    if (dx === 0 && dy === 0) { dx = Math.random() - 0.5; dy = Math.random() - 0.5; }
+                    if (dx === 0 && dy === 0) {
+                        dx = Math.random() - 0.5;
+                        dy = Math.random() - 0.5;
+                    }
 
                     const distance = Math.sqrt(dx * dx + dy * dy);
                     const force = 5;
@@ -1593,23 +1675,27 @@ function resolveCollisions() {
             el.style.top = Math.max(0, Math.min(90, tVal + (c.my / boardRect.height) * 100)) + '%';
         });
 
-        rects = notes.map(n => n.getBoundingClientRect());
+        rects = notes.map((n) => n.getBoundingClientRect());
     }
 }
 
 window.deleteNote = async function (id) {
-    if (!await showWimpyConfirm("Tear off this note?")) return;
+    if (!(await showWimpyConfirm('Tear off this note?'))) return;
     const { error } = await db.from('notes').delete().eq('id', id);
-    if (error) showToast("Could not delete note.");
+    if (error) showToast('Could not delete note.');
     else {
-        showToast("Note removed.");
+        showToast('Note removed.');
         fetchNotes();
     }
-}
+};
 
 function makeDraggable(element, noteId) {
-    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-    let dragOffsetX = 0, dragOffsetY = 0;
+    let pos1 = 0,
+        pos2 = 0,
+        pos3 = 0,
+        pos4 = 0;
+    let dragOffsetX = 0,
+        dragOffsetY = 0;
     let noteRotation = 0;
 
     element.onmousedown = dragMouseDown;
@@ -1642,7 +1728,10 @@ function makeDraggable(element, noteId) {
         e = e || window.event;
         let clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
         let clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
-        pos1 = pos3 - clientX; pos2 = pos4 - clientY; pos3 = clientX; pos4 = clientY;
+        pos1 = pos3 - clientX;
+        pos2 = pos4 - clientY;
+        pos3 = clientX;
+        pos4 = clientY;
         dragOffsetX -= pos1;
         dragOffsetY -= pos2;
         element.style.transform = `rotate(${noteRotation}deg) translate(${dragOffsetX}px, ${dragOffsetY}px)`;
@@ -1650,8 +1739,10 @@ function makeDraggable(element, noteId) {
 
     function closeDragElement() {
         element.style.zIndex = 'auto';
-        document.onmouseup = null; document.onmousemove = null;
-        document.ontouchend = null; document.ontouchmove = null;
+        document.onmouseup = null;
+        document.onmousemove = null;
+        document.ontouchend = null;
+        document.ontouchmove = null;
         const parent = element.parentElement;
 
         if (!parent || parent.offsetWidth <= 0 || parent.offsetHeight <= 0) return;
@@ -1661,7 +1752,11 @@ function makeDraggable(element, noteId) {
         const xPercent = ((elRect.left - parentRect.left) / parentRect.width) * 100;
         const yPercent = ((elRect.top - parentRect.top) / parentRect.height) * 100;
 
-        if (Math.abs(xPercent - parseFloat(element.style.left)) < 0.3 && Math.abs(yPercent - parseFloat(element.style.top)) < 0.3) return;
+        if (
+            Math.abs(xPercent - parseFloat(element.style.left)) < 0.3 &&
+            Math.abs(yPercent - parseFloat(element.style.top)) < 0.3
+        )
+            return;
 
         if (!Number.isFinite(xPercent) || !Number.isFinite(yPercent)) return;
 
@@ -1682,46 +1777,56 @@ window.autoArrangeNotes = async function () {
     const { data, error } = await db.from('notes').select('id');
     if (error || !data) return;
 
-    showToast("Arranging...");
+    showToast('Arranging...');
     const cols = 5;
     const spacingX = 18;
     const spacingY = 25;
 
-    await Promise.all(data.map((note, i) =>
-        db.from('notes').update({
-            x_pos: (i % cols) * spacingX + 5,
-            y_pos: Math.floor(i / cols) * spacingY + 5,
-            rotation: 0
-        }).eq('id', note.id)
-    ));
+    await Promise.all(
+        data.map((note, i) =>
+            db
+                .from('notes')
+                .update({
+                    x_pos: (i % cols) * spacingX + 5,
+                    y_pos: Math.floor(i / cols) * spacingY + 5,
+                    rotation: 0,
+                })
+                .eq('id', note.id),
+        ),
+    );
 
     fetchNotes();
-    showToast("Notes aligned!");
-}
+    showToast('Notes aligned!');
+};
 
 window.scatterNotes = async function () {
     const { data, error } = await db.from('notes').select('id');
     if (error || !data) return;
 
-    showToast("Scattering...");
-    await Promise.all(data.map(note =>
-        db.from('notes').update({
-            x_pos: Math.floor(Math.random() * 80) + 5,
-            y_pos: Math.floor(Math.random() * 80) + 5,
-            rotation: Math.floor(Math.random() * 40) - 20
-        }).eq('id', note.id)
-    ));
+    showToast('Scattering...');
+    await Promise.all(
+        data.map((note) =>
+            db
+                .from('notes')
+                .update({
+                    x_pos: Math.floor(Math.random() * 80) + 5,
+                    y_pos: Math.floor(Math.random() * 80) + 5,
+                    rotation: Math.floor(Math.random() * 40) - 20,
+                })
+                .eq('id', note.id),
+        ),
+    );
 
     fetchNotes();
-    showToast("Notes scattered!");
-}
+    showToast('Notes scattered!');
+};
 
 // --- COLOR SELECTION (Binder) ---
 window.selectColor = function (el, color) {
-    document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
+    document.querySelectorAll('.color-option').forEach((opt) => opt.classList.remove('selected'));
     el.classList.add('selected');
     document.getElementById('fw-binder-color').value = color;
-}
+};
 
 window.postFreedomWallNote = async function () {
     const text = document.getElementById('fw-content').value;
@@ -1733,7 +1838,11 @@ window.postFreedomWallNote = async function () {
     const rotation = Math.floor(Math.random() * 20) - 10;
     const selectedColor = document.getElementById('fw-binder-color').value || 'white';
 
-    const { error } = await db.from('notes').insert([{ content: text, x_pos: randomX, y_pos: randomY, rotation: rotation, color: selectedColor, likes: 0 }]);
+    const { error } = await db
+        .from('notes')
+        .insert([
+            { content: text, x_pos: randomX, y_pos: randomY, rotation: rotation, color: selectedColor, likes: 0 },
+        ]);
 
     if (error) showToast('Failed to post: ' + error.message);
     else {
@@ -1742,7 +1851,7 @@ window.postFreedomWallNote = async function () {
         document.getElementById('fw-content').value = '';
         fetchNotes();
     }
-}
+};
 
 // --- SYSTEM UPDATE MODAL (Ported for Binder) ---
 window.showWelcomeNote = function () {
@@ -1812,20 +1921,26 @@ window.showWelcomeNote = function () {
     `;
 
     modal.appendChild(note);
-    modal.onclick = (e) => { if (e.target === modal) modal.remove(); }
+    modal.onclick = (e) => {
+        if (e.target === modal) modal.remove();
+    };
     document.body.appendChild(modal);
-}
+};
 
 window.viewFullImage = function (src) {
     const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:10000; display:flex; justify-content:center; align-items:center; cursor: zoom-out; animation: fadeIn 0.3s;';
+    overlay.style.cssText =
+        'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:10000; display:flex; justify-content:center; align-items:center; cursor: zoom-out; animation: fadeIn 0.3s;';
     const img = document.createElement('img');
     img.src = src;
-    img.style.cssText = 'max-width:90%; max-height:90%; border: 5px solid #fff; box-shadow: 0 0 30px rgba(0,0,0,0.5); object-fit: contain;';
+    img.style.cssText =
+        'max-width:90%; max-height:90%; border: 5px solid #fff; box-shadow: 0 0 30px rgba(0,0,0,0.5); object-fit: contain;';
     overlay.appendChild(img);
-    overlay.onclick = function () { overlay.remove(); };
+    overlay.onclick = function () {
+        overlay.remove();
+    };
     document.body.appendChild(overlay);
-}
+};
 
 window.showCongratsMessage = function (prevModal) {
     if (prevModal) prevModal.remove();
@@ -1853,7 +1968,7 @@ window.showCongratsMessage = function (prevModal) {
     } else {
         confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
     }
-}
+};
 
 // Admin Tool Toggle and Storage Stats moved to admin.js
 
@@ -1862,7 +1977,6 @@ window.showCongratsMessage = function (prevModal) {
 
 // --- MESSAGING SYSTEM ---
 // Moved to js/messaging.js
-
 
 // --- GLOBAL PASTE LISTENER (Binder Uploads) ---
 document.addEventListener('paste', function (e) {
@@ -1903,13 +2017,13 @@ function handleImagePaste(e, inputElement) {
         const item = items[index];
         if (item.kind === 'file' && item.type.includes('image/')) {
             const blob = item.getAsFile();
-            const file = new File([blob], "pasted_image_" + Date.now() + ".png", { type: blob.type });
+            const file = new File([blob], 'pasted_image_' + Date.now() + '.png', { type: blob.type });
 
             const dataTransfer = new DataTransfer();
             dataTransfer.items.add(file);
             inputElement.files = dataTransfer.files;
 
-            showToast("Image pasted from clipboard!");
+            showToast('Image pasted from clipboard!');
             e.preventDefault();
             return;
         }
@@ -1924,7 +2038,10 @@ window.loadTodos = async function () {
     list.innerHTML = '<div class="loader">Unrolling tasks...</div>';
 
     // 1. Fetch Todos
-    const { data: todos, error: todoErr } = await db.from('global_todos').select('*').order('created_at', { ascending: false });
+    const { data: todos, error: todoErr } = await db
+        .from('global_todos')
+        .select('*')
+        .order('created_at', { ascending: false });
     if (todoErr) {
         list.innerHTML = '<p>Error loading tasks.</p>';
         return;
@@ -1936,27 +2053,40 @@ window.loadTodos = async function () {
     }
 
     // 2. Fetch Completions
-    const { data: completions, error: compErr } = await db.from('todo_completions').select('todo_id, user_id, students(name, avatar_url)');
-    if (compErr) console.error("Error fetching completions:", compErr);
+    const { data: completions, error: compErr } = await db
+        .from('todo_completions')
+        .select('todo_id, user_id, students(name, avatar_url)');
+    if (compErr) console.error('Error fetching completions:', compErr);
 
     // 3. Render
-    list.innerHTML = todos.map(todo => {
-        const itemCompletions = (completions || []).filter(c => c.todo_id === todo.id);
-        const isDoneByMe = itemCompletions.some(c => c.user_id === user.id);
+    list.innerHTML = todos
+        .map((todo) => {
+            const itemCompletions = (completions || []).filter((c) => c.todo_id === todo.id);
+            const isDoneByMe = itemCompletions.some((c) => c.user_id === user.id);
 
-        const deleteBtn = isAdmin ? `<button onclick="deleteGlobalTodo(${todo.id})" class="sketch-btn danger" style="padding:2px 8px; font-size:0.8rem; height:auto; width:auto; margin:0;"><i class="fas fa-trash"></i></button>` : '';
+            const deleteBtn = isAdmin
+                ? `<button onclick="deleteGlobalTodo(${todo.id})" class="sketch-btn danger" style="padding:2px 8px; font-size:0.8rem; height:auto; width:auto; margin:0;"><i class="fas fa-trash"></i></button>`
+                : '';
 
-        // Generate avatars for completed users
-        const completionAvatars = itemCompletions.slice(0, 10).map(c => {
-            const student = c.students;
-            if (!student) return '';
-            const avatar = student.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random`;
-            return `<img src="${avatar}" class="completion-avatar" title="${escapeHTML(student.name)} done this!" loading="lazy">`;
-        }).join('');
+            // Generate avatars for completed users
+            const completionAvatars = itemCompletions
+                .slice(0, 10)
+                .map((c) => {
+                    const student = c.students;
+                    if (!student) return '';
+                    const avatar =
+                        student.avatar_url ||
+                        `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random`;
+                    return `<img src="${avatar}" class="completion-avatar" title="${escapeHTML(student.name)} done this!" loading="lazy">`;
+                })
+                .join('');
 
-        const othersCount = itemCompletions.length > 10 ? `<small style="font-size:0.7rem; color:#666;">+${itemCompletions.length - 10} more</small>` : '';
+            const othersCount =
+                itemCompletions.length > 10
+                    ? `<small style="font-size:0.7rem; color:#666;">+${itemCompletions.length - 10} more</small>`
+                    : '';
 
-        return `
+            return `
             <div class="todo-item">
                 <div class="todo-main">
                     <div class="todo-checkbox ${isDoneByMe ? 'checked' : ''}" onclick="toggleTodoCompletion(${todo.id}, ${isDoneByMe})">
@@ -1979,8 +2109,9 @@ window.loadTodos = async function () {
                 </div>
             </div>
         `;
-    }).join('');
-}
+        })
+        .join('');
+};
 
 window.toggleTodoCompletion = async function (todoId, currentlyDone) {
     if (!user) return;
@@ -1989,20 +2120,23 @@ window.toggleTodoCompletion = async function (todoId, currentlyDone) {
         if (currentlyDone) {
             // Unmark
             await db.from('todo_completions').delete().eq('todo_id', todoId).eq('user_id', user.id);
-            showToast("Marked as Not Done.");
+            showToast('Marked as Not Done.');
         } else {
             // Mark as done
             await db.from('todo_completions').insert([{ todo_id: todoId, user_id: user.id }]);
             // Play sound
             const snd = document.getElementById('notif-sound');
-            if (snd) { snd.currentTime = 0; snd.play().catch(() => { }); }
+            if (snd) {
+                snd.currentTime = 0;
+                snd.play().catch(() => {});
+            }
             showToast("Task Finished! Charcoal 'X' added.");
         }
         loadTodos(); // Refresh list
     } catch (err) {
-        showToast("Error updating task: " + err.message, "error");
+        showToast('Error updating task: ' + err.message, 'error');
     }
-}
+};
 
 // Admin Tools: Add Todo
 window.addGlobalTodo = async function (e) {
@@ -2015,27 +2149,27 @@ window.addGlobalTodo = async function (e) {
     const { error } = await db.from('global_todos').insert([{ task_name: task, created_by: user.id }]);
 
     if (error) {
-        showToast("Failed to post task: " + error.message, "error");
+        showToast('Failed to post task: ' + error.message, 'error');
     } else {
-        showToast("Global Task Posted!");
+        showToast('Global Task Posted!');
         document.getElementById('todo-task').value = '';
         loadTodos();
         showAdminTool(null); // Close tool
     }
-}
+};
 
 window.deleteGlobalTodo = async function (id) {
     if (!isAdmin) return;
-    if (!await showWimpyConfirm("Delete this global task? All completions will be lost!")) return;
+    if (!(await showWimpyConfirm('Delete this global task? All completions will be lost!'))) return;
 
     const { error } = await db.from('global_todos').delete().eq('id', id);
     if (error) {
-        showToast("Error deleting task: " + error.message, "error");
+        showToast('Error deleting task: ' + error.message, 'error');
     } else {
-        showToast("Task deleted.");
+        showToast('Task deleted.');
         loadTodos();
     }
-}
+};
 
 /**
  * Shows a robust admin privileges pop-up when an admin enters the binder.
@@ -2046,12 +2180,12 @@ async function showHighlightsModal() {
     // 1. Ensure user and db are ready
     const currentUser = window.user || user;
     if (!currentUser || !db) {
-        console.warn("Highlights: User or DB not ready. Retrying...");
+        console.warn('Highlights: User or DB not ready. Retrying...');
         setTimeout(showHighlightsModal, 1000);
         return;
     }
 
-    console.log("Fetching quick highlights for:", currentUser.name);
+    console.log('Fetching quick highlights for:', currentUser.name);
 
     try {
         // 2. Prevent duplicates
@@ -2073,7 +2207,7 @@ async function showHighlightsModal() {
             .order('created_at', { ascending: false })
             .limit(3);
 
-        if (hError || fError) throw new Error("Could not fetch highlights");
+        if (hError || fError) throw new Error('Could not fetch highlights');
 
         // 4. Create Modal Structure
         const overlay = document.createElement('div');
@@ -2084,9 +2218,14 @@ async function showHighlightsModal() {
         box.className = 'highlights-box';
 
         // Helper for subject name
-        const getSubjectName = (code) => (window.subjectMapping && window.subjectMapping[code]) ? window.subjectMapping[code] : code;
+        const getSubjectName = (code) =>
+            window.subjectMapping && window.subjectMapping[code] ? window.subjectMapping[code] : code;
 
-        const hwHtml = homework.length > 0 ? homework.map(h => `
+        const hwHtml =
+            homework.length > 0
+                ? homework
+                      .map(
+                          (h) => `
             <div class="highlight-item interactive" onclick="
                 window.switchTab('assignments', event); 
                 document.getElementById('highlights-popup').remove(); 
@@ -2097,21 +2236,40 @@ async function showHighlightsModal() {
                     <span class="highlight-sub">${getSubjectName(h.subject)} • <span style="color:#d63031; font-weight:bold;">Due ${window.timeAgo ? window.timeAgo(h.due_date) : new Date(h.due_date).toLocaleDateString()}</span></span>
                 </div>
             </div>
-        `).join('') : '<p style="text-align:center; padding:20px; color:#666; font-style:italic;">No pending homework. Chill mode! 😎</p>';
+        `,
+                      )
+                      .join('')
+                : '<p style="text-align:center; padding:20px; color:#666; font-style:italic;">No pending homework. Chill mode! 😎</p>';
 
-        const filesHtml = files.length > 0 ? files.map(f => {
-            const safeUrl = (f.file_url || '').replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;");
-            const safeTitle = (f.title || 'File').replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;");
+        const filesHtml =
+            files.length > 0
+                ? files
+                      .map((f) => {
+                          const safeUrl = (f.file_url || '')
+                              .replace(/\\/g, '\\\\')
+                              .replace(/'/g, "\\'")
+                              .replace(/"/g, '&quot;');
+                          const safeTitle = (f.title || 'File')
+                              .replace(/\\/g, '\\\\')
+                              .replace(/'/g, "\\'")
+                              .replace(/"/g, '&quot;');
 
-            // Icon logic to match the mini-cards
-            let iconClass = 'fa-file';
-            let iconColor = '#2f3542';
-            const fType = (f.file_type || '').toLowerCase();
-            if (fType.includes('pdf')) { iconClass = 'fa-file-pdf'; iconColor = '#d63031'; }
-            else if (fType.includes('image')) { iconClass = 'fa-file-image'; iconColor = '#00b894'; }
-            else if (fType.includes('word')) { iconClass = 'fa-file-word'; iconColor = '#0984e3'; }
+                          // Icon logic to match the mini-cards
+                          let iconClass = 'fa-file';
+                          let iconColor = '#2f3542';
+                          const fType = (f.file_type || '').toLowerCase();
+                          if (fType.includes('pdf')) {
+                              iconClass = 'fa-file-pdf';
+                              iconColor = '#d63031';
+                          } else if (fType.includes('image')) {
+                              iconClass = 'fa-file-image';
+                              iconColor = '#00b894';
+                          } else if (fType.includes('word')) {
+                              iconClass = 'fa-file-word';
+                              iconColor = '#0984e3';
+                          }
 
-            return `
+                          return `
                 <div class="highlight-item interactive" onclick="openFilePreview('${safeUrl}', '${safeTitle}', ${f.id}); document.getElementById('highlights-popup').remove();">
                     <i class="fas ${iconClass}" style="color:${iconColor};"></i>
                     <div class="highlight-details">
@@ -2120,7 +2278,9 @@ async function showHighlightsModal() {
                     </div>
                 </div>
             `;
-        }).join('') : '<p style="text-align:center; padding:20px; color:#666; font-style:italic;">No new files uploaded yet. 📂</p>';
+                      })
+                      .join('')
+                : '<p style="text-align:center; padding:20px; color:#666; font-style:italic;">No new files uploaded yet. 📂</p>';
 
         // 4. Admin-Specific Section
         let adminHtml = '';
@@ -2137,11 +2297,11 @@ async function showHighlightsModal() {
                 { id: 'storage', label: 'Bucket Storage Monitor', icon: 'fa-hdd' },
                 { id: 'promote', label: 'Admin Privilege Management', icon: 'fa-crown' },
                 { id: 'revoke', label: 'Admin Access Revocation', icon: 'fa-user-slash' },
-                { id: 'blacklist', label: 'Student Black List (VIP)', icon: 'fa-user-shield' }
+                { id: 'blacklist', label: 'Student Black List (VIP)', icon: 'fa-user-shield' },
             ];
 
             const accessibleTools = [];
-            toolDefinitions.forEach(tool => {
+            toolDefinitions.forEach((tool) => {
                 if (tool.id === 'promote' || tool.id === 'revoke') {
                     if (currentUser.sr_code === 'ADMIN') accessibleTools.push(tool);
                 } else if (window.hasPermission && window.hasPermission(tool.id)) {
@@ -2150,12 +2310,16 @@ async function showHighlightsModal() {
             });
 
             if (accessibleTools.length > 0) {
-                const toolsListHtml = accessibleTools.map(t => `
+                const toolsListHtml = accessibleTools
+                    .map(
+                        (t) => `
                     <div style="display:flex; align-items:center; gap:10px; padding:5px 0; font-family:'Patrick Hand';">
                         <i class="fas ${t.icon}" style="width:20px; text-align:center;"></i>
                         <span style="font-size:0.95rem;">${t.label}</span>
                     </div>
-                `).join('');
+                `,
+                    )
+                    .join('');
 
                 adminHtml = `
                     <div class="highlights-section" style="background:#fdfbf7; border:2px dashed #000; padding:10px; border-radius:3px; margin-bottom:15px;">
@@ -2171,14 +2335,14 @@ async function showHighlightsModal() {
         }
 
         // 5. Create HTML content
-        const headerTitle = window.isAdmin ? 'Hoy admin ka!' : 'WHAT\'S NEW?';
+        const headerTitle = window.isAdmin ? 'Hoy admin ka!' : "WHAT'S NEW?";
         const headerIcon = window.isAdmin ? 'fa-crown' : 'fa-bolt';
         const headerColor = window.isAdmin ? '#6c5ce7' : '#f1c40f';
-        const headerSub = window.isAdmin ? 'Eto ang may access ka, Boss:' : 'Here\'s your quick recap, ';
+        const headerSub = window.isAdmin ? 'Eto ang may access ka, Boss:' : "Here's your quick recap, ";
 
         box.innerHTML = `
             <div class="highlights-header" style="${window.isAdmin ? 'background:#fffdf0; border-bottom:3px solid #000;' : ''}">
-                <h2 style="${window.isAdmin ? 'color:#000; font-family:\'Patrick Hand\'; font-size:2.5rem;' : ''}">
+                <h2 style="${window.isAdmin ? "color:#000; font-family:'Patrick Hand'; font-size:2.5rem;" : ''}">
                     <i class="fas ${headerIcon}" style="color:${headerColor};"></i> ${headerTitle}
                 </h2>
                 <p style="margin:5px 0 0 0; font-family:'Patrick Hand'; font-size:1.1rem;">
@@ -2231,9 +2395,8 @@ async function showHighlightsModal() {
             box.style.transition = 'all 0.3s ease-out';
             setTimeout(() => overlay.remove(), 300);
         };
-
     } catch (err) {
-        console.warn("Highlights popup failed:", err);
+        console.warn('Highlights popup failed:', err);
     }
 }
 /**
@@ -2256,20 +2419,23 @@ window.loadRecentAnnouncementsSidebar = async function () {
 
         // 2. Filter for valid (non-expired)
         const now = Date.now();
-        const validAnnouncements = (announcements || []).filter(ann => {
-            const createdAt = new Date(ann.created_at).getTime();
-            const durationMins = parseInt(ann.x_pos) || 10;
-            const expiresAt = createdAt + (durationMins * 60 * 1000);
-            return now < expiresAt;
-        }).slice(0, 5); // Take top 5 valid
+        const validAnnouncements = (announcements || [])
+            .filter((ann) => {
+                const createdAt = new Date(ann.created_at).getTime();
+                const durationMins = parseInt(ann.x_pos) || 10;
+                const expiresAt = createdAt + durationMins * 60 * 1000;
+                return now < expiresAt;
+            })
+            .slice(0, 5); // Take top 5 valid
 
         if (validAnnouncements.length === 0) {
-            list.innerHTML = '<p style="text-align: center; color: #666; font-style: italic; font-size: 0.9rem;">No recent announcements.</p>';
+            list.innerHTML =
+                '<p style="text-align: center; color: #666; font-style: italic; font-size: 0.9rem;">No recent announcements.</p>';
             return;
         }
 
         // 3. Fetch comments for these announcements
-        const annIds = validAnnouncements.map(a => 'COMMENT:' + a.id);
+        const annIds = validAnnouncements.map((a) => 'COMMENT:' + a.id);
         const { data: comments, error: commError } = await window.db
             .from('notes')
             .select('*')
@@ -2279,7 +2445,7 @@ window.loadRecentAnnouncementsSidebar = async function () {
         // Map comments to their announcements
         const commentMap = {};
         if (comments) {
-            comments.forEach(c => {
+            comments.forEach((c) => {
                 const annId = c.color.split(':')[1];
                 if (!commentMap[annId]) commentMap[annId] = [];
                 commentMap[annId].push(c);
@@ -2288,38 +2454,50 @@ window.loadRecentAnnouncementsSidebar = async function () {
 
         const isAdmin = window.user && window.user.sr_code === 'ADMIN';
 
-        list.innerHTML = validAnnouncements.map(ann => {
-            const timeStr = window.timeAgo ? window.timeAgo(ann.created_at) : new Date(ann.created_at).toLocaleTimeString();
-            const annComments = commentMap[ann.id] || [];
+        list.innerHTML = validAnnouncements
+            .map((ann) => {
+                const timeStr = window.timeAgo
+                    ? window.timeAgo(ann.created_at)
+                    : new Date(ann.created_at).toLocaleTimeString();
+                const annComments = commentMap[ann.id] || [];
 
-            // Build Peek HTML
-            let peekHtml = '';
-            if (annComments.length > 0) {
-                const previews = annComments.slice(0, 2).map(c => {
-                    let sender = "Someone", msg = c.content;
-                    if (msg.includes(':::')) [sender, msg] = msg.split(':::');
-                    return `<div class="peek-line"><b>${escapeHTML(sender)}:</b> ${escapeHTML(msg)}</div>`;
-                }).join('');
+                // Build Peek HTML
+                let peekHtml = '';
+                if (annComments.length > 0) {
+                    const previews = annComments
+                        .slice(0, 2)
+                        .map((c) => {
+                            let sender = 'Someone',
+                                msg = c.content;
+                            if (msg.includes(':::')) [sender, msg] = msg.split(':::');
+                            return `<div class="peek-line"><b>${escapeHTML(sender)}:</b> ${escapeHTML(msg)}</div>`;
+                        })
+                        .join('');
 
-                const moreCount = annComments.length > 2 ? `<div style="font-size:0.7rem; opacity:0.6; margin-top:3px;">+ ${annComments.length - 2} more...</div>` : '';
+                    const moreCount =
+                        annComments.length > 2
+                            ? `<div style="font-size:0.7rem; opacity:0.6; margin-top:3px;">+ ${annComments.length - 2} more...</div>`
+                            : '';
 
-                peekHtml = `
+                    peekHtml = `
                     <div class="ann-peek">
                         <div class="peek-title"><i class="fas fa-comments"></i> Reactions (${annComments.length})</div>
                         ${previews}
                         ${moreCount}
                     </div>
                 `;
-            }
+                }
 
-            const deleteBtn = isAdmin ? `
+                const deleteBtn = isAdmin
+                    ? `
                 <button onclick="event.stopPropagation(); deleteAnnouncementSidebar('${ann.id}')" 
                         style="position: absolute; top: -5px; right: -5px; background: #d63031; color: #fff; border: 2px solid #000; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.7rem; z-index: 10; box-shadow: 2px 2px 0 rgba(0,0,0,0.1);">
                     <i class="fas fa-times"></i>
                 </button>
-            ` : '';
+            `
+                    : '';
 
-            return `
+                return `
                 <div class="ann-mini-card" style="position: relative;" onclick="window.showAnnouncementPopup({id: '${ann.id}', message: \`${ann.content.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`, admin_name: 'Admin'})">
                     ${deleteBtn}
                     <div class="ann-mini-content" style="font-weight: bold; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
@@ -2329,29 +2507,26 @@ window.loadRecentAnnouncementsSidebar = async function () {
                     ${peekHtml}
                 </div>
             `;
-        }).join('');
-
+            })
+            .join('');
     } catch (err) {
-        console.error("Bulletin announcements load failed:", err);
+        console.error('Bulletin announcements load failed:', err);
     }
 };
 
 window.deleteAnnouncementSidebar = async function (id) {
     if (!window.user || window.user.sr_code !== 'ADMIN') return;
 
-    const confirmMsg = "Do you want to delete this announcement and all its comments?";
+    const confirmMsg = 'Do you want to delete this announcement and all its comments?';
     if (window.showWimpyConfirm) {
-        if (!await window.showWimpyConfirm(confirmMsg)) return;
+        if (!(await window.showWimpyConfirm(confirmMsg))) return;
     } else {
         if (!confirm(confirmMsg)) return;
     }
 
     try {
         // 1. Delete main announcement
-        const { error: annError } = await window.db
-            .from('notes')
-            .delete()
-            .eq('id', id);
+        const { error: annError } = await window.db.from('notes').delete().eq('id', id);
 
         if (annError) throw annError;
 
@@ -2366,15 +2541,15 @@ window.deleteAnnouncementSidebar = async function (id) {
             window.roomChannel.send({
                 type: 'broadcast',
                 event: 'delete_announcement',
-                payload: { id: id }
+                payload: { id: id },
             });
         }
 
-        showToast("Announcement deleted!");
+        showToast('Announcement deleted!');
         loadRecentAnnouncementsSidebar();
     } catch (err) {
-        console.error("Failed to delete announcement:", err);
-        showToast("Error deleting announcement", "error");
+        console.error('Failed to delete announcement:', err);
+        showToast('Error deleting announcement', 'error');
     }
 };
 // --- HAMILAW (SHOCK) FEATURE ---
@@ -2384,7 +2559,9 @@ window.showUserActionMenu = function (targetId, targetName) {
     const overlay = document.createElement('div');
     overlay.className = 'wimpy-modal-overlay';
     overlay.style.zIndex = '10007';
-    overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+    overlay.onclick = (e) => {
+        if (e.target === overlay) overlay.remove();
+    };
 
     const box = document.createElement('div');
     box.className = 'wimpy-modal-box';
@@ -2437,7 +2614,7 @@ window.hamilawUser = async function (targetId, targetName) {
     const waitTime = Math.ceil((5000 - (now - lastShock)) / 1000);
 
     if (now - lastShock < 5000) {
-        showToast(`👻 Chill! You can shock ${targetName.split(' ')[0]} again in ${waitTime}s.`, "error");
+        showToast(`👻 Chill! You can shock ${targetName.split(' ')[0]} again in ${waitTime}s.`, 'error');
         return;
     }
 
@@ -2447,16 +2624,16 @@ window.hamilawUser = async function (targetId, targetName) {
             event: 'hamilaw',
             payload: {
                 target_id: targetId,
-                sender_name: window.user.name
-            }
+                sender_name: window.user.name,
+            },
         });
 
         if (resp === 'ok') {
             window.hamilawCooldowns[targetId] = now;
-            showToast(`👻 Hamilaw sent to ${targetName.split(' ')[0]}!`, "success");
+            showToast(`👻 Hamilaw sent to ${targetName.split(' ')[0]}!`, 'success');
         }
     } catch (err) {
-        console.error("Hamilaw failed:", err);
+        console.error('Hamilaw failed:', err);
     }
 };
 
@@ -2465,7 +2642,7 @@ window.showSSCPaymentPopup = function () {
     // 1. Check if user is already paid (stored in localStorage)
     const isPaid = localStorage.getItem('ssc_paid');
     if (isPaid === 'true') {
-        console.log("SSC: User already marked as paid. Skipping popup.");
+        console.log('SSC: User already marked as paid. Skipping popup.');
         return;
     }
 
@@ -2473,16 +2650,16 @@ window.showSSCPaymentPopup = function () {
     const modal = document.getElementById('sscPaymentModal');
     if (modal) {
         modal.classList.remove('hidden');
-        console.log("SSC: Showing payment popup.");
+        console.log('SSC: Showing payment popup.');
     }
-}
+};
 
 window.closeSSCPaymentModal = function () {
     // 1. Check if user marked the "Already Paid" checkbox
     const isChecked = document.getElementById('ssc-paid-checkbox').checked;
     if (isChecked) {
         localStorage.setItem('ssc_paid', 'true');
-        if (window.showToast) showToast("Payment status saved! You won't see this again.", "info");
+        if (window.showToast) showToast("Payment status saved! You won't see this again.", 'info');
     }
 
     // 2. Hide the modal
@@ -2490,8 +2667,7 @@ window.closeSSCPaymentModal = function () {
     if (modal) {
         modal.classList.add('hidden');
     }
-}
-
+};
 
 // --- VALENTINE'S DAY SURPRISE ---
 function checkValentinesDay() {
@@ -2526,7 +2702,7 @@ function checkValentinesDay() {
             cursor: 'pointer',
             opacity: '0',
             transition: 'opacity 0.6s ease',
-            backdropFilter: 'blur(5px)' // Nice blur effect
+            backdropFilter: 'blur(5px)', // Nice blur effect
         });
 
         // HTML Content & Styles
@@ -2578,9 +2754,9 @@ function checkValentinesDay() {
 
             // Randomize Props
             heart.style.left = Math.random() * 100 + 'vw';
-            heart.style.fontSize = (Math.random() * 2 + 1.5) + 'rem';
-            heart.style.animationDuration = (Math.random() * 4 + 3) + 's'; // 3-7s duration
-            heart.style.animationDelay = (Math.random() * 5) + 's'; // Stagger start
+            heart.style.fontSize = Math.random() * 2 + 1.5 + 'rem';
+            heart.style.animationDuration = Math.random() * 4 + 3 + 's'; // 3-7s duration
+            heart.style.animationDelay = Math.random() * 5 + 's'; // Stagger start
 
             overlay.appendChild(heart);
         }
@@ -2612,9 +2788,18 @@ function checkValentinesDay() {
 function showBirthdayCollector() {
     return new Promise((resolve) => {
         const currentUser = window.user || user;
-        if (!currentUser || !db) { resolve(); return; }
-        if (currentUser.birthday) { resolve(); return; }
-        if (currentUser.sr_code === 'ADMIN') { resolve(); return; }
+        if (!currentUser || !db) {
+            resolve();
+            return;
+        }
+        if (currentUser.birthday) {
+            resolve();
+            return;
+        }
+        if (currentUser.sr_code === 'ADMIN') {
+            resolve();
+            return;
+        }
 
         const overlay = document.createElement('div');
         overlay.className = 'wimpy-modal-overlay';
@@ -2677,10 +2862,7 @@ function showBirthdayCollector() {
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
 
             try {
-                const { error } = await db
-                    .from('students')
-                    .update({ birthday: val })
-                    .eq('id', currentUser.id);
+                const { error } = await db.from('students').update({ birthday: val }).eq('id', currentUser.id);
 
                 if (error) throw error;
 
@@ -2709,8 +2891,6 @@ function showBirthdayCollector() {
     });
 }
 
-
-
 // ================= FLASHCARDS LOGIC (Supabase) =================
 const FC_EXPIRY_DAYS = 7;
 
@@ -2734,7 +2914,7 @@ async function loadFlashcards() {
     const active = [];
     const expiredIds = [];
 
-    (data || []).forEach(card => {
+    (data || []).forEach((card) => {
         const created = new Date(card.created_at);
         const ageMs = now - created;
         if (ageMs >= FC_EXPIRY_DAYS * 24 * 60 * 60 * 1000) {
@@ -2746,9 +2926,12 @@ async function loadFlashcards() {
 
     // Purge expired from DB silently
     if (expiredIds.length > 0) {
-        db.from('flashcards').delete().in('id', expiredIds).then(() => {
-            console.log(`Auto-deleted ${expiredIds.length} expired flashcard(s).`);
-        });
+        db.from('flashcards')
+            .delete()
+            .in('id', expiredIds)
+            .then(() => {
+                console.log(`Auto-deleted ${expiredIds.length} expired flashcard(s).`);
+            });
     }
 
     renderFlashcardCards(active);
@@ -2759,30 +2942,38 @@ function renderFlashcardCards(cards) {
     if (!container) return;
 
     if (!cards || !cards.length) {
-        container.innerHTML = '<p style="text-align: center; color: #666; font-style: italic;">No flashcards available yet.</p>';
+        container.innerHTML =
+            '<p style="text-align: center; color: #666; font-style: italic;">No flashcards available yet.</p>';
         return;
     }
 
     const colors = ['#6c5ce7', '#00b894', '#0984e3', '#e17055', '#fdcb6e', '#d63031', '#00cec9', '#e84393'];
 
-    container.innerHTML = cards.map((card, i) => {
-        const color = colors[i % colors.length];
-        const domain = (() => {
-            try { return new URL(card.link).hostname.replace('www.', ''); } catch { return 'Link'; }
-        })();
-        const created = new Date(card.created_at);
-        const ageMs = Date.now() - created.getTime();
-        const daysLeft = Math.max(0, FC_EXPIRY_DAYS - Math.floor(ageMs / (24 * 60 * 60 * 1000)));
-        const expiryColor = daysLeft <= 1 ? '#d63031' : daysLeft <= 3 ? '#e67e22' : '#00b894';
-        const addedAt = created.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    container.innerHTML = cards
+        .map((card, i) => {
+            const color = colors[i % colors.length];
+            const domain = (() => {
+                try {
+                    return new URL(card.link).hostname.replace('www.', '');
+                } catch {
+                    return 'Link';
+                }
+            })();
+            const created = new Date(card.created_at);
+            const ageMs = Date.now() - created.getTime();
+            const daysLeft = Math.max(0, FC_EXPIRY_DAYS - Math.floor(ageMs / (24 * 60 * 60 * 1000)));
+            const expiryColor = daysLeft <= 1 ? '#d63031' : daysLeft <= 3 ? '#e67e22' : '#00b894';
+            const addedAt = created.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
-        const deleteBtn = isAdmin ? `
+            const deleteBtn = isAdmin
+                ? `
             <button onclick="deleteFlashcard(${card.id})" class="sketch-btn danger"
                 style="position: absolute; top: 10px; right: 10px; width: auto; padding: 4px 10px; font-size: 0.8rem; margin: 0;">
                 <i class="fas fa-trash-alt"></i>
-            </button>` : '';
+            </button>`
+                : '';
 
-        return `
+            return `
             <div class="class-card" style="border-left: 5px solid ${color}; position: relative; animation-delay: ${i * 0.08}s;">
                 ${deleteBtn}
                 <div style="display: flex; align-items: flex-start; gap: 15px; flex-wrap: wrap;">
@@ -2810,7 +3001,8 @@ function renderFlashcardCards(cards) {
                 </div>
             </div>
         `;
-    }).join('');
+        })
+        .join('');
 }
 
 window.addFlashcard = async function (e) {
@@ -2833,11 +3025,11 @@ window.addFlashcard = async function (e) {
     e.target.reset();
     await loadFlashcards();
     showToast('Flashcard set saved!');
-}
+};
 
 window.deleteFlashcard = async function (id) {
     if (!isAdmin) return showToast('Admin access required.');
-    if (!await showWimpyConfirm('Delete this flashcard set?')) return;
+    if (!(await showWimpyConfirm('Delete this flashcard set?'))) return;
 
     const { error } = await db.from('flashcards').delete().eq('id', id);
     if (error) {
@@ -2847,7 +3039,9 @@ window.deleteFlashcard = async function (id) {
 
     await loadFlashcards();
     showToast('Flashcard set removed.');
-}
+};
 
 // Load flashcards on page ready
-document.addEventListener('DOMContentLoaded', () => { loadFlashcards(); });
+document.addEventListener('DOMContentLoaded', () => {
+    loadFlashcards();
+});

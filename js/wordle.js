@@ -3,20 +3,102 @@
  */
 
 const WIMPY_WORDS = [
-    "GREGG", "DIARY", "WIMPY", "MANNY", "CHRIS", "CHEES", "METAL", "FRANK", "SUSAN", "HOLLY",
-    "FREGG", "BOOKS", "WRITE", "STUCK", "ZOOEE", "MAMAS", "PLOPY", "BUBBY",
-    "GAMES", "LODER", "PAPER", "SKETC", "NOTES", "CLASS", "GRADE", "SCARE", "SHOCK", "WIDER"
+    'GREGG',
+    'DIARY',
+    'WIMPY',
+    'MANNY',
+    'CHRIS',
+    'CHEES',
+    'METAL',
+    'FRANK',
+    'SUSAN',
+    'HOLLY',
+    'FREGG',
+    'BOOKS',
+    'WRITE',
+    'STUCK',
+    'ZOOEE',
+    'MAMAS',
+    'PLOPY',
+    'BUBBY',
+    'GAMES',
+    'LODER',
+    'PAPER',
+    'SKETC',
+    'NOTES',
+    'CLASS',
+    'GRADE',
+    'SCARE',
+    'SHOCK',
+    'WIDER',
 ];
 
 // Standard Wordle words for fallback or extended list
 const EXTENDED_WORDS = [
-    "APPLE", "BEACH", "BRAIN", "BREAD", "BRUSH", "CHAIR", "CHEST", "CHORD", "CLICK", "CLOCK",
-    "CLOUD", "DANCE", "DIARY", "DRINK", "EARTH", "FEAST", "FIELD", "FLAME", "FLOWER", "GLASS",
-    "GRAPE", "GREEN", "GHOST", "HEART", "HOUSE", "JUICE", "LIGHT", "LEMON", "MELON", "MONEY",
-    "MUSIC", "NIGHT", "OCEAN", "PARTY", "PIANO", "PILOT", "PLANE", "PHONE", "PIZZA", "PLANT",
-    "RADIO", "RIVER", "ROBOT", "SHIRT", "SHOES", "SMILE", "SNAKE", "SPACE", "SPOON", "STORM",
-    "TABLE", "TIGER", "TOAST", "TOUCH", "TRAIN", "TRUCK", "VOICE", "WATER", "WATCH", "WHALE",
-    "WORLD", "WRITE", "YACHT", "ZEBRA"
+    'APPLE',
+    'BEACH',
+    'BRAIN',
+    'BREAD',
+    'BRUSH',
+    'CHAIR',
+    'CHEST',
+    'CHORD',
+    'CLICK',
+    'CLOCK',
+    'CLOUD',
+    'DANCE',
+    'DIARY',
+    'DRINK',
+    'EARTH',
+    'FEAST',
+    'FIELD',
+    'FLAME',
+    'FLOWER',
+    'GLASS',
+    'GRAPE',
+    'GREEN',
+    'GHOST',
+    'HEART',
+    'HOUSE',
+    'JUICE',
+    'LIGHT',
+    'LEMON',
+    'MELON',
+    'MONEY',
+    'MUSIC',
+    'NIGHT',
+    'OCEAN',
+    'PARTY',
+    'PIANO',
+    'PILOT',
+    'PLANE',
+    'PHONE',
+    'PIZZA',
+    'PLANT',
+    'RADIO',
+    'RIVER',
+    'ROBOT',
+    'SHIRT',
+    'SHOES',
+    'SMILE',
+    'SNAKE',
+    'SPACE',
+    'SPOON',
+    'STORM',
+    'TABLE',
+    'TIGER',
+    'TOAST',
+    'TOUCH',
+    'TRAIN',
+    'TRUCK',
+    'VOICE',
+    'WATER',
+    'WATCH',
+    'WHALE',
+    'WORLD',
+    'WRITE',
+    'YACHT',
+    'ZEBRA',
 ];
 
 const ALL_WORDS = [...WIMPY_WORDS, ...EXTENDED_WORDS];
@@ -24,8 +106,8 @@ const ALL_WORDS = [...WIMPY_WORDS, ...EXTENDED_WORDS];
 class WordleGame {
     constructor() {
         this.board = document.getElementById('wordle-game-container');
-        this.secretWord = "";
-        this.currentGuess = "";
+        this.secretWord = '';
+        this.currentGuess = '';
         this.guesses = [];
         this.gameOver = false;
         this.maxGuesses = 6;
@@ -36,24 +118,21 @@ class WordleGame {
     async init() {
         // QUICKEST IMPLEMENTATION: Fetch from DB, fallback to hardcoded
         try {
-            const { data, error } = await window.db
-                .from('notes')
-                .select('content')
-                .eq('color', 'WORDLE_WORD');
+            const { data, error } = await window.db.from('notes').select('content').eq('color', 'WORDLE_WORD');
 
             let pool = ALL_WORDS;
             if (!error && data && data.length > 0) {
-                pool = data.map(w => w.content.toUpperCase());
-                console.log("Loaded custom Wordle pool:", pool);
+                pool = data.map((w) => w.content.toUpperCase());
+                console.log('Loaded custom Wordle pool:', pool);
             }
 
             this.secretWord = pool[Math.floor(Math.random() * pool.length)].toUpperCase();
-            console.log("Secret word:", this.secretWord); // For debugging
+            console.log('Secret word:', this.secretWord); // For debugging
         } catch (err) {
             this.secretWord = ALL_WORDS[Math.floor(Math.random() * ALL_WORDS.length)].toUpperCase();
         }
 
-        this.currentGuess = "";
+        this.currentGuess = '';
         this.guesses = [];
         this.gameOver = false;
 
@@ -64,7 +143,10 @@ class WordleGame {
     render() {
         this.board.innerHTML = `
             <div class="wordle-board">
-                ${Array(this.maxGuesses).fill().map((_, i) => this.renderRow(i)).join('')}
+                ${Array(this.maxGuesses)
+                    .fill()
+                    .map((_, i) => this.renderRow(i))
+                    .join('')}
             </div>
             <div class="wordle-keyboard">
                 ${this.renderKeyboard()}
@@ -73,51 +155,52 @@ class WordleGame {
     }
 
     renderRow(rowIndex) {
-        const guess = this.guesses[rowIndex] || (rowIndex === this.guesses.length ? this.currentGuess : "");
+        const guess = this.guesses[rowIndex] || (rowIndex === this.guesses.length ? this.currentGuess : '');
         const isSubmitted = rowIndex < this.guesses.length;
 
         return `
             <div class="wordle-row" id="row-${rowIndex}">
-                ${Array(5).fill().map((_, i) => {
-            const char = guess[i] || "";
-            let className = "wordle-cell";
-            if (isSubmitted) {
-                className += " " + this.getCellClass(char, i, this.guesses[rowIndex]);
-            }
-            return `<div class="wordle-cell ${className}">${char}</div>`;
-        }).join('')}
+                ${Array(5)
+                    .fill()
+                    .map((_, i) => {
+                        const char = guess[i] || '';
+                        let className = 'wordle-cell';
+                        if (isSubmitted) {
+                            className += ' ' + this.getCellClass(char, i, this.guesses[rowIndex]);
+                        }
+                        return `<div class="wordle-cell ${className}">${char}</div>`;
+                    })
+                    .join('')}
             </div>
         `;
     }
 
     getCellClass(char, index, guess) {
-        if (this.secretWord[index] === char) return "correct";
+        if (this.secretWord[index] === char) return 'correct';
         if (this.secretWord.includes(char)) {
             // Complex Wordle logic for multiple occurrences
             const charCountInSecret = this.secretWord.split(char).length - 1;
             const charCountInGuessBefore = guess.substring(0, index + 1).split(char).length - 1;
-            const correctOccurrences = Array.from(this.secretWord).filter((c, i) => c === char && guess[i] === char).length;
+            const correctOccurrences = Array.from(this.secretWord).filter(
+                (c, i) => c === char && guess[i] === char,
+            ).length;
 
-            if (charCountInGuessBefore <= (charCountInSecret - correctOccurrences) || this.secretWord[index] === char) {
-                return "present";
+            if (charCountInGuessBefore <= charCountInSecret - correctOccurrences || this.secretWord[index] === char) {
+                return 'present';
             }
         }
-        return "absent";
+        return 'absent';
     }
 
     renderKeyboard() {
-        const rows = [
-            "QWERTYUIOP",
-            "ASDFGHJKL",
-            "ZXCVBNM"
-        ];
+        const rows = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
 
-        let html = "";
+        let html = '';
         rows.forEach((row, i) => {
             html += `<div class="keyboard-row">`;
             if (i === 2) html += `<div class="key wide" data-key="ENTER">ENTER</div>`;
 
-            row.split('').forEach(char => {
+            row.split('').forEach((char) => {
                 const status = this.getKeyStatus(char);
                 html += `<div class="key ${status}" data-key="${char}">${char}</div>`;
             });
@@ -129,13 +212,13 @@ class WordleGame {
     }
 
     getKeyStatus(char) {
-        let status = "";
-        this.guesses.forEach(guess => {
+        let status = '';
+        this.guesses.forEach((guess) => {
             for (let i = 0; i < 5; i++) {
                 if (guess[i] === char) {
-                    if (this.secretWord[i] === char) status = "correct";
-                    else if (this.secretWord.includes(char) && status !== "correct") status = "present";
-                    else if (status !== "correct" && status !== "present") status = "absent";
+                    if (this.secretWord[i] === char) status = 'correct';
+                    else if (this.secretWord.includes(char) && status !== 'correct') status = 'present';
+                    else if (status !== 'correct' && status !== 'present') status = 'absent';
                 }
             }
         });
@@ -153,22 +236,27 @@ class WordleGame {
 
         // Physical keyboard
         document.onkeydown = (e) => {
-            if (this.gameOver || document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return;
+            if (
+                this.gameOver ||
+                document.activeElement.tagName === 'INPUT' ||
+                document.activeElement.tagName === 'TEXTAREA'
+            )
+                return;
 
-            if (e.key === "Enter") this.handleInput("ENTER");
-            else if (e.key === "Backspace") this.handleInput("BACKSPACE");
+            if (e.key === 'Enter') this.handleInput('ENTER');
+            else if (e.key === 'Backspace') this.handleInput('BACKSPACE');
             else if (/^[a-zA-Z]$/.test(e.key)) this.handleInput(e.key.toUpperCase());
         };
     }
 
     handleInput(key) {
-        if (key === "ENTER") {
+        if (key === 'ENTER') {
             if (this.currentGuess.length === 5) {
                 this.submitGuess();
             } else {
                 this.shakeRow();
             }
-        } else if (key === "BACKSPACE") {
+        } else if (key === 'BACKSPACE') {
             this.currentGuess = this.currentGuess.slice(0, -1);
             this.updateCurrentRow();
         } else if (this.currentGuess.length < 5) {
@@ -181,7 +269,7 @@ class WordleGame {
         const row = document.getElementById(`row-${this.guesses.length}`);
         const cells = row.querySelectorAll('.wordle-cell');
         cells.forEach((cell, i) => {
-            cell.innerText = this.currentGuess[i] || "";
+            cell.innerText = this.currentGuess[i] || '';
             if (this.currentGuess[i]) {
                 cell.classList.add('pop');
                 setTimeout(() => cell.classList.remove('pop'), 100);
@@ -192,7 +280,7 @@ class WordleGame {
     async submitGuess() {
         const guess = this.currentGuess;
         this.guesses.push(guess);
-        this.currentGuess = "";
+        this.currentGuess = '';
 
         // Animate flip
         const row = document.getElementById(`row-${this.guesses.length - 1}`);
@@ -200,7 +288,7 @@ class WordleGame {
 
         for (let i = 0; i < 5; i++) {
             cells[i].classList.add('flip');
-            await new Promise(r => setTimeout(r, 100));
+            await new Promise((r) => setTimeout(r, 100));
 
             const status = this.getCellClass(guess[i], i, guess);
             cells[i].classList.add(status);
@@ -220,7 +308,7 @@ class WordleGame {
     shakeRow() {
         const row = document.getElementById(`row-${this.guesses.length}`);
         row.style.animation = 'shake 0.5s';
-        setTimeout(() => row.style.animation = '', 500);
+        setTimeout(() => (row.style.animation = ''), 500);
     }
 
     endGame(win) {
@@ -229,7 +317,7 @@ class WordleGame {
         const overlay = document.createElement('div');
         overlay.innerHTML = `
             <div class="game-status-msg">
-                ${win ? '<img src="monster.png" style="width: 150px; height: 150px; object-fit: contain; margin-bottom: 5px; transform: scale(1.1) rotate(-3deg);">' : ''}
+                ${win ? '<img src="assets/images/monster.png" style="width: 150px; height: 150px; object-fit: contain; margin-bottom: 5px; transform: scale(1.1) rotate(-3deg);">' : ''}
                 <div class="status-title">${win ? 'ZOO WEE MAMA!' : 'RATS!'}</div>
                 <p style="font-size: 1.5rem;">${win ? 'You found the word!' : 'Better luck next time, Greg.'}</p>
                 <p style="font-size: 2rem; margin-top: 10px; font-family: 'Permanent Marker'; text-decoration: underline;">

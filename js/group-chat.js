@@ -17,15 +17,15 @@ window.groupChat = {
 
     // ===== INIT =====
     init: async function () {
-        console.log("Group Chat: Initializing...");
+        console.log('Group Chat: Initializing...');
         if (!window.db) {
-            console.warn("Group Chat: window.db not ready.");
+            console.warn('Group Chat: window.db not ready.');
             return;
         }
         this.setupRealtime();
         this.setupSelfRegen();
         this.setupBroadcastListeners();
-        console.log("Group Chat: Ready.");
+        console.log('Group Chat: Ready.');
     },
 
     // ===== OPEN / CLOSE / TOGGLE =====
@@ -70,16 +70,20 @@ window.groupChat = {
 
         this.subscription = window.db
             .channel('gc-messages')
-            .on('postgres_changes', {
-                event: 'INSERT',
-                schema: 'public',
-                table: 'notes',
-                filter: 'color=eq.CHAT_HIDDEN'
-            }, payload => {
-                this.handleIncoming(payload.new);
-            })
+            .on(
+                'postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'notes',
+                    filter: 'color=eq.CHAT_HIDDEN',
+                },
+                (payload) => {
+                    this.handleIncoming(payload.new);
+                },
+            )
             .subscribe((status) => {
-                console.log("Group Chat Realtime:", status);
+                console.log('Group Chat Realtime:', status);
                 if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
                     this.subscription = null;
                     setTimeout(() => this.setupRealtime(), 3000);
@@ -99,7 +103,7 @@ window.groupChat = {
                     .on('broadcast', { event: 'gc_seen' }, (payload) => {
                         this.handleSeenBroadcast(payload.payload);
                     });
-                console.log("Group Chat: Broadcast listeners attached.");
+                console.log('Group Chat: Broadcast listeners attached.');
             } else {
                 setTimeout(waitForChannel, 500);
             }
@@ -128,7 +132,8 @@ window.groupChat = {
         const historyContainer = document.getElementById('gc-history');
         if (!historyContainer || !window.db) return;
 
-        historyContainer.innerHTML = '<div style="text-align:center; padding:20px; color:#666; font-family:Patrick Hand;">Loading chismis...</div>';
+        historyContainer.innerHTML =
+            '<div style="text-align:center; padding:20px; color:#666; font-family:Patrick Hand;">Loading chismis...</div>';
 
         const { data, error } = await window.db
             .from('notes')
@@ -139,7 +144,7 @@ window.groupChat = {
 
         if (error) {
             historyContainer.innerHTML = '<div style="text-align:center; color:red;">Failed to load chat.</div>';
-            console.error("GC Load Error:", error);
+            console.error('GC Load Error:', error);
             return;
         }
 
@@ -148,7 +153,7 @@ window.groupChat = {
         this.pendingOptimistic.clear();
 
         const messages = (data || []).reverse();
-        messages.forEach(msg => this.renderMessage(msg));
+        messages.forEach((msg) => this.renderMessage(msg));
         this.scrollToBottom();
     },
 
@@ -172,7 +177,7 @@ window.groupChat = {
                 delete this.typingUsers[data.id];
                 this.renderTypingIndicator();
             }
-        } catch (e) { }
+        } catch (e) {}
 
         this.renderMessage(record);
 
@@ -201,15 +206,20 @@ window.groupChat = {
             return;
         }
 
-        const isMe = window.user && (data.id === window.user.id);
-        const time = new Date(data.t || record.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const isMe = window.user && data.id === window.user.id;
+        const time = new Date(data.t || record.created_at).toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+        });
 
         const div = document.createElement('div');
         div.className = `gc-message ${isMe ? 'me' : 'them'}`;
         div.style.animation = 'gcSlideIn 0.25s ease-out';
 
         const avatarUrl = data.a || `https://ui-avatars.com/api/?name=${encodeURIComponent(data.u)}&background=random`;
-        const avatarHtml = !isMe ? `<img src="${avatarUrl}" class="gc-avatar" title="${this.escapeHTML(data.u)}" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(data.u)}&background=random'">` : '';
+        const avatarHtml = !isMe
+            ? `<img src="${avatarUrl}" class="gc-avatar" title="${this.escapeHTML(data.u)}" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(data.u)}&background=random'">`
+            : '';
         const nameHtml = !isMe ? `<div class="gc-name">${this.escapeHTML(data.u)}</div>` : '';
 
         div.innerHTML = `
@@ -241,13 +251,13 @@ window.groupChat = {
             const stored = localStorage.getItem('wimpy_user');
             if (stored) window.user = JSON.parse(stored);
             else {
-                alert("You must be logged in to chat!");
+                alert('You must be logged in to chat!');
                 return;
             }
         }
 
         if (!window.db) {
-            alert("Connection error — please refresh the page.");
+            alert('Connection error — please refresh the page.');
             return;
         }
 
@@ -256,10 +266,12 @@ window.groupChat = {
 
         const payload = {
             u: window.user.name,
-            a: window.user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(window.user.name)}&background=random`,
+            a:
+                window.user.avatar_url ||
+                `https://ui-avatars.com/api/?name=${encodeURIComponent(window.user.name)}&background=random`,
             m: text,
             t: new Date().toISOString(),
-            id: window.user.id
+            id: window.user.id,
         };
 
         const jsonString = JSON.stringify(payload);
@@ -271,22 +283,24 @@ window.groupChat = {
 
         // Save to DB
         try {
-            const { error } = await window.db.from('notes').insert([{
-                content: jsonString,
-                x_pos: 0,
-                y_pos: 0,
-                rotation: 0,
-                color: 'CHAT_HIDDEN',
-                likes: 0
-            }]);
+            const { error } = await window.db.from('notes').insert([
+                {
+                    content: jsonString,
+                    x_pos: 0,
+                    y_pos: 0,
+                    rotation: 0,
+                    color: 'CHAT_HIDDEN',
+                    likes: 0,
+                },
+            ]);
 
             if (error) {
-                console.error("GC Send Error:", error);
-                if (window.showToast) window.showToast("Send failed: " + error.message, "error");
+                console.error('GC Send Error:', error);
+                if (window.showToast) window.showToast('Send failed: ' + error.message, 'error');
             }
         } catch (err) {
-            console.error("GC Network Error:", err);
-            if (window.showToast) window.showToast("Network Error", "error");
+            console.error('GC Network Error:', err);
+            if (window.showToast) window.showToast('Network Error', 'error');
         }
     },
 
@@ -299,8 +313,8 @@ window.groupChat = {
             payload: {
                 id: window.user.id,
                 name: window.user.name,
-                typing: true
-            }
+                typing: true,
+            },
         });
 
         // Auto-stop after 3 seconds of no keystrokes
@@ -317,8 +331,8 @@ window.groupChat = {
             payload: {
                 id: window.user.id,
                 name: window.user.name,
-                typing: false
-            }
+                typing: false,
+            },
         });
     },
 
@@ -386,9 +400,11 @@ window.groupChat = {
             payload: {
                 id: window.user.id,
                 name: window.user.name,
-                avatar: window.user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(window.user.name)}&background=random`,
-                at: new Date().toISOString()
-            }
+                avatar:
+                    window.user.avatar_url ||
+                    `https://ui-avatars.com/api/?name=${encodeURIComponent(window.user.name)}&background=random`,
+                at: new Date().toISOString(),
+            },
         });
     },
 
@@ -397,7 +413,7 @@ window.groupChat = {
         if (window.user && data.id === window.user.id) return;
 
         // Update seen list (keep unique by user id)
-        const existing = this.seenBy.findIndex(s => s.id === data.id);
+        const existing = this.seenBy.findIndex((s) => s.id === data.id);
         if (existing >= 0) this.seenBy[existing] = data;
         else this.seenBy.push(data);
 
@@ -416,9 +432,12 @@ window.groupChat = {
             return;
         }
 
-        const avatars = this.seenBy.map(s =>
-            `<img src="${s.avatar}" title="Seen by ${this.escapeHTML(s.name)}" style="width:16px;height:16px;border-radius:50%;border:1px solid #fff;object-fit:cover;" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=random&size=16'">`
-        ).join('');
+        const avatars = this.seenBy
+            .map(
+                (s) =>
+                    `<img src="${s.avatar}" title="Seen by ${this.escapeHTML(s.name)}" style="width:16px;height:16px;border-radius:50%;border:1px solid #fff;object-fit:cover;" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=random&size=16'">`,
+            )
+            .join('');
 
         el.innerHTML = `
             <div style="display:flex;align-items:center;gap:2px;justify-content:flex-end;padding:2px 8px;opacity:0.7;">
@@ -439,7 +458,7 @@ window.groupChat = {
         if (!window.db) return;
 
         if (window.showWimpyConfirm) {
-            if (!await window.showWimpyConfirm('Delete all GC messages older than 24 hours?')) return;
+            if (!(await window.showWimpyConfirm('Delete all GC messages older than 24 hours?'))) return;
         }
 
         const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
@@ -466,14 +485,11 @@ window.groupChat = {
         if (!window.db) return;
 
         if (window.showWimpyConfirm) {
-            if (!await window.showWimpyConfirm('⚠️ DELETE ALL group chat messages? This cannot be undone!')) return;
+            if (!(await window.showWimpyConfirm('⚠️ DELETE ALL group chat messages? This cannot be undone!'))) return;
         }
 
         try {
-            const { error } = await window.db
-                .from('notes')
-                .delete()
-                .eq('color', 'CHAT_HIDDEN');
+            const { error } = await window.db.from('notes').delete().eq('color', 'CHAT_HIDDEN');
 
             if (error) {
                 if (window.showToast) window.showToast('Error: ' + error.message, 'error');
@@ -489,7 +505,10 @@ window.groupChat = {
     // ===== UTILITIES =====
     scrollToBottom: function () {
         const el = document.getElementById('gc-history');
-        if (el) setTimeout(() => { el.scrollTop = el.scrollHeight; }, 50);
+        if (el)
+            setTimeout(() => {
+                el.scrollTop = el.scrollHeight;
+            }, 50);
     },
 
     updateBadge: function (show) {
@@ -523,17 +542,18 @@ window.groupChat = {
             osc.start();
             gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
             osc.stop(ctx.currentTime + 0.25);
-        } catch (e) { }
+        } catch (e) {}
     },
 
     escapeHTML: function (str) {
         if (!str) return '';
-        return str.replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
-    }
+        return str
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    },
 };
 
 // ===== INITIALIZATION =====
@@ -549,14 +569,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.user = JSON.parse(localStorage.getItem('wimpy_user'));
                 window.groupChat.init();
             } catch (e) {
-                console.error("GC: User recovery failed", e);
+                console.error('GC: User recovery failed', e);
             }
         } else {
             attempts++;
             if (attempts < maxAttempts) {
                 setTimeout(tryInit, 500);
             } else {
-                console.warn("Group Chat: Could not init after 10s.");
+                console.warn('Group Chat: Could not init after 10s.');
             }
         }
     };

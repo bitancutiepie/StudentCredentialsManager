@@ -11,10 +11,10 @@ body {
     font-family: 'Patrick Hand', cursive;
     background-color: #3d3d3d;
     background-image:
-        linear-gradient(135deg, rgba(0,0,0,0.08) 25%, transparent 25%),
-        linear-gradient(225deg, rgba(0,0,0,0.08) 25%, transparent 25%),
-        linear-gradient(315deg, rgba(0,0,0,0.08) 25%, transparent 25%),
-        linear-gradient(45deg, rgba(0,0,0,0.08) 25%, transparent 25%);
+        linear-gradient(135deg, rgba(0, 0, 0, 0.08) 25%, transparent 25%),
+        linear-gradient(225deg, rgba(0, 0, 0, 0.08) 25%, transparent 25%),
+        linear-gradient(315deg, rgba(0, 0, 0, 0.08) 25%, transparent 25%),
+        linear-gradient(45deg, rgba(0, 0, 0, 0.08) 25%, transparent 25%);
     background-size: 40px 40px;
     margin: 0;
     padding: 20px;
@@ -56,7 +56,6 @@ html {
     scrollbar-width: thin;
 }
 
-
 /* --- THE BINDER CONTAINER --- */
 .binder {
     display: flex;
@@ -65,7 +64,7 @@ html {
     background: var(--paper-color);
     box-shadow:
         0 20px 60px rgba(0, 0, 0, 0.5),
-        0 0 0 1px rgba(255,255,255,0.1);
+        0 0 0 1px rgba(255, 255, 255, 0.1);
     border-radius: 8px;
     position: relative;
     min-height: 85vh;
@@ -88,7 +87,7 @@ html {
     padding-top: 40px;
     z-index: 20;
     flex-shrink: 0;
-    box-shadow: inset -3px 0 10px rgba(0,0,0,0.3);
+    box-shadow: inset -3px 0 10px rgba(0, 0, 0, 0.3);
 }
 
 .binder-ring {
@@ -193,7 +192,11 @@ html {
     flex-grow: 1;
     /* INCREASED LEFT PADDING from 120px to 170px to clear the tabs */
     padding: 40px 40px 40px 170px;
-    background-image: repeating-linear-gradient(var(--paper-color) 0px, var(--paper-color) 29px, var(--line-color) 30px);
+    background-image: repeating-linear-gradient(
+        var(--paper-color) 0px,
+        var(--paper-color) 29px,
+        var(--line-color) 30px
+    );
     position: relative;
     /* Smooth transitions for tab switching height changes */
     transition: min-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -291,7 +294,9 @@ h2:hover {
 .class-card {
     background: white;
     padding: 20px;
-    box-shadow: 3px 3px 0 #000, 0 4px 15px rgba(0, 0, 0, 0.08);
+    box-shadow:
+        3px 3px 0 #000,
+        0 4px 15px rgba(0, 0, 0, 0.08);
     position: relative;
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     border: 2px solid #000;
@@ -309,7 +314,7 @@ h2:hover {
     transform: translateX(-50%) rotate(-1deg);
     width: 80px;
     height: 24px;
-    background: linear-gradient(135deg, rgba(255,255,255,0.5), rgba(255,255,255,0.25));
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.25));
     border-left: 1px dashed rgba(0, 0, 0, 0.08);
     border-right: 1px dashed rgba(0, 0, 0, 0.08);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
@@ -317,7 +322,9 @@ h2:hover {
 
 .class-card:hover {
     transform: translateY(-4px);
-    box-shadow: 5px 5px 0 #000, 0 12px 25px rgba(0, 0, 0, 0.12);
+    box-shadow:
+        5px 5px 0 #000,
+        0 12px 25px rgba(0, 0, 0, 0.12);
     z-index: 10;
 }
 
@@ -503,7 +510,7 @@ h2:hover {
 .loader::before {
     content: '\f303';
     /* Pencil Icon */
-    font-family: "Font Awesome 6 Free";
+    font-family: 'Font Awesome 6 Free';
     font-weight: 900;
     margin-right: 5px;
 }
@@ -544,7 +551,7 @@ h2:hover {
     z-index: 2;
     border-radius: 3px;
     letter-spacing: 0.5px;
-    box-shadow: 2px 2px 0 rgba(0,0,0,0.15);
+    box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.15);
 }
 
 .live-card h3 {
@@ -563,15 +570,21 @@ h2:hover {
 
 @keyframes urgentPulse {
     0% {
-        box-shadow: 0 0 0 0 rgba(214, 48, 49, 0.25), 0 4px 15px rgba(214, 48, 49, 0.1);
+        box-shadow:
+            0 0 0 0 rgba(214, 48, 49, 0.25),
+            0 4px 15px rgba(214, 48, 49, 0.1);
     }
 
     70% {
-        box-shadow: 0 0 0 12px rgba(214, 48, 49, 0), 0 4px 15px rgba(214, 48, 49, 0.1);
+        box-shadow:
+            0 0 0 12px rgba(214, 48, 49, 0),
+            0 4px 15px rgba(214, 48, 49, 0.1);
     }
 
     100% {
-        box-shadow: 0 0 0 0 rgba(214, 48, 49, 0), 0 4px 15px rgba(214, 48, 49, 0.1);
+        box-shadow:
+            0 0 0 0 rgba(214, 48, 49, 0),
+            0 4px 15px rgba(214, 48, 49, 0.1);
     }
 }
 
@@ -821,7 +834,7 @@ h2:hover {
     }
 
     /* Modal Form Grid Responsiveness */
-    .wimpy-modal-box div[style*="grid-template-columns: 1fr 1fr"] {
+    .wimpy-modal-box div[style*='grid-template-columns: 1fr 1fr'] {
         grid-template-columns: 1fr !important;
     }
 }
@@ -1147,7 +1160,9 @@ h2:hover {
     justify-content: center;
     align-items: center;
     text-align: center;
-    box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0,0,0,0.1);
+    box-shadow:
+        4px 4px 8px rgba(0, 0, 0, 0.15),
+        0 1px 3px rgba(0, 0, 0, 0.1);
     transform: rotate(3deg);
     font-family: 'Permanent Marker', cursive;
     z-index: 10;
@@ -1187,7 +1202,7 @@ h2:hover {
     line-height: 1;
     font-weight: bold;
     white-space: nowrap;
-    text-shadow: 1px 1px 0 rgba(0,0,0,0.06);
+    text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.06);
 }
 
 /* Mobile */
@@ -1223,12 +1238,14 @@ h2:hover {
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.5));
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 2px solid rgba(255,255,255,0.6);
+    border: 2px solid rgba(255, 255, 255, 0.6);
     border-radius: 50px;
     display: inline-flex;
     align-items: center;
     gap: 15px;
-    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1), inset 0 1px 0 rgba(255,255,255,0.8);
+    box-shadow:
+        0 8px 32px rgba(31, 38, 135, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
     animation: headerAppear 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
@@ -1831,7 +1848,7 @@ h2:hover {
     flex-grow: 1;
 }
 
-.todo-checkbox.checked+.todo-task-text {
+.todo-checkbox.checked + .todo-task-text {
     text-decoration: line-through;
     color: #747d8c;
 }
@@ -1966,11 +1983,11 @@ h2:hover {
 }
 
 /* Handle Checked State via CSS (no JS needed) */
-.custom-checkbox-container input:checked+.todo-checkbox .charcoal-x {
+.custom-checkbox-container input:checked + .todo-checkbox .charcoal-x {
     opacity: 1;
 }
 
-.custom-checkbox-container input:checked+.todo-checkbox .charcoal-x svg path {
+.custom-checkbox-container input:checked + .todo-checkbox .charcoal-x svg path {
     animation: drawX 0.4s ease-out forwards;
 }
 
@@ -2023,7 +2040,9 @@ h2:hover {
 
 .subject-folder.active {
     transform: scale(1.05);
-    box-shadow: 0 0 0 3px var(--folder-color, #000), 6px 6px 0 rgba(0, 0, 0, 0.15);
+    box-shadow:
+        0 0 0 3px var(--folder-color, #000),
+        6px 6px 0 rgba(0, 0, 0, 0.15);
     background: #fffdf0;
 }
 
@@ -2119,8 +2138,7 @@ h2:hover {
     cursor: pointer;
     position: relative;
     overflow: hidden;
-    background-image:
-        radial-gradient(#eee 1px, transparent 1px);
+    background-image: radial-gradient(#eee 1px, transparent 1px);
     background-size: 15px 15px;
 }
 
@@ -2440,7 +2458,7 @@ h2:hover {
     background: #81ecec;
 }
 
-.bday-month-card:nth-child(4n+1) .bday-month-header {
+.bday-month-card:nth-child(4n + 1) .bday-month-header {
     background: #a29bfe;
 }
 
@@ -2545,7 +2563,6 @@ h2:hover {
 }
 
 @keyframes bdayPulse {
-
     0%,
     100% {
         transform: scale(1);
@@ -2702,7 +2719,9 @@ h2:hover {
     align-items: center;
     gap: 12px;
     cursor: pointer;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.3), 0 0 0 2px rgba(255,255,255,0.15);
+    box-shadow:
+        0 8px 25px rgba(0, 0, 0, 0.3),
+        0 0 0 2px rgba(255, 255, 255, 0.15);
     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     border: 2px solid #fff;
     white-space: nowrap;
@@ -2711,7 +2730,7 @@ h2:hover {
 #class-countdown-pill:hover {
     transform: translateX(-50%) translateY(-3px) scale(1.05);
     background: #000;
-    box-shadow: 0 12px 30px rgba(0,0,0,0.4);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
 }
 
 #class-countdown-pill .pill-pulse {
@@ -2736,9 +2755,17 @@ h2:hover {
 }
 
 @keyframes pillPulse {
-    0% { transform: scale(0.5); opacity: 0; }
-    50% { opacity: 0.5; }
-    100% { transform: scale(1.5); opacity: 0; }
+    0% {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+    50% {
+        opacity: 0.5;
+    }
+    100% {
+        transform: scale(1.5);
+        opacity: 0;
+    }
 }
 
 #class-countdown-pill.hidden {
@@ -2755,4 +2782,4 @@ h2:hover {
         width: auto;
         max-width: 90%;
     }
-}
+}

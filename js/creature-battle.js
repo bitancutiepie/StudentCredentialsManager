@@ -11,36 +11,36 @@
             image: 'assets/images/Creatures/tikbalang.png',
             lore: 'Ang pinakapoging tikbalang ng IT 06',
             beats: ['sigbin', 'tiyanak'],
-            losesTo: ['angel', 'demunyo']
+            losesTo: ['angel', 'demunyo'],
         },
         tiyanak: {
             name: 'Tiyanak',
             image: 'assets/images/Creatures/tiyanak.png',
             lore: 'Ang pinakapraning na tiyanak sa mundong ibabaw',
             beats: ['angel', 'demunyo'],
-            losesTo: ['tikbalang', 'sigbin']
+            losesTo: ['tikbalang', 'sigbin'],
         },
         angel: {
             name: 'Angel',
             image: 'assets/images/Creatures/angel.png',
             lore: 'Dahil nabali ang leeg niya naging anghel tuloy',
             beats: ['demunyo', 'tikbalang'],
-            losesTo: ['sigbin', 'tiyanak']
+            losesTo: ['sigbin', 'tiyanak'],
         },
         demunyo: {
             name: 'Demunyo',
             image: 'assets/images/Creatures/demunyo.png',
             lore: 'Wala demunyo lang talaga',
             beats: ['tikbalang', 'sigbin'],
-            losesTo: ['angel', 'tiyanak']
+            losesTo: ['angel', 'tiyanak'],
         },
         sigbin: {
             name: 'Sigbin',
             image: 'assets/images/Creatures/sigbin.png',
             lore: 'Pinakawild at laging inheat',
             beats: ['angel', 'tiyanak'],
-            losesTo: ['demunyo', 'tikbalang']
-        }
+            losesTo: ['demunyo', 'tikbalang'],
+        },
     };
 
     // ==================== STATE ====================
@@ -114,7 +114,9 @@
                 </div>
 
                 <div class="battle-creature-showcase">
-                    ${Object.entries(CREATURES).map(([key, c]) => `
+                    ${Object.entries(CREATURES)
+                        .map(
+                            ([key, c]) => `
                         <div class="tcg-card" data-creature="${key}">
                             <div class="tcg-card-inner">
                                 <div class="tcg-card-frame">
@@ -128,13 +130,15 @@
                                         <p>${c.lore}</p>
                                     </div>
                                     <div class="tcg-card-matchups">
-                                        <span class="tcg-beats"><i class="fas fa-chevron-up"></i> ${c.beats.map(b => CREATURES[b].name).join(', ')}</span>
-                                        <span class="tcg-loses"><i class="fas fa-chevron-down"></i> ${c.losesTo.map(l => CREATURES[l].name).join(', ')}</span>
+                                        <span class="tcg-beats"><i class="fas fa-chevron-up"></i> ${c.beats.map((b) => CREATURES[b].name).join(', ')}</span>
+                                        <span class="tcg-loses"><i class="fas fa-chevron-down"></i> ${c.losesTo.map((l) => CREATURES[l].name).join(', ')}</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    `).join('')}
+                    `,
+                        )
+                        .join('')}
                 </div>
             </div>
         `;
@@ -180,12 +184,14 @@
                 return {
                     id: s.id,
                     name: s.name,
-                    avatar: s.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(s.name) + '&background=random',
+                    avatar:
+                        s.avatar_url ||
+                        'https://ui-avatars.com/api/?name=' + encodeURIComponent(s.name) + '&background=random',
                     wins: wins,
                     losses: losses,
-                    score: (wins * 3) - losses,
+                    score: wins * 3 - losses,
                     winRate: winRate,
-                    total: total
+                    total: total,
                 };
             });
 
@@ -213,7 +219,8 @@
         if (!container) return;
 
         if (!ranked || ranked.length === 0) {
-            container.innerHTML = '<div style="text-align: center; padding: 30px; font-family: Patrick Hand; color: #999; font-size: 1.2rem;"><i class="fas fa-ghost" style="font-size: 2rem; margin-bottom: 10px; display: block;"></i>No battles yet. Be the first to fight!</div>';
+            container.innerHTML =
+                '<div style="text-align: center; padding: 30px; font-family: Patrick Hand; color: #999; font-size: 1.2rem;"><i class="fas fa-ghost" style="font-size: 2rem; margin-bottom: 10px; display: block;"></i>No battles yet. Be the first to fight!</div>';
             return;
         }
 
@@ -227,12 +234,22 @@
         // Top player card
         html += '<div class="lb-top-player">';
         html += '<div class="lb-top-rank-badge">1<sup>st</sup> Rank</div>';
-        html += '<div class="lb-top-avatar-wrap"><img src="' + topPlayer.avatar + '" alt="' + escapeHTML(topPlayer.name) + '" class="lb-top-avatar"></div>';
+        html +=
+            '<div class="lb-top-avatar-wrap"><img src="' +
+            topPlayer.avatar +
+            '" alt="' +
+            escapeHTML(topPlayer.name) +
+            '" class="lb-top-avatar"></div>';
         html += '<div class="lb-top-stars">' + (starHTML || '<i class="far fa-star"></i>') + '</div>';
         html += '<div class="lb-top-name">' + escapeHTML(topPlayer.name) + '</div>';
         html += '<div class="lb-top-score">' + topPlayer.score + '</div>';
         html += '<div class="lb-top-score-label">Points</div>';
-        html += '<div class="lb-top-stats"><span class="lb-wl-win"><i class="fas fa-check"></i> ' + topPlayer.wins + 'W</span> <span class="lb-wl-lose"><i class="fas fa-times"></i> ' + topPlayer.losses + 'L</span></div>';
+        html +=
+            '<div class="lb-top-stats"><span class="lb-wl-win"><i class="fas fa-check"></i> ' +
+            topPlayer.wins +
+            'W</span> <span class="lb-wl-lose"><i class="fas fa-times"></i> ' +
+            topPlayer.losses +
+            'L</span></div>';
         html += '</div>';
 
         // Ranked list
@@ -255,7 +272,14 @@
             html += '<div class="lb-row' + (isMe ? ' lb-row-me' : '') + '">';
             html += '<div class="lb-rank ' + rankClass + '">' + rank + '<sup>' + getOrdinal(rank) + '</sup></div>';
             html += '<img src="' + p.avatar + '" alt="' + escapeHTML(p.name) + '" class="lb-row-avatar">';
-            html += '<div class="lb-row-info"><div class="lb-row-name">' + escapeHTML(p.name) + '</div><div class="lb-row-wl"><span class="lb-wl-win">' + p.wins + 'W</span> / <span class="lb-wl-lose">' + p.losses + 'L</span></div></div>';
+            html +=
+                '<div class="lb-row-info"><div class="lb-row-name">' +
+                escapeHTML(p.name) +
+                '</div><div class="lb-row-wl"><span class="lb-wl-win">' +
+                p.wins +
+                'W</span> / <span class="lb-wl-lose">' +
+                p.losses +
+                'L</span></div></div>';
             html += '<div class="lb-row-stars">' + pStarHTML + '</div>';
             html += '<div class="lb-row-score"><span>Score</span><strong>' + p.score + '</strong></div>';
             html += '</div>';
@@ -281,12 +305,26 @@
         try {
             if (result === 'win') {
                 // Increment my wins
-                var { data: me } = await window.db.from('students').select('battle_wins').eq('id', window.user.id).single();
-                await window.db.from('students').update({ battle_wins: ((me && me.battle_wins) || 0) + 1 }).eq('id', window.user.id);
+                var { data: me } = await window.db
+                    .from('students')
+                    .select('battle_wins')
+                    .eq('id', window.user.id)
+                    .single();
+                await window.db
+                    .from('students')
+                    .update({ battle_wins: ((me && me.battle_wins) || 0) + 1 })
+                    .eq('id', window.user.id);
             } else if (result === 'lose') {
                 // Increment my losses
-                var { data: me2 } = await window.db.from('students').select('battle_losses').eq('id', window.user.id).single();
-                await window.db.from('students').update({ battle_losses: ((me2 && me2.battle_losses) || 0) + 1 }).eq('id', window.user.id);
+                var { data: me2 } = await window.db
+                    .from('students')
+                    .select('battle_losses')
+                    .eq('id', window.user.id)
+                    .single();
+                await window.db
+                    .from('students')
+                    .update({ battle_losses: ((me2 && me2.battle_losses) || 0) + 1 })
+                    .eq('id', window.user.id);
             }
         } catch (err) {
             console.error('Failed to record battle result:', err);
@@ -324,16 +362,21 @@
                     <button onclick="document.getElementById('battle-opponent-modal').classList.add('hidden')" class="sketch-btn danger" style="width:auto; padding: 5px 10px;">X</button>
                 </div>
                 <div style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
-                    ${onlineUsers.length === 0
-                ? '<p style="text-align:center; color:#999; font-style:italic; padding: 30px 0;">No one else is online right now...</p>'
-                : onlineUsers.map(u => `
+                    ${
+                        onlineUsers.length === 0
+                            ? '<p style="text-align:center; color:#999; font-style:italic; padding: 30px 0;">No one else is online right now...</p>'
+                            : onlineUsers
+                                  .map(
+                                      (u) => `
                             <div class="battle-opponent-row" onclick="window.sendBattleInvite('${u.user_id}', '${escapeHTML(u.name)}', '${u.avatar}')">
                                 <img src="${u.avatar}" alt="${u.name}" class="battle-opponent-avatar">
                                 <span class="battle-opponent-name">${escapeHTML(u.name)}</span>
                                 <span class="battle-opponent-badge">Challenge</span>
                             </div>
-                        `).join('')
-            }
+                        `,
+                                  )
+                                  .join('')
+                    }
                 </div>
             </div>
         `;
@@ -360,14 +403,19 @@
                 battle_id: currentBattleId,
                 from_id: window.user.id,
                 from_name: window.user.name,
-                from_avatar: window.user.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(window.user.name) + '&background=random',
-                to_id: targetId
-            }
+                from_avatar:
+                    window.user.avatar_url ||
+                    'https://ui-avatars.com/api/?name=' + encodeURIComponent(window.user.name) + '&background=random',
+                to_id: targetId,
+            },
         });
 
         const container = document.getElementById('battle-game-container');
         if (container) {
-            container.innerHTML = '<div class="battle-waiting"><div class="battle-waiting-card"><i class="fas fa-spinner fa-spin" style="font-size: 2.5rem; color: #6c5ce7;"></i><h3 style="font-family: Permanent Marker; margin: 15px 0 5px;">Waiting for ' + escapeHTML(targetName) + '...</h3><p style="font-family: Patrick Hand; color: #666;">Battle invite sent! Waiting for response.</p><button class="sketch-btn danger" onclick="window.cancelBattleInvite()" style="margin-top: 15px; width: auto;">Cancel</button></div></div>';
+            container.innerHTML =
+                '<div class="battle-waiting"><div class="battle-waiting-card"><i class="fas fa-spinner fa-spin" style="font-size: 2.5rem; color: #6c5ce7;"></i><h3 style="font-family: Permanent Marker; margin: 15px 0 5px;">Waiting for ' +
+                escapeHTML(targetName) +
+                '...</h3><p style="font-family: Patrick Hand; color: #666;">Battle invite sent! Waiting for response.</p><button class="sketch-btn danger" onclick="window.cancelBattleInvite()" style="margin-top: 15px; width: auto;">Cancel</button></div></div>';
         }
 
         showToast('Battle invite sent to ' + targetName + '!');
@@ -381,8 +429,8 @@
                 payload: {
                     battle_id: currentBattleId,
                     from_id: window.user.id,
-                    to_id: opponentId
-                }
+                    to_id: opponentId,
+                },
             });
         }
         resetBattleState();
@@ -402,7 +450,7 @@
             window.roomChannel.send({
                 type: 'broadcast',
                 event: 'battle_decline',
-                payload: { battle_id: battle_id, from_id: window.user.id, to_id: from_id, reason: 'busy' }
+                payload: { battle_id: battle_id, from_id: window.user.id, to_id: from_id, reason: 'busy' },
             });
             return;
         }
@@ -412,13 +460,18 @@
             pendingInviteFrom = data;
             var statusEl = document.getElementById('rematch-status-text');
             if (statusEl) {
-                statusEl.innerHTML = '<div style="margin: 10px 0; padding: 5px; background: rgba(108, 92, 231, 0.1); border-radius: 5px; color: #6c5ce7; font-weight: bold; animation: pulse 1.5s infinite;">' + escapeHTML(from_name) + ' wants a rematch!</div>';
+                statusEl.innerHTML =
+                    '<div style="margin: 10px 0; padding: 5px; background: rgba(108, 92, 231, 0.1); border-radius: 5px; color: #6c5ce7; font-weight: bold; animation: pulse 1.5s infinite;">' +
+                    escapeHTML(from_name) +
+                    ' wants a rematch!</div>';
             }
             var retryBtn = document.getElementById('battle-play-again-btn');
             if (retryBtn) {
                 retryBtn.innerHTML = '<i class="fas fa-play"></i> ACCEPT REMATCH';
                 retryBtn.style.background = '#6c5ce7';
-                retryBtn.onclick = function () { window.acceptBattleInvite(); };
+                retryBtn.onclick = function () {
+                    window.acceptBattleInvite();
+                };
             }
             return;
         }
@@ -434,13 +487,19 @@
             document.body.appendChild(overlay);
         }
 
-        var avatar = from_avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(from_name) + '&background=random';
+        var avatar =
+            from_avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(from_name) + '&background=random';
 
-        overlay.innerHTML = '<div class="battle-invite-card" style="animation: battleInvitePop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);"><div class="battle-invite-header"><span style="font-size: 2.5rem;">&#9876;&#65039;</span><h2>BATTLE CHALLENGE!</h2></div><div class="battle-invite-body"><img src="' + avatar + '" class="battle-invite-avatar"><h3>' + escapeHTML(from_name) + '</h3><p>wants to battle you!</p></div><div class="battle-invite-actions"><button class="sketch-btn" onclick="window.declineBattleInvite()" style="flex:1; background: #fff;">DECLINE</button><button class="sketch-btn" onclick="window.acceptBattleInvite()" style="flex:1; background: #00b894; color: #fff;">ACCEPT</button></div></div>';
+        overlay.innerHTML =
+            '<div class="battle-invite-card" style="animation: battleInvitePop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);"><div class="battle-invite-header"><span style="font-size: 2.5rem;">&#9876;&#65039;</span><h2>BATTLE CHALLENGE!</h2></div><div class="battle-invite-body"><img src="' +
+            avatar +
+            '" class="battle-invite-avatar"><h3>' +
+            escapeHTML(from_name) +
+            '</h3><p>wants to battle you!</p></div><div class="battle-invite-actions"><button class="sketch-btn" onclick="window.declineBattleInvite()" style="flex:1; background: #fff;">DECLINE</button><button class="sketch-btn" onclick="window.acceptBattleInvite()" style="flex:1; background: #00b894; color: #fff;">ACCEPT</button></div></div>';
         overlay.classList.remove('hidden');
 
         var sound = document.getElementById('notif-sound');
-        if (sound) sound.play().catch(function () { });
+        if (sound) sound.play().catch(function () {});
     };
 
     window.acceptBattleInvite = function () {
@@ -465,14 +524,17 @@
                 battle_id: battle_id,
                 from_id: window.user.id,
                 from_name: window.user.name,
-                from_avatar: window.user.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(window.user.name) + '&background=random',
-                to_id: from_id
-            }
+                from_avatar:
+                    window.user.avatar_url ||
+                    'https://ui-avatars.com/api/?name=' + encodeURIComponent(window.user.name) + '&background=random',
+                to_id: from_id,
+            },
         });
 
         pendingInviteFrom = null;
 
-        var gamesTab = document.querySelector('[onclick*="switchTab"][onclick*="games"]') ||
+        var gamesTab =
+            document.querySelector('[onclick*="switchTab"][onclick*="games"]') ||
             document.querySelector('.tab-btn[onclick*="games"]');
         if (gamesTab) gamesTab.click();
 
@@ -493,8 +555,8 @@
             payload: {
                 battle_id: pendingInviteFrom.battle_id,
                 from_id: window.user.id,
-                to_id: pendingInviteFrom.from_id
-            }
+                to_id: pendingInviteFrom.from_id,
+            },
         });
 
         pendingInviteFrom = null;
@@ -512,27 +574,69 @@
         var container = document.getElementById('battle-game-container');
         if (!container) return;
 
-        var oppAvatar = opponentAvatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(opponentName) + '&background=random';
-        var myAvatarUrl = window.user.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(window.user.name) + '&background=random';
+        var oppAvatar =
+            opponentAvatar ||
+            'https://ui-avatars.com/api/?name=' + encodeURIComponent(opponentName) + '&background=random';
+        var myAvatarUrl =
+            window.user.avatar_url ||
+            'https://ui-avatars.com/api/?name=' + encodeURIComponent(window.user.name) + '&background=random';
 
-        var html = '<div class="battle-selection"><div class="battle-vs-bar"><div class="battle-player-tag"><img src="' + myAvatarUrl + '" class="battle-vs-avatar"><span>' + escapeHTML(window.user.name) + '</span></div><div class="battle-vs-text"><span id="battle-timer" class="battle-timer">' + selectionTimeLeft + '</span><span style="font-family: Permanent Marker; font-size: 1.5rem;">VS</span></div><div class="battle-player-tag"><img src="' + oppAvatar + '" class="battle-vs-avatar"><span>' + escapeHTML(opponentName) + '</span></div></div>';
+        var html =
+            '<div class="battle-selection"><div class="battle-vs-bar"><div class="battle-player-tag"><img src="' +
+            myAvatarUrl +
+            '" class="battle-vs-avatar"><span>' +
+            escapeHTML(window.user.name) +
+            '</span></div><div class="battle-vs-text"><span id="battle-timer" class="battle-timer">' +
+            selectionTimeLeft +
+            '</span><span style="font-family: Permanent Marker; font-size: 1.5rem;">VS</span></div><div class="battle-player-tag"><img src="' +
+            oppAvatar +
+            '" class="battle-vs-avatar"><span>' +
+            escapeHTML(opponentName) +
+            '</span></div></div>';
 
-        html += '<h3 style="font-family: Permanent Marker; text-align: center; margin: 20px 0 5px;">Choose Your Creature!</h3>';
-        html += '<p style="text-align: center; font-family: Patrick Hand; color: #666; margin-bottom: 15px;">Pick wisely — your opponent is choosing too!</p>';
+        html +=
+            '<h3 style="font-family: Permanent Marker; text-align: center; margin: 20px 0 5px;">Choose Your Creature!</h3>';
+        html +=
+            '<p style="text-align: center; font-family: Patrick Hand; color: #666; margin-bottom: 15px;">Pick wisely — your opponent is choosing too!</p>';
         html += '<div class="battle-creature-grid">';
 
         Object.entries(CREATURES).forEach(function (entry) {
             var key = entry[0];
             var c = entry[1];
-            html += '<div class="battle-creature-card" id="creature-card-' + key + '" onclick="window.selectCreature(\'' + key + '\')">';
-            html += '<div class="tcg-select-card"><div class="tcg-select-img-wrap"><img src="' + c.image + '" alt="' + c.name + '"></div>';
+            html +=
+                '<div class="battle-creature-card" id="creature-card-' +
+                key +
+                '" onclick="window.selectCreature(\'' +
+                key +
+                '\')">';
+            html +=
+                '<div class="tcg-select-card"><div class="tcg-select-img-wrap"><img src="' +
+                c.image +
+                '" alt="' +
+                c.name +
+                '"></div>';
             html += '<div class="tcg-select-name">' + c.name + '</div>';
-            html += '<div class="battle-card-matchup"><small class="tcg-beats"><i class="fas fa-chevron-up"></i> ' + c.beats.map(function (b) { return CREATURES[b].name; }).join(', ') + '</small>';
-            html += '<small class="tcg-loses"><i class="fas fa-chevron-down"></i> ' + c.losesTo.map(function (l) { return CREATURES[l].name; }).join(', ') + '</small></div></div></div>';
+            html +=
+                '<div class="battle-card-matchup"><small class="tcg-beats"><i class="fas fa-chevron-up"></i> ' +
+                c.beats
+                    .map(function (b) {
+                        return CREATURES[b].name;
+                    })
+                    .join(', ') +
+                '</small>';
+            html +=
+                '<small class="tcg-loses"><i class="fas fa-chevron-down"></i> ' +
+                c.losesTo
+                    .map(function (l) {
+                        return CREATURES[l].name;
+                    })
+                    .join(', ') +
+                '</small></div></div></div>';
         });
 
         html += '</div>';
-        html += '<div id="battle-confirm-area" class="battle-confirm-area hidden"><button class="sketch-btn" id="battle-confirm-btn" onclick="window.confirmCreatureChoice()" style="background: #6c5ce7; color: #fff; font-size: 1.3rem; padding: 12px 40px; width: auto;"><i class="fas fa-check"></i> LOCK IN!</button></div></div>';
+        html +=
+            '<div id="battle-confirm-area" class="battle-confirm-area hidden"><button class="sketch-btn" id="battle-confirm-btn" onclick="window.confirmCreatureChoice()" style="background: #6c5ce7; color: #fff; font-size: 1.3rem; padding: 12px 40px; width: auto;"><i class="fas fa-check"></i> LOCK IN!</button></div></div>';
 
         container.innerHTML = html;
 
@@ -560,7 +664,9 @@
     window.selectCreature = function (key) {
         if (battleState !== 'selecting') return;
 
-        document.querySelectorAll('.battle-creature-card').forEach(function (c) { c.classList.remove('selected'); });
+        document.querySelectorAll('.battle-creature-card').forEach(function (c) {
+            c.classList.remove('selected');
+        });
 
         var card = document.getElementById('creature-card-' + key);
         if (card) card.classList.add('selected');
@@ -583,8 +689,8 @@
                 battle_id: currentBattleId,
                 from_id: window.user.id,
                 to_id: opponentId,
-                creature: myChoice
-            }
+                creature: myChoice,
+            },
         });
 
         document.querySelectorAll('.battle-creature-card').forEach(function (c) {
@@ -596,7 +702,10 @@
 
         var confirmArea = document.getElementById('battle-confirm-area');
         if (confirmArea) {
-            confirmArea.innerHTML = '<div style="display: flex; align-items: center; gap: 10px; justify-content: center;"><i class="fas fa-lock" style="color: #6c5ce7; font-size: 1.3rem;"></i><span style="font-family: Permanent Marker; font-size: 1.3rem; color: #6c5ce7;">LOCKED IN — ' + CREATURES[myChoice].name + '</span></div><p style="font-family: Patrick Hand; color: #999; margin-top: 5px;">Waiting for opponent to choose...</p>';
+            confirmArea.innerHTML =
+                '<div style="display: flex; align-items: center; gap: 10px; justify-content: center;"><i class="fas fa-lock" style="color: #6c5ce7; font-size: 1.3rem;"></i><span style="font-family: Permanent Marker; font-size: 1.3rem; color: #6c5ce7;">LOCKED IN — ' +
+                CREATURES[myChoice].name +
+                '</span></div><p style="font-family: Patrick Hand; color: #999; margin-top: 5px;">Waiting for opponent to choose...</p>';
         }
 
         if (opponentChoice) {
@@ -610,21 +719,34 @@
         var container = document.getElementById('battle-game-container');
         if (!container) return;
 
-        var myAvatar = window.user.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(window.user.name) + '&background=random';
-        var oppAvatarUrl = opponentAvatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(opponentName) + '&background=random';
+        var myAvatar =
+            window.user.avatar_url ||
+            'https://ui-avatars.com/api/?name=' + encodeURIComponent(window.user.name) + '&background=random';
+        var oppAvatarUrl =
+            opponentAvatar ||
+            'https://ui-avatars.com/api/?name=' + encodeURIComponent(opponentName) + '&background=random';
 
-        container.innerHTML = '<div class="battle-arena" id="battle-arena-main">' +
+        container.innerHTML =
+            '<div class="battle-arena" id="battle-arena-main">' +
             '<div class="battle-flash-overlay" id="battle-flash"></div>' +
             '<div class="battle-arena-players">' +
             '<div class="battle-arena-side battle-side-left battle-enter-left">' +
-            '<img src="' + myAvatar + '" class="battle-arena-avatar">' +
-            '<span class="battle-arena-name">' + escapeHTML(window.user.name) + '</span>' +
+            '<img src="' +
+            myAvatar +
+            '" class="battle-arena-avatar">' +
+            '<span class="battle-arena-name">' +
+            escapeHTML(window.user.name) +
+            '</span>' +
             '<div class="battle-arena-creature" id="my-creature-reveal"><div class="battle-card-back battle-card-wobble">?</div></div>' +
             '</div>' +
             '<div class="battle-arena-center"><div id="battle-countdown" class="battle-countdown">3</div></div>' +
             '<div class="battle-arena-side battle-side-right battle-enter-right">' +
-            '<img src="' + oppAvatarUrl + '" class="battle-arena-avatar">' +
-            '<span class="battle-arena-name">' + escapeHTML(opponentName) + '</span>' +
+            '<img src="' +
+            oppAvatarUrl +
+            '" class="battle-arena-avatar">' +
+            '<span class="battle-arena-name">' +
+            escapeHTML(opponentName) +
+            '</span>' +
             '<div class="battle-arena-creature" id="opp-creature-reveal"><div class="battle-card-back battle-card-wobble">?</div></div>' +
             '</div>' +
             '</div>' +
@@ -662,7 +784,9 @@
                 var flash = document.getElementById('battle-flash');
                 if (flash) {
                     flash.classList.add('active');
-                    setTimeout(function () { flash.classList.remove('active'); }, 300);
+                    setTimeout(function () {
+                        flash.classList.remove('active');
+                    }, 300);
                 }
                 // Heavy shake
                 if (arena) {
@@ -684,26 +808,44 @@
         var arena = document.getElementById('battle-arena-main');
 
         // Stop wobble
-        document.querySelectorAll('.battle-card-wobble').forEach(function (c) { c.classList.remove('battle-card-wobble'); });
+        document.querySelectorAll('.battle-card-wobble').forEach(function (c) {
+            c.classList.remove('battle-card-wobble');
+        });
 
         // Flash on reveal
         var flash = document.getElementById('battle-flash');
         if (flash) {
             flash.classList.add('active');
-            setTimeout(function () { flash.classList.remove('active'); }, 200);
+            setTimeout(function () {
+                flash.classList.remove('active');
+            }, 200);
         }
 
         // Reveal my creature with dramatic entrance
         var myReveal = document.getElementById('my-creature-reveal');
         if (myReveal) {
-            myReveal.innerHTML = '<div class="battle-revealed-creature battle-reveal-entrance-left"><img src="' + myCreature.image + '" alt="' + myCreature.name + '"><span>' + myCreature.name + '</span></div>';
+            myReveal.innerHTML =
+                '<div class="battle-revealed-creature battle-reveal-entrance-left"><img src="' +
+                myCreature.image +
+                '" alt="' +
+                myCreature.name +
+                '"><span>' +
+                myCreature.name +
+                '</span></div>';
         }
 
         // Reveal opponent with delay
         setTimeout(function () {
             var oppReveal = document.getElementById('opp-creature-reveal');
             if (oppReveal) {
-                oppReveal.innerHTML = '<div class="battle-revealed-creature battle-reveal-entrance-right"><img src="' + oppCreature.image + '" alt="' + oppCreature.name + '"><span>' + oppCreature.name + '</span></div>';
+                oppReveal.innerHTML =
+                    '<div class="battle-revealed-creature battle-reveal-entrance-right"><img src="' +
+                    oppCreature.image +
+                    '" alt="' +
+                    oppCreature.name +
+                    '"><span>' +
+                    oppCreature.name +
+                    '</span></div>';
             }
 
             // Clash shake after both revealed
@@ -715,9 +857,13 @@
                 }
                 if (flash) {
                     flash.classList.add('active');
-                    setTimeout(function () { flash.classList.remove('active'); }, 150);
+                    setTimeout(function () {
+                        flash.classList.remove('active');
+                    }, 150);
                 }
-                setTimeout(function () { showBattleResult(); }, 600);
+                setTimeout(function () {
+                    showBattleResult();
+                }, 600);
             }, 400);
         }, 600);
     }
@@ -764,20 +910,48 @@
         }
 
         var resultConfig = {
-            win: { text: 'YOU WIN!', color: '#00b894', bg: 'rgba(0, 184, 148, 0.15)', desc: CREATURES[myChoice].name + ' beats ' + CREATURES[opponentChoice].name + '!' },
-            lose: { text: 'YOU LOSE!', color: '#d63031', bg: 'rgba(214, 48, 49, 0.15)', desc: CREATURES[opponentChoice].name + ' beats ' + CREATURES[myChoice].name + '!' },
-            draw: { text: 'DRAW!', color: '#6c5ce7', bg: 'rgba(108, 92, 231, 0.15)', desc: 'Both chose ' + CREATURES[myChoice].name + '!' }
+            win: {
+                text: 'YOU WIN!',
+                color: '#00b894',
+                bg: 'rgba(0, 184, 148, 0.15)',
+                desc: CREATURES[myChoice].name + ' beats ' + CREATURES[opponentChoice].name + '!',
+            },
+            lose: {
+                text: 'YOU LOSE!',
+                color: '#d63031',
+                bg: 'rgba(214, 48, 49, 0.15)',
+                desc: CREATURES[opponentChoice].name + ' beats ' + CREATURES[myChoice].name + '!',
+            },
+            draw: {
+                text: 'DRAW!',
+                color: '#6c5ce7',
+                bg: 'rgba(108, 92, 231, 0.15)',
+                desc: 'Both chose ' + CREATURES[myChoice].name + '!',
+            },
         };
 
         var cfg = resultConfig[result];
 
         if (resultArea) {
             resultArea.classList.remove('hidden');
-            resultArea.innerHTML = '<div class="battle-result-splash" style="background: ' + cfg.bg + '; border-color: ' + cfg.color + ';">' +
-                '<h2 class="battle-result-text" style="color: ' + cfg.color + ';">' + cfg.text + '</h2>' +
-                '<p style="font-family: Patrick Hand; font-size: 1.2rem; color: #555;">' + cfg.desc + '</p>' +
+            resultArea.innerHTML =
+                '<div class="battle-result-splash" style="background: ' +
+                cfg.bg +
+                '; border-color: ' +
+                cfg.color +
+                ';">' +
+                '<h2 class="battle-result-text" style="color: ' +
+                cfg.color +
+                ';">' +
+                cfg.text +
+                '</h2>' +
+                '<p style="font-family: Patrick Hand; font-size: 1.2rem; color: #555;">' +
+                cfg.desc +
+                '</p>' +
                 '<div id="rematch-status-text"></div>' +
-                '<button id="battle-play-again-btn" class="sketch-btn" onclick="window.battlePlayAgain()" style="background: ' + cfg.color + '; color: #fff; width: auto; margin-top: 15px; font-size: 1.1rem; padding: 10px 30px;"><i class="fas fa-redo"></i> PLAY AGAIN</button>' +
+                '<button id="battle-play-again-btn" class="sketch-btn" onclick="window.battlePlayAgain()" style="background: ' +
+                cfg.color +
+                '; color: #fff; width: auto; margin-top: 15px; font-size: 1.1rem; padding: 10px 30px;"><i class="fas fa-redo"></i> PLAY AGAIN</button>' +
                 '<button class="sketch-btn" onclick="window.battleBackToLobby()" style="width: auto; margin-top: 10px; font-size: 1rem; padding: 8px 20px;">Back to Lobby</button>' +
                 '</div>';
         }
@@ -837,7 +1011,7 @@
             case 'battle_choice':
                 if (payload.to_id === window.user.id && payload.battle_id === currentBattleId) {
                     opponentChoice = payload.creature;
-                    if (myChoice && (battleState === 'waiting_opponent')) {
+                    if (myChoice && battleState === 'waiting_opponent') {
                         startCountdown();
                     }
                 }
@@ -869,7 +1043,10 @@
     let inTourneyMatch = false; // true when playing a tournament match
 
     function getMyAvatar() {
-        return window.user.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(window.user.name) + '&background=random';
+        return (
+            window.user.avatar_url ||
+            'https://ui-avatars.com/api/?name=' + encodeURIComponent(window.user.name) + '&background=random'
+        );
     }
 
     // --- Extend renderLanding to show tournament buttons ---
@@ -891,18 +1068,27 @@
         tourneyBtn.className = 'sketch-btn';
         tourneyBtn.style.cssText = 'background: #f1c40f; color: #000; border-color: #f1c40f; margin-top: 10px;';
         tourneyBtn.innerHTML = '🏆 TOURNAMENT';
-        tourneyBtn.onclick = function () { window.openTourneyCreate(); };
+        tourneyBtn.onclick = function () {
+            window.openTourneyCreate();
+        };
         loreHeader.appendChild(tourneyBtn);
 
         // Show active tournament banner if one exists
         if (tourney && tourney.status !== 'finished') {
             var banner = document.createElement('div');
             banner.className = 'tourney-banner';
-            banner.onclick = function () { window.openTourneyView(); };
-            var statusText = tourney.status === 'lobby' ? (tourney.participants.length + '/' + tourney.size + ' players joined') : 'Tournament in progress!';
+            banner.onclick = function () {
+                window.openTourneyView();
+            };
+            var statusText =
+                tourney.status === 'lobby'
+                    ? tourney.participants.length + '/' + tourney.size + ' players joined'
+                    : 'Tournament in progress!';
             banner.innerHTML =
                 '<span class="tourney-banner-icon">🏆</span>' +
-                '<div class="tourney-banner-text"><h4>TOURNAMENT ACTIVE!</h4><p>' + statusText + '</p></div>' +
+                '<div class="tourney-banner-text"><h4>TOURNAMENT ACTIVE!</h4><p>' +
+                statusText +
+                '</p></div>' +
                 '<i class="fas fa-chevron-right" style="color: #fff; font-size: 1.2rem;"></i>';
             loreHeader.parentNode.insertBefore(banner, loreHeader.nextSibling);
         }
@@ -950,7 +1136,9 @@
     };
 
     window.selectTourneySize = function (btn, size) {
-        document.querySelectorAll('.tourney-size-btn').forEach(function (b) { b.classList.remove('selected'); });
+        document.querySelectorAll('.tourney-size-btn').forEach(function (b) {
+            b.classList.remove('selected');
+        });
         btn.classList.add('selected');
         window._selectedTourneySize = size;
     };
@@ -964,13 +1152,15 @@
             hostName: window.user.name,
             size: size,
             status: 'lobby', // lobby | active | finished
-            participants: [{
-                id: window.user.id,
-                name: window.user.name,
-                avatar: getMyAvatar()
-            }],
+            participants: [
+                {
+                    id: window.user.id,
+                    name: window.user.name,
+                    avatar: getMyAvatar(),
+                },
+            ],
             bracket: null,
-            currentMatchIdx: 0
+            currentMatchIdx: 0,
         };
         isTourneyHost = true;
         inTourneyMatch = false;
@@ -979,7 +1169,7 @@
         window.roomChannel.send({
             type: 'broadcast',
             event: 'tourney_create',
-            payload: tourney
+            payload: tourney,
         });
 
         var modal = document.getElementById('tourney-create-modal');
@@ -995,7 +1185,9 @@
         if (!window.user) return showToast('You must be logged in!', 'error');
 
         // Check if already joined
-        var already = tourney.participants.some(function (p) { return p.id === window.user.id; });
+        var already = tourney.participants.some(function (p) {
+            return p.id === window.user.id;
+        });
         if (already) {
             showToast('You already joined!');
             return;
@@ -1014,16 +1206,16 @@
                 player: {
                     id: window.user.id,
                     name: window.user.name,
-                    avatar: getMyAvatar()
-                }
-            }
+                    avatar: getMyAvatar(),
+                },
+            },
         });
 
         // Optimistic add
         tourney.participants.push({
             id: window.user.id,
             name: window.user.name,
-            avatar: getMyAvatar()
+            avatar: getMyAvatar(),
         });
 
         showToast('You joined the tournament!');
@@ -1039,18 +1231,20 @@
             event: 'tourney_leave',
             payload: {
                 tourney_id: tourney.id,
-                player_id: window.user.id
-            }
+                player_id: window.user.id,
+            },
         });
 
-        tourney.participants = tourney.participants.filter(function (p) { return p.id !== window.user.id; });
+        tourney.participants = tourney.participants.filter(function (p) {
+            return p.id !== window.user.id;
+        });
 
         if (isTourneyHost) {
             // Host leaves = cancel
             window.roomChannel.send({
                 type: 'broadcast',
                 event: 'tourney_cancel',
-                payload: { tourney_id: tourney.id }
+                payload: { tourney_id: tourney.id },
             });
             tourney = null;
             isTourneyHost = false;
@@ -1088,28 +1282,48 @@
             if (i < tourney.participants.length) {
                 var p = tourney.participants[i];
                 var hostClass = p.id === tourney.hostId ? ' is-host' : '';
-                participantsHTML += '<div class="tourney-participant' + hostClass + '">' +
-                    '<img src="' + p.avatar + '" alt="' + escapeHTML(p.name) + '">' +
-                    '<span>' + escapeHTML(p.name) + '</span></div>';
+                participantsHTML +=
+                    '<div class="tourney-participant' +
+                    hostClass +
+                    '">' +
+                    '<img src="' +
+                    p.avatar +
+                    '" alt="' +
+                    escapeHTML(p.name) +
+                    '">' +
+                    '<span>' +
+                    escapeHTML(p.name) +
+                    '</span></div>';
             } else {
-                participantsHTML += '<div class="tourney-slot-empty"><i class="fas fa-user-plus"></i><span>Empty</span></div>';
+                participantsHTML +=
+                    '<div class="tourney-slot-empty"><i class="fas fa-user-plus"></i><span>Empty</span></div>';
             }
         }
 
-        var isJoined = tourney.participants.some(function (p) { return p.id === window.user.id; });
+        var isJoined = tourney.participants.some(function (p) {
+            return p.id === window.user.id;
+        });
         var actionsHTML = '';
 
         if (isTourneyHost) {
             var canStart = tourney.participants.length >= 2;
             actionsHTML =
                 '<button class="sketch-btn" onclick="window.startTourney()" style="background: #00b894; color: #fff; width: auto; font-size: 1.1rem; padding: 10px 25px;"' +
-                (canStart ? '' : ' disabled style="background: #b2bec3; color: #fff; width: auto; font-size: 1.1rem; padding: 10px 25px; cursor: not-allowed;"') +
-                '><i class="fas fa-play"></i> START TOURNAMENT (' + tourney.participants.length + '/' + tourney.size + ')</button>' +
+                (canStart
+                    ? ''
+                    : ' disabled style="background: #b2bec3; color: #fff; width: auto; font-size: 1.1rem; padding: 10px 25px; cursor: not-allowed;"') +
+                '><i class="fas fa-play"></i> START TOURNAMENT (' +
+                tourney.participants.length +
+                '/' +
+                tourney.size +
+                ')</button>' +
                 '<button class="sketch-btn danger" onclick="window.leaveTourney()" style="width: auto; padding: 10px 20px;">Cancel</button>';
         } else if (isJoined) {
-            actionsHTML = '<button class="sketch-btn danger" onclick="window.leaveTourney()" style="width: auto; padding: 10px 20px;">Leave Tournament</button>';
+            actionsHTML =
+                '<button class="sketch-btn danger" onclick="window.leaveTourney()" style="width: auto; padding: 10px 20px;">Leave Tournament</button>';
         } else {
-            actionsHTML = '<button class="sketch-btn" onclick="window.joinTourney()" style="background: #6c5ce7; color: #fff; width: auto; font-size: 1.1rem; padding: 10px 25px;"><i class="fas fa-sign-in-alt"></i> JOIN TOURNAMENT</button>' +
+            actionsHTML =
+                '<button class="sketch-btn" onclick="window.joinTourney()" style="background: #6c5ce7; color: #fff; width: auto; font-size: 1.1rem; padding: 10px 25px;"><i class="fas fa-sign-in-alt"></i> JOIN TOURNAMENT</button>' +
                 '<button class="sketch-btn" onclick="window.battleBackToLobby()" style="width: auto; padding: 10px 20px;">Back</button>';
         }
 
@@ -1117,10 +1331,18 @@
             '<div class="tourney-lobby">' +
             '<div class="tourney-lobby-header">' +
             '<h3>🏆 TOURNAMENT LOBBY</h3>' +
-            '<p>Hosted by ' + escapeHTML(tourney.hostName) + ' • ' + tourney.size + '-Player Bracket</p>' +
+            '<p>Hosted by ' +
+            escapeHTML(tourney.hostName) +
+            ' • ' +
+            tourney.size +
+            '-Player Bracket</p>' +
             '</div>' +
-            '<div class="tourney-participants">' + participantsHTML + '</div>' +
-            '<div class="tourney-lobby-actions">' + actionsHTML + '</div>' +
+            '<div class="tourney-participants">' +
+            participantsHTML +
+            '</div>' +
+            '<div class="tourney-lobby-actions">' +
+            actionsHTML +
+            '</div>' +
             '</div>';
     }
 
@@ -1140,14 +1362,16 @@
         window.roomChannel.send({
             type: 'broadcast',
             event: 'tourney_start',
-            payload: tourney
+            payload: tourney,
         });
 
         showToast('Tournament started!');
         renderTourneyBracket();
 
         // Auto-trigger first available match
-        setTimeout(function () { triggerNextMatch(); }, 2000);
+        setTimeout(function () {
+            triggerNextMatch();
+        }, 2000);
     };
 
     // --- Bracket Generation ---
@@ -1175,7 +1399,7 @@
                 p1: p1, // { id, name, avatar } or null (bye)
                 p2: p2,
                 winner: null,
-                played: false
+                played: false,
             });
         }
 
@@ -1190,7 +1414,7 @@
                     p1: null,
                     p2: null,
                     winner: null,
-                    played: false
+                    played: false,
                 });
             }
         }
@@ -1284,7 +1508,9 @@
             bracketHTML += '<div class="tourney-round">';
             bracketHTML += '<div class="tourney-round-label">' + roundNames[rd] + '</div>';
 
-            var roundMatches = tourney.bracket.filter(function (m) { return m.round === rd; });
+            var roundMatches = tourney.bracket.filter(function (m) {
+                return m.round === rd;
+            });
 
             for (var mi = 0; mi < roundMatches.length; mi++) {
                 var m = roundMatches[mi];
@@ -1323,16 +1549,20 @@
             tourney.status = 'finished';
             championHTML = renderChampion(finalMatch.winner);
             standingsHTML = renderStandings();
-            actionsHTML = '<div style="text-align: center; margin-top: 20px;">' +
+            actionsHTML =
+                '<div style="text-align: center; margin-top: 20px;">' +
                 '<button class="sketch-btn" onclick="window.endTourney()" style="background: #6c5ce7; color: #fff; width: auto; padding: 10px 25px; font-size: 1.1rem;"><i class="fas fa-home"></i> BACK TO LOBBY</button>' +
                 '</div>';
         } else {
             actionsHTML = '<div style="text-align: center; margin-top: 15px;">';
             if (isTourneyHost) {
-                actionsHTML += '<button class="sketch-btn" onclick="window.triggerNextMatchManual()" style="background: #00b894; color: #fff; width: auto; padding: 8px 20px; margin: 5px;"><i class="fas fa-bolt"></i> Trigger Next Match</button>';
-                actionsHTML += '<button class="sketch-btn danger" onclick="window.cancelTourney()" style="width: auto; padding: 8px 20px; margin: 5px;">Cancel Tournament</button>';
+                actionsHTML +=
+                    '<button class="sketch-btn" onclick="window.triggerNextMatchManual()" style="background: #00b894; color: #fff; width: auto; padding: 8px 20px; margin: 5px;"><i class="fas fa-bolt"></i> Trigger Next Match</button>';
+                actionsHTML +=
+                    '<button class="sketch-btn danger" onclick="window.cancelTourney()" style="width: auto; padding: 8px 20px; margin: 5px;">Cancel Tournament</button>';
             }
-            actionsHTML += '<button class="sketch-btn" onclick="window.battleBackToLobby()" style="width: auto; padding: 8px 20px; margin: 5px;">Back to Lobby</button>';
+            actionsHTML +=
+                '<button class="sketch-btn" onclick="window.battleBackToLobby()" style="width: auto; padding: 8px 20px; margin: 5px;">Back to Lobby</button>';
             actionsHTML += '</div>';
         }
 
@@ -1340,7 +1570,9 @@
             '<div class="tourney-bracket-wrapper">' +
             '<div class="tourney-bracket-header">' +
             '<h3>🏆 TOURNAMENT BRACKET</h3>' +
-            '<p>Hosted by ' + escapeHTML(tourney.hostName) + '</p>' +
+            '<p>Hosted by ' +
+            escapeHTML(tourney.hostName) +
+            '</p>' +
             '</div>' +
             championHTML +
             bracketHTML +
@@ -1366,19 +1598,37 @@
         var isMe = window.user && player.id === window.user.id;
         if (isMe) cls += ' lb-row-me';
 
-        return '<div class="' + cls + '">' +
-            '<img src="' + player.avatar + '" alt="' + escapeHTML(player.name) + '">' +
-            '<span>' + escapeHTML(player.name) + '</span>' +
-            '</div>';
+        return (
+            '<div class="' +
+            cls +
+            '">' +
+            '<img src="' +
+            player.avatar +
+            '" alt="' +
+            escapeHTML(player.name) +
+            '">' +
+            '<span>' +
+            escapeHTML(player.name) +
+            '</span>' +
+            '</div>'
+        );
     }
 
     function renderChampion(winner) {
-        return '<div class="tourney-champion-card">' +
+        return (
+            '<div class="tourney-champion-card">' +
             '<div class="tourney-champion-crown">👑</div>' +
             '<h2>CHAMPION!</h2>' +
-            '<img src="' + winner.avatar + '" alt="' + escapeHTML(winner.name) + '">' +
-            '<h3>' + escapeHTML(winner.name) + '</h3>' +
-            '</div>';
+            '<img src="' +
+            winner.avatar +
+            '" alt="' +
+            escapeHTML(winner.name) +
+            '">' +
+            '<h3>' +
+            escapeHTML(winner.name) +
+            '</h3>' +
+            '</div>'
+        );
     }
 
     function renderStandings() {
@@ -1399,11 +1649,18 @@
 
         // Semi-finalists and others
         for (var rd = totalRounds - 2; rd >= 0; rd--) {
-            var roundMatches = tourney.bracket.filter(function (m) { return m.round === rd && m.played && m.winner; });
+            var roundMatches = tourney.bracket.filter(function (m) {
+                return m.round === rd && m.played && m.winner;
+            });
             for (var i = 0; i < roundMatches.length; i++) {
                 var m = roundMatches[i];
                 var rl = m.p1 && m.p1.id !== m.winner.id ? m.p1 : m.p2;
-                if (rl && !standings.some(function (s) { return s.player.id === rl.id; })) {
+                if (
+                    rl &&
+                    !standings.some(function (s) {
+                        return s.player.id === rl.id;
+                    })
+                ) {
                     var label = rd === totalRounds - 2 ? 'Semi-finalist' : 'Round ' + (rd + 1);
                     var resultClass = rd === totalRounds - 2 ? 'bronze' : 'eliminated';
                     standings.push({ player: rl, result: label, resultClass: resultClass });
@@ -1413,17 +1670,31 @@
 
         if (standings.length === 0) return '';
 
-        var html = '<div class="tourney-standings">' +
+        var html =
+            '<div class="tourney-standings">' +
             '<div class="tourney-standings-header"><i class="fas fa-list-ol"></i> Tournament Standings</div>';
 
         for (var s = 0; s < standings.length; s++) {
             var st = standings[s];
-            var rankIcon = s === 0 ? '🥇' : s === 1 ? '🥈' : s === 2 ? '🥉' : (s + 1);
-            html += '<div class="tourney-standing-row">' +
-                '<div class="tourney-standing-rank">' + rankIcon + '</div>' +
-                '<img src="' + st.player.avatar + '" alt="' + escapeHTML(st.player.name) + '">' +
-                '<div class="tourney-standing-name">' + escapeHTML(st.player.name) + '</div>' +
-                '<div class="tourney-standing-result ' + st.resultClass + '">' + st.result + '</div>' +
+            var rankIcon = s === 0 ? '🥇' : s === 1 ? '🥈' : s === 2 ? '🥉' : s + 1;
+            html +=
+                '<div class="tourney-standing-row">' +
+                '<div class="tourney-standing-rank">' +
+                rankIcon +
+                '</div>' +
+                '<img src="' +
+                st.player.avatar +
+                '" alt="' +
+                escapeHTML(st.player.name) +
+                '">' +
+                '<div class="tourney-standing-name">' +
+                escapeHTML(st.player.name) +
+                '</div>' +
+                '<div class="tourney-standing-result ' +
+                st.resultClass +
+                '">' +
+                st.result +
+                '</div>' +
                 '</div>';
         }
 
@@ -1466,8 +1737,8 @@
                 tourney_id: tourney.id,
                 match_id: nextMatch.id,
                 p1: nextMatch.p1,
-                p2: nextMatch.p2
-            }
+                p2: nextMatch.p2,
+            },
         });
 
         // If host is one of the players, handle locally
@@ -1507,9 +1778,9 @@
                 tourney_id: tourney.id,
                 match_id: tourney.currentMatchIdx,
                 reporter_id: window.user.id,
-                winner_id: result === 'win' ? window.user.id : (result === 'lose' ? opponentId : null),
-                result: result
-            }
+                winner_id: result === 'win' ? window.user.id : result === 'lose' ? opponentId : null,
+                result: result,
+            },
         });
 
         // If I'm the host, process immediately
@@ -1551,7 +1822,9 @@
         renderTourneyBracket();
 
         // Trigger next match after delay
-        setTimeout(function () { triggerNextMatch(); }, 3000);
+        setTimeout(function () {
+            triggerNextMatch();
+        }, 3000);
     }
 
     function broadcastTourneyUpdate() {
@@ -1559,7 +1832,7 @@
         window.roomChannel.send({
             type: 'broadcast',
             event: 'tourney_update',
-            payload: tourney
+            payload: tourney,
         });
     }
 
@@ -1569,7 +1842,7 @@
         window.roomChannel.send({
             type: 'broadcast',
             event: 'tourney_cancel',
-            payload: { tourney_id: tourney.id }
+            payload: { tourney_id: tourney.id },
         });
         showToast('Tournament cancelled.');
         tourney = null;
@@ -1605,7 +1878,8 @@
             if (resultArea) {
                 var bracketBtn = document.createElement('button');
                 bracketBtn.className = 'sketch-btn';
-                bracketBtn.style.cssText = 'width: auto; margin-top: 10px; font-size: 1rem; padding: 8px 20px; background: #6c5ce7; color: #fff;';
+                bracketBtn.style.cssText =
+                    'width: auto; margin-top: 10px; font-size: 1rem; padding: 8px 20px; background: #6c5ce7; color: #fff;';
                 bracketBtn.innerHTML = '<i class="fas fa-trophy"></i> Back to Bracket';
                 bracketBtn.onclick = function () {
                     resetBattleState();
@@ -1626,7 +1900,7 @@
             case 'tourney_create':
                 if (!tourney || tourney.status === 'finished') {
                     tourney = payload;
-                    isTourneyHost = (payload.hostId === window.user.id);
+                    isTourneyHost = payload.hostId === window.user.id;
                     showToast('🏆 ' + escapeHTML(payload.hostName) + ' created a tournament!');
                     // If on battle landing, re-render to show banner
                     var container = document.getElementById('battle-game-container');
@@ -1638,7 +1912,9 @@
 
             case 'tourney_join':
                 if (tourney && tourney.id === payload.tourney_id && tourney.status === 'lobby') {
-                    var exists = tourney.participants.some(function (p) { return p.id === payload.player.id; });
+                    var exists = tourney.participants.some(function (p) {
+                        return p.id === payload.player.id;
+                    });
                     if (!exists) {
                         tourney.participants.push(payload.player);
                         showToast(escapeHTML(payload.player.name) + ' joined the tournament!');
@@ -1653,7 +1929,9 @@
 
             case 'tourney_leave':
                 if (tourney && tourney.id === payload.tourney_id && tourney.status === 'lobby') {
-                    tourney.participants = tourney.participants.filter(function (p) { return p.id !== payload.player_id; });
+                    tourney.participants = tourney.participants.filter(function (p) {
+                        return p.id !== payload.player_id;
+                    });
                     var cont2 = document.getElementById('battle-game-container');
                     if (cont2 && cont2.querySelector('.tourney-lobby')) {
                         renderTourneyLobby();
@@ -1663,7 +1941,7 @@
 
             case 'tourney_start':
                 tourney = payload;
-                isTourneyHost = (payload.hostId === window.user.id);
+                isTourneyHost = payload.hostId === window.user.id;
                 showToast('🏆 Tournament has started!');
                 // Switch to bracket if in battle section
                 var bContainer = document.getElementById('battle-game-container');
@@ -1674,7 +1952,7 @@
 
             case 'tourney_update':
                 tourney = payload;
-                isTourneyHost = (payload.hostId === window.user.id);
+                isTourneyHost = payload.hostId === window.user.id;
                 var uContainer = document.getElementById('battle-game-container');
                 if (uContainer && !inTourneyMatch) {
                     if (tourney.status === 'active' || tourney.status === 'finished') {
@@ -1690,7 +1968,8 @@
                     tourney.currentMatchIdx = payload.match_id;
 
                     // Switch to battle tab if needed
-                    var gamesTab = document.querySelector('[onclick*="switchTab"][onclick*="games"]') ||
+                    var gamesTab =
+                        document.querySelector('[onclick*="switchTab"][onclick*="games"]') ||
                         document.querySelector('.tab-btn[onclick*="games"]');
                     if (gamesTab) gamesTab.click();
 
@@ -1730,5 +2009,4 @@
         // Fall through to original handler
         _origHandleBattleEvent(event, payload);
     };
-
 })();

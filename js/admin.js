@@ -19,7 +19,7 @@ window.showAdminTool = function (toolId, btnElement) {
             'admin-revoke-form': 'revoke',
             'admin-blacklist-view': 'blacklist',
             'admin-announcement-form': 'announcement',
-            'admin-birthday-view': 'birthday'
+            'admin-birthday-view': 'birthday',
         };
 
         const permKey = toolIdToPerm[toolId];
@@ -27,24 +27,38 @@ window.showAdminTool = function (toolId, btnElement) {
             // "promote", "revoke", and "announcement" are strictly for MAIN ADMIN
             if (permKey === 'promote' || permKey === 'revoke' || permKey === 'announcement') {
                 if (window.user.sr_code !== 'ADMIN') {
-                    showToast("Only the BOSS can do this!", "error");
+                    showToast('Only the BOSS can do this!', 'error');
                     return;
                 }
             } else if (!hasPermission(permKey)) {
-                showToast("You don't have access to this tool.", "error");
+                showToast("You don't have access to this tool.", 'error');
                 return;
             }
         }
     }
 
     // 1. Reset all buttons
-    document.querySelectorAll('.filter-bar .sketch-btn').forEach(b => b.classList.remove('active-tool'));
+    document.querySelectorAll('.filter-bar .sketch-btn').forEach((b) => b.classList.remove('active-tool'));
 
     // Hide all admin forms
-    const forms = ['admin-schedule-form', 'admin-assignment-form', 'admin-event-form', 'admin-file-form', 'admin-email-form', 'admin-message-manager', 'admin-gallery-form', 'admin-storage-view', 'admin-promote-form', 'admin-revoke-form', 'admin-todo-form', 'admin-announcement-form', 'admin-birthday-view'];
+    const forms = [
+        'admin-schedule-form',
+        'admin-assignment-form',
+        'admin-event-form',
+        'admin-file-form',
+        'admin-email-form',
+        'admin-message-manager',
+        'admin-gallery-form',
+        'admin-storage-view',
+        'admin-promote-form',
+        'admin-revoke-form',
+        'admin-todo-form',
+        'admin-announcement-form',
+        'admin-birthday-view',
+    ];
     let isAlreadyOpen = false;
 
-    forms.forEach(id => {
+    forms.forEach((id) => {
         const el = document.getElementById(id);
         if (el) {
             if (el.id === toolId && el.style.display === 'block') isAlreadyOpen = true;
@@ -73,7 +87,7 @@ window.showAdminTool = function (toolId, btnElement) {
         // If closing or clicking active, show hint
         if (hint) hint.style.display = 'block';
     }
-}
+};
 
 // --- STORAGE MONITOR ---
 window.fetchStorageStats = async function () {
@@ -97,7 +111,7 @@ window.fetchStorageStats = async function () {
 
         const count = data.length;
         let totalSize = 0;
-        data.forEach(f => totalSize += (f.metadata ? f.metadata.size : 0));
+        data.forEach((f) => (totalSize += f.metadata ? f.metadata.size : 0));
         grandTotalBytes += totalSize;
 
         const sizeMB = (totalSize / (1024 * 1024)).toFixed(2);
@@ -117,7 +131,7 @@ window.fetchStorageStats = async function () {
     const totalMB = (grandTotalBytes / (1024 * 1024)).toFixed(2);
     const limitGB = 1; // 1GB Limit
     const limitBytes = limitGB * 1024 * 1024 * 1024;
-    const percent = Math.min(100, ((grandTotalBytes / limitBytes) * 100)).toFixed(1);
+    const percent = Math.min(100, (grandTotalBytes / limitBytes) * 100).toFixed(1);
 
     const summaryHtml = `
         <div class="class-card" style="margin-bottom: 20px; border: 2px solid #000; background: #fff740; transform: rotate(-1deg);">
@@ -131,7 +145,7 @@ window.fetchStorageStats = async function () {
     `;
 
     display.innerHTML = summaryHtml + bucketHtml;
-}
+};
 
 // --- FILE UPLOAD (Admin Resources) ---
 window.uploadFile = async function (e) {
@@ -162,24 +176,23 @@ window.uploadFile = async function (e) {
         if (uploadError) throw uploadError;
 
         // 2. Get URL
-        const { data: urlData } = window.db.storage
-            .from('class-resources')
-            .getPublicUrl(fileName);
+        const { data: urlData } = window.db.storage.from('class-resources').getPublicUrl(fileName);
 
         // 3. Save to DB with Subject
-        const { error: dbError } = await window.db.from('shared_files').insert([{
-            title: titleInput.value,
-            subject: subjectInput.value,
-            file_url: urlData.publicUrl,
-            file_type: file.type
-        }]);
+        const { error: dbError } = await window.db.from('shared_files').insert([
+            {
+                title: titleInput.value,
+                subject: subjectInput.value,
+                file_url: urlData.publicUrl,
+                file_type: file.type,
+            },
+        ]);
 
         if (dbError) throw dbError;
 
         showToast('File added to ' + subjectInput.value + ' folder!');
         if (window.loadFiles) window.loadFiles(subjectInput.value);
         e.target.reset();
-
     } catch (error) {
         console.error(error);
         showToast('Upload failed: ' + error.message);
@@ -187,17 +200,17 @@ window.uploadFile = async function (e) {
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-paperclip"></i> Upload to Cabinet';
     }
-}
+};
 
 window.deleteFile = async function (id) {
-    if (!await showWimpyConfirm('Delete this file?')) return;
+    if (!(await showWimpyConfirm('Delete this file?'))) return;
     const { error } = await window.db.from('shared_files').delete().eq('id', id);
     if (error) showToast('Error deleting file.');
     else {
         showToast('File removed.');
         if (window.loadFiles) window.loadFiles();
     }
-}
+};
 
 // --- EMAIL BLAST (EmailJS) ---
 window.sendEmailService = async function (e) {
@@ -206,7 +219,7 @@ window.sendEmailService = async function (e) {
     const SERVICE_ID = 'service_crvq85j';
     const TEMPLATE_ID = 'template_jhu61sc';
 
-    if (!window.isAdmin) return showToast("Admins only!");
+    if (!window.isAdmin) return showToast('Admins only!');
 
     const recipientSelect = document.getElementById('email-recipient');
     const subjectInput = document.getElementById('email-subject');
@@ -217,14 +230,14 @@ window.sendEmailService = async function (e) {
     const selectedValue = recipientSelect.value;
 
     btn.disabled = true;
-    btn.innerText = "Processing...";
+    btn.innerText = 'Processing...';
 
     try {
-        let emailList = "";
+        let emailList = '';
 
         // SCENARIO 1: SEND TO EVERYONE
         if (selectedValue === 'ALL') {
-            btn.innerText = "Gathering all emails...";
+            btn.innerText = 'Gathering all emails...';
             const { data, error } = await window.db
                 .from('students')
                 .select('email')
@@ -233,36 +246,35 @@ window.sendEmailService = async function (e) {
                 .neq('email', '');
 
             if (error) throw error;
-            if (!data || data.length === 0) throw new Error("No emails found!");
+            if (!data || data.length === 0) throw new Error('No emails found!');
 
-            emailList = data.map(s => s.email).join(',');
+            emailList = data.map((s) => s.email).join(',');
         }
         // SCENARIO 2: SEND TO SPECIFIC PERSON
         else {
             emailList = selectedValue;
         }
 
-        console.log("Sending to:", emailList);
+        console.log('Sending to:', emailList);
 
         const templateParams = {
             subject: subjectInput.value,
             message: bodyInput.value,
             bcc: emailList,
-            from_name: window.user.name
+            from_name: window.user.name,
         };
 
         await emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams);
         showToast('Bird sent the letter!');
         e.target.reset();
-
     } catch (error) {
-        console.error("Email Error:", error);
-        showToast("Failed to send: " + error.message);
+        console.error('Email Error:', error);
+        showToast('Failed to send: ' + error.message);
     } finally {
         btn.disabled = false;
-        btn.innerText = "Send via Carrier Pigeon";
+        btn.innerText = 'Send via Carrier Pigeon';
     }
-}
+};
 
 // --- ADMIN GALLERY ---
 window.fetchAdminGalleryList = async function () {
@@ -287,7 +299,9 @@ window.fetchAdminGalleryList = async function () {
         return;
     }
 
-    list.innerHTML = data.map(file => `
+    list.innerHTML = data
+        .map(
+            (file) => `
         <div class="class-card" style="display:flex; align-items:center; justify-content:space-between; padding:10px;">
             <div style="display:flex; align-items:center; gap:10px;">
                 <img src="${file.file_url}" style="width:50px; height:50px; object-fit:cover; border:1px solid #000;" loading="lazy">
@@ -295,9 +309,10 @@ window.fetchAdminGalleryList = async function () {
             </div>
             <button onclick="deleteGalleryImage('${file.id}')" class="sketch-btn danger" style="padding:5px 10px; width:auto;">X</button>
         </div>
-    `).join('');
-}
-
+    `,
+        )
+        .join('');
+};
 
 window.uploadGalleryItem = async function (e) {
     e.preventDefault();
@@ -317,17 +332,21 @@ window.uploadGalleryItem = async function (e) {
         const compressedFile = await compressImage(file, 1500, 1500, 0.8);
         const fileName = `gallery_${Date.now()}_${compressedFile.name.replace(/\s/g, '_')}`;
 
-        const { error: upErr } = await window.db.storage.from('class-resources').upload(fileName, compressedFile, { cacheControl: '31536000', upsert: false });
+        const { error: upErr } = await window.db.storage
+            .from('class-resources')
+            .upload(fileName, compressedFile, { cacheControl: '31536000', upsert: false });
         if (upErr) throw upErr;
 
         const { data: urlData } = window.db.storage.from('class-resources').getPublicUrl(fileName);
 
-        const { error: dbErr } = await window.db.from('shared_files').insert([{
-            title: captionInput.value || 'Gallery Image',
-            subject: 'LandingGallery',
-            file_url: urlData.publicUrl,
-            file_type: file.type
-        }]);
+        const { error: dbErr } = await window.db.from('shared_files').insert([
+            {
+                title: captionInput.value || 'Gallery Image',
+                subject: 'LandingGallery',
+                file_url: urlData.publicUrl,
+                file_type: file.type,
+            },
+        ]);
 
         if (dbErr) throw dbErr;
 
@@ -340,17 +359,17 @@ window.uploadGalleryItem = async function (e) {
         btn.disabled = false;
         btn.innerText = 'Upload to Gallery';
     }
-}
+};
 
 window.deleteGalleryImage = async function (id) {
-    if (!await showWimpyConfirm('Remove this photo?')) return;
+    if (!(await showWimpyConfirm('Remove this photo?'))) return;
     const { error } = await window.db.from('shared_files').delete().eq('id', id);
     if (error) showToast('Error: ' + error.message);
     else {
         showToast('Photo removed.');
         fetchAdminGalleryList();
     }
-}
+};
 
 // --- MANAGE ROLES ---
 window.populatePromoteDropdown = async function () {
@@ -360,10 +379,11 @@ window.populatePromoteDropdown = async function () {
     // Fetch ALL users except the Main Admin (allows updating permissions for existing admins)
     const { data } = await window.db.from('students').select('id, name, sr_code').neq('sr_code', 'ADMIN').order('name');
     if (data) {
-        dropdown.innerHTML = '<option value="" disabled selected>Select User to Promote/Update</option>' +
-            data.map(s => `<option value="${s.id}">${escapeHTML(s.name)}</option>`).join('');
+        dropdown.innerHTML =
+            '<option value="" disabled selected>Select User to Promote/Update</option>' +
+            data.map((s) => `<option value="${s.id}">${escapeHTML(s.name)}</option>`).join('');
     }
-}
+};
 
 window.promoteUser = async function (e) {
     e.preventDefault();
@@ -373,7 +393,7 @@ window.promoteUser = async function (e) {
 
     // Gather permissions
     const checkboxes = document.querySelectorAll('.tool-perm:checked');
-    const perms = Array.from(checkboxes).map(cb => cb.value);
+    const perms = Array.from(checkboxes).map((cb) => cb.value);
 
     let newRole = 'admin';
     if (perms.length > 0) {
@@ -388,24 +408,26 @@ window.promoteUser = async function (e) {
         populatePromoteDropdown();
         populateRevokeDropdown();
     }
-}
+};
 
 window.populateRevokeDropdown = async function () {
     const dropdown = document.getElementById('revoke-user-select');
     if (!dropdown) return;
 
     // Fetch ANY admin (legacy or granular) except Main Admin
-    const { data } = await window.db.from('students')
+    const { data } = await window.db
+        .from('students')
         .select('id, name, sr_code')
         .ilike('role', 'admin%') // Matches 'admin' and 'admin:tools:...'
         .neq('sr_code', 'ADMIN')
         .order('name');
 
     if (data) {
-        dropdown.innerHTML = '<option value="" disabled selected>Select Admin</option>' +
-            data.map(s => `<option value="${s.id}">${escapeHTML(s.name)}</option>`).join('');
+        dropdown.innerHTML =
+            '<option value="" disabled selected>Select Admin</option>' +
+            data.map((s) => `<option value="${s.id}">${escapeHTML(s.name)}</option>`).join('');
     }
-}
+};
 
 window.revokeAdmin = async function (e) {
     e.preventDefault();
@@ -413,7 +435,7 @@ window.revokeAdmin = async function (e) {
     if (!window.user || window.user.sr_code !== 'ADMIN') return showToast('Only Main Admin can revoke.');
     if (!userId) return showToast('Select user.');
 
-    if (!await showWimpyConfirm('Revoke admin access?')) return;
+    if (!(await showWimpyConfirm('Revoke admin access?'))) return;
 
     const { error } = await window.db.from('students').update({ role: 'student' }).eq('id', userId);
     if (error) showToast('Error: ' + error.message);
@@ -422,7 +444,7 @@ window.revokeAdmin = async function (e) {
         e.target.reset();
         populateRevokeDropdown();
     }
-}
+};
 
 // --- EMAIL DROPDOWN POPULATION ---
 window.populateEmailDropdown = async function () {
@@ -436,12 +458,12 @@ window.populateEmailDropdown = async function () {
         .neq('sr_code', 'ADMIN') // Don't list the admin
         .order('name', { ascending: true });
 
-    if (error) return console.error("Error loading recipients:", error);
+    if (error) return console.error('Error loading recipients:', error);
 
     // Keep the "Everyone" option, remove others to avoid duplicates if reloaded
     dropdown.innerHTML = '<option value="ALL">Send to Everyone (Blast)</option>';
 
-    data.forEach(student => {
+    data.forEach((student) => {
         // Only add if they have an email
         if (student.email) {
             const option = document.createElement('option');
@@ -450,42 +472,44 @@ window.populateEmailDropdown = async function () {
             dropdown.appendChild(option);
         }
     });
-}
+};
 window.quickAddHomeworkToEmail = function () {
     const tasks = window.assignmentsData || [];
-    if (tasks.length === 0) return showToast("No homework found to attach!");
+    if (tasks.length === 0) return showToast('No homework found to attach!');
 
     const body = document.getElementById('email-body');
 
     // Format the list
-    let text = "📚 UPCOMING HOMEWORK & TASKS:\n";
+    let text = '📚 UPCOMING HOMEWORK & TASKS:\n';
     tasks.forEach((t, i) => {
-        const date = t.due_date ? new Date(t.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'No date';
+        const date = t.due_date
+            ? new Date(t.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+            : 'No date';
         text += `${i + 1}. [${t.subject}] ${t.title} - Due: ${date}\n`;
     });
 
-    text += "\nAralll mabutiii! 📝";
+    text += '\nAralll mabutiii! 📝';
 
     body.value = text;
     body.focus();
-}
+};
 
 // --- REALTIME ANNOUNCEMENT BROADCAST ---
 // --- REALTIME ANNOUNCEMENT BROADCAST ---
 window.broadcastAnnouncement = async function (e) {
     if (e && e.preventDefault) e.preventDefault();
-    if (window.user.sr_code !== 'ADMIN') return showToast("Nice try, but only the BOSS can broadcast!", "error");
+    if (window.user.sr_code !== 'ADMIN') return showToast('Nice try, but only the BOSS can broadcast!', 'error');
 
     const msgInput = document.getElementById('announcement-msg');
     const durInput = document.getElementById('announcement-duration');
     const btn = document.getElementById('broadcast-btn');
 
-    const message = msgInput ? msgInput.value.trim() : "";
+    const message = msgInput ? msgInput.value.trim() : '';
     const duration = parseInt(durInput ? durInput.value : 10) || 10;
 
     await window.performBroadcast(message, duration, btn);
     if (msgInput) msgInput.value = '';
-}
+};
 
 window.quickAddAnnouncement = async function () {
     if (window.user.sr_code !== 'ADMIN') return;
@@ -548,7 +572,7 @@ window.quickAddAnnouncement = async function () {
         const btn = document.getElementById('qa-send');
 
         if (!msg) {
-            showToast("Message is empty!", "warning");
+            showToast('Message is empty!', 'warning');
             return;
         }
 
@@ -561,7 +585,7 @@ window.quickAddAnnouncement = async function () {
 };
 
 window.performBroadcast = async function (message, duration, btn = null) {
-    if (!message) return showToast("Announcement is empty!", "error");
+    if (!message) return showToast('Announcement is empty!', 'error');
 
     const originalBtnHtml = btn ? btn.innerHTML : '';
     if (btn) {
@@ -575,14 +599,19 @@ window.performBroadcast = async function (message, duration, btn = null) {
             await window.roomChannel.subscribe();
         }
 
-        const { data: dbData, error: dbError } = await window.db.from('notes').insert([{
-            content: message,
-            color: 'GLOBAL_MSG',
-            x_pos: duration,
-            y_pos: 0,
-            rotation: 0,
-            likes: 0
-        }]).select();
+        const { data: dbData, error: dbError } = await window.db
+            .from('notes')
+            .insert([
+                {
+                    content: message,
+                    color: 'GLOBAL_MSG',
+                    x_pos: duration,
+                    y_pos: 0,
+                    rotation: 0,
+                    likes: 0,
+                },
+            ])
+            .select();
 
         if (dbError) throw dbError;
         const announcementId = dbData[0].id;
@@ -596,20 +625,20 @@ window.performBroadcast = async function (message, duration, btn = null) {
                 id: announcementId,
                 message: message,
                 admin_name: window.user.name,
-                admin_avatar: window.user.avatar_url
-            }
+                admin_avatar: window.user.avatar_url,
+            },
         });
 
-        if (resp !== 'ok') throw new Error("Broadcast failed. Check connection.");
+        if (resp !== 'ok') throw new Error('Broadcast failed. Check connection.');
 
-        showToast("📢 Announcement sent to everyone!");
+        showToast('📢 Announcement sent to everyone!');
 
         if (window.showAnnouncementPopup) {
             window.showAnnouncementPopup({
                 id: announcementId,
                 message: message,
                 admin_name: window.user.name,
-                admin_avatar: window.user.avatar_url
+                admin_avatar: window.user.avatar_url,
             });
         }
 
@@ -617,17 +646,16 @@ window.performBroadcast = async function (message, duration, btn = null) {
         if (window.loadRecentAnnouncementsSidebar) {
             window.loadRecentAnnouncementsSidebar();
         }
-
     } catch (err) {
         console.error(err);
-        showToast(err.message, "error");
+        showToast(err.message, 'error');
     } finally {
         if (btn) {
             btn.disabled = false;
             btn.innerHTML = originalBtnHtml || '<i class="fas fa-broadcast-tower"></i> BROADCAST NOW';
         }
     }
-}
+};
 
 // --- AUTO-CLEANUP ANNOUNCEMENTS (Smart Expiration) ---
 // This runs for the admin to keep the DB clean as requested
@@ -647,35 +675,36 @@ setInterval(async () => {
         const expiredIds = [];
 
         if (announcements) {
-            announcements.forEach(ann => {
+            announcements.forEach((ann) => {
                 const createdAt = new Date(ann.created_at).getTime();
                 const durationMs = (parseInt(ann.x_pos) || 10) * 60 * 1000;
 
-                if (now > (createdAt + durationMs)) {
+                if (now > createdAt + durationMs) {
                     expiredIds.push(ann.id);
                 }
             });
         }
 
         if (expiredIds.length > 0) {
-            console.log("System: Expiring", expiredIds.length, "announcements.");
+            console.log('System: Expiring', expiredIds.length, 'announcements.');
 
             // Delete expired announcements
             await window.db.from('notes').delete().in('id', expiredIds);
 
             // Also delete associated comments for these expired announcements
-            const commentColors = expiredIds.map(id => `COMMENT:${id}`);
+            const commentColors = expiredIds.map((id) => `COMMENT:${id}`);
             await window.db.from('notes').delete().in('color', commentColors);
         }
 
         // 2. Legacy/General Cleanup (Delete anything older than 24 hours just in case)
         const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-        await window.db.from('notes').delete()
+        await window.db
+            .from('notes')
+            .delete()
             .or(`color.eq.GLOBAL_MSG,color.ilike.COMMENT:%`)
             .lt('created_at', oneDayAgo);
-
     } catch (err) {
-        console.error("Cleanup error:", err);
+        console.error('Cleanup error:', err);
     }
 }, 300000); // Check every 5 minutes (was 60s — reduced for egress savings)
 
@@ -685,24 +714,24 @@ window.broadcastSystemUpdate = async function () {
         await window.roomChannel.subscribe();
     }
 
-    const confirmed = await showWimpyConfirm("Are you sure? This will force a refresh for EVERYONE currently online.");
+    const confirmed = await showWimpyConfirm('Are you sure? This will force a refresh for EVERYONE currently online.');
     if (!confirmed) return;
 
     try {
         const resp = await window.roomChannel.send({
             type: 'broadcast',
             event: 'system_reload',
-            payload: { timestamp: Date.now() }
+            payload: { timestamp: Date.now() },
         });
 
         if (resp === 'ok') {
-            showToast("Force refresh signal sent successfully!", "success");
+            showToast('Force refresh signal sent successfully!', 'success');
         } else {
-            showToast("Failed to send refresh signal.", "error");
+            showToast('Failed to send refresh signal.', 'error');
         }
     } catch (err) {
-        console.error("Broadcast failed:", err);
-        showToast("Error sending update signal.", "error");
+        console.error('Broadcast failed:', err);
+        showToast('Error sending update signal.', 'error');
     }
 };
 
@@ -713,11 +742,7 @@ window.fetchWordlePool = async function () {
 
     list.innerHTML = '<div class="loader">Unfolding paper...</div>';
 
-    const { data, error } = await window.db
-        .from('notes')
-        .select('*')
-        .eq('color', 'WORDLE_WORD')
-        .order('content');
+    const { data, error } = await window.db.from('notes').select('*').eq('color', 'WORDLE_WORD').order('content');
 
     if (error) {
         list.innerHTML = '<p>Error loading word pool.</p>';
@@ -725,55 +750,62 @@ window.fetchWordlePool = async function () {
     }
 
     if (!data || data.length === 0) {
-        list.innerHTML = '<p style="width:100%; text-align:center; font-style:italic;">No custom words yet. Using defaults.</p>';
+        list.innerHTML =
+            '<p style="width:100%; text-align:center; font-style:italic;">No custom words yet. Using defaults.</p>';
         return;
     }
 
-    list.innerHTML = data.map(w => `
+    list.innerHTML = data
+        .map(
+            (w) => `
         <div style="background:white; border:2px solid #000; padding:5px 10px; display:flex; align-items:center; gap:8px; font-family:'Permanent Marker'; box-shadow:2px 2px 0 #000;">
             <span>${escapeHTML(w.content)}</span>
             <i class="fas fa-times" onclick="window.deleteWordleWord('${w.id}')" style="color:#d63031; cursor:pointer;" title="Delete"></i>
         </div>
-    `).join('');
-}
+    `,
+        )
+        .join('');
+};
 
 window.addWordleWord = async function (e) {
     e.preventDefault();
     const input = document.getElementById('w-new-word');
     const word = input.value.trim().toUpperCase();
 
-    if (word.length !== 5) return showToast("Word must be exactly 5 letters!");
+    if (word.length !== 5) return showToast('Word must be exactly 5 letters!');
 
-    const { error } = await window.db.from('notes').insert([{
-        content: word,
-        color: 'WORDLE_WORD',
-        x_pos: 0,
-        y_pos: 0,
-        rotation: 0,
-        likes: 0
-    }]);
+    const { error } = await window.db.from('notes').insert([
+        {
+            content: word,
+            color: 'WORDLE_WORD',
+            x_pos: 0,
+            y_pos: 0,
+            rotation: 0,
+            likes: 0,
+        },
+    ]);
 
     if (error) {
-        showToast("Failed to add word: " + error.message);
+        showToast('Failed to add word: ' + error.message);
     } else {
         showToast(`"${word}" added to the pool!`);
         input.value = '';
         window.fetchWordlePool();
     }
-}
+};
 
 window.deleteWordleWord = async function (id) {
-    if (!await showWimpyConfirm("Delete this word from the pool?")) return;
+    if (!(await showWimpyConfirm('Delete this word from the pool?'))) return;
 
     const { error } = await window.db.from('notes').delete().eq('id', id);
 
     if (error) {
-        showToast("Failed to delete.");
+        showToast('Failed to delete.');
     } else {
-        showToast("Word removed.");
+        showToast('Word removed.');
         window.fetchWordlePool();
     }
-}
+};
 
 // --- BIRTHDAY VIEWER (Calendar Grid) ---
 window.fetchBirthdays = async function () {
@@ -796,7 +828,8 @@ window.fetchBirthdays = async function () {
     }
 
     if (!data || data.length === 0) {
-        display.innerHTML = '<p style="text-align:center; font-style:italic; color:#999;">No birthdays recorded yet. Students will be prompted on login.</p>';
+        display.innerHTML =
+            '<p style="text-align:center; font-style:italic; color:#999;">No birthdays recorded yet. Students will be prompted on login.</p>';
         return;
     }
 
@@ -805,7 +838,20 @@ window.fetchBirthdays = async function () {
     const currentMonth = today.getMonth() + 1; // 1-indexed
     const currentDay = today.getDate();
 
-    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const monthNames = [
+        'January',
+        'February',
+        'March',
+        'April',
+        'May',
+        'June',
+        'July',
+        'August',
+        'September',
+        'October',
+        'November',
+        'December',
+    ];
     const monthIcons = ['❄️', '💝', '🌸', '🌧️', '🎉', '☀️', '🌊', '🎒', '🍂', '🎃', '🦃', '🎄'];
 
     // Group students by birth month (1-12)
@@ -815,11 +861,11 @@ window.fetchBirthdays = async function () {
     let todayCount = 0;
     let weekCount = 0;
 
-    data.forEach(s => {
+    data.forEach((s) => {
         const parts = s.birthday.split('-');
         const bMonth = parseInt(parts[1]);
         const bDay = parseInt(parts[2]);
-        const isToday = (bMonth === currentMonth && bDay === currentDay);
+        const isToday = bMonth === currentMonth && bDay === currentDay;
 
         if (isToday) todayCount++;
 
@@ -854,7 +900,7 @@ window.fetchBirthdays = async function () {
 
     for (let m = 1; m <= 12; m++) {
         const students = monthBuckets[m];
-        const isCurrent = (m === currentMonth);
+        const isCurrent = m === currentMonth;
 
         gridHtml += `<div class="bday-month-card ${isCurrent ? 'current-month' : ''}">`;
         gridHtml += `<div class="bday-month-header">${monthIcons[m - 1]} ${monthNames[m - 1]}</div>`;
@@ -868,7 +914,7 @@ window.fetchBirthdays = async function () {
         if (students.length === 0) {
             gridHtml += '<div class="bday-month-empty">No birthdays</div>';
         } else {
-            students.forEach(s => {
+            students.forEach((s) => {
                 const avatarUrl = s.avatar_url || 'assets/images/default-avatar.png';
                 const todayTag = s.isToday ? '<span class="bday-today-tag">🎉 TODAY!</span>' : '';
 
@@ -889,5 +935,4 @@ window.fetchBirthdays = async function () {
     gridHtml += '</div>'; // close grid
 
     display.innerHTML = summaryHtml + gridHtml;
-}
-
+};
