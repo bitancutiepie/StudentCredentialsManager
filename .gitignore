@@ -8,7 +8,8 @@ Thumbs.db
 # Large binaries / duplicates
 web2_backup.html
 web2_paused.html
-assets/screenshots/
+assets/screenshots/*
+!assets/screenshots/new/
 *.wav
 *.pdf
 

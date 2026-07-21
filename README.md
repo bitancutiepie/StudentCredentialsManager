@@ -111,23 +111,23 @@ The Wimpy Credentials Book is a web-based academic management platform designed 
 
 ## Screenshots
 
-| Landing View 1 | Landing View 2 |
+| Auth & Memories Gallery | Member List & Fresh Drops |
 |:---:|:---:|
 | ![Landing 1](assets/screenshots/new/landing1.png) | ![Landing 2](assets/screenshots/new/landing2.png) |
 
-| Landing View 3 | Landing View 4 |
+| Recent Logins & Spotted | Admin Dashboard (Black List) |
 |:---:|:---:|
 | ![Landing 3](assets/screenshots/new/landing3.png) | ![Landing 4](assets/screenshots/new/landing4.png) |
 
-| Admin Choice | Student Binder |
+| Admin Role Selection | Student Dashboard (The Binder) |
 |:---:|:---:|
 | ![Admin Choice](assets/screenshots/new/adminchoice.png) | ![Binder](assets/screenshots/new/binder.png) |
 
-| Class Schedule | Freedom Wall |
+| Weekly Class Schedule | Real-time Freedom Wall |
 |:---:|:---:|
 | ![Schedule](assets/screenshots/new/schedule.png) | ![Freedom Wall](assets/screenshots/new/freedomwall.png) |
 
-| Admin Tools | Resource Cabinet |
+| Admin Management Tools | Digital Resource Cabinet |
 |:---:|:---:|
 | ![Admin Tools](assets/screenshots/new/admin_tools.png) | ![Resources](assets/screenshots/new/resources.png) |
 
