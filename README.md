@@ -115,7 +115,7 @@ The Wimpy Credentials Book is a web-based academic management platform designed 
 |:---:|:---:|
 | ![Landing 1](assets/screenshots/new/landing1.png) | ![Landing 2](assets/screenshots/new/landing2.png) |
 
-| Recent Logins & Spotted | Admin Dashboard (Black List) |
+| Recent Logins & Spotted | Memories Section |
 |:---:|:---:|
 | ![Landing 3](assets/screenshots/new/landing3.png) | ![Landing 4](assets/screenshots/new/landing4.png) |
 
