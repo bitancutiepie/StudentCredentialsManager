@@ -141,7 +141,7 @@
                     ></p>
                     <form id="authForm">
                         <input type="text" id="name" placeholder="YOUR NAME (Full Name)" class="hidden" />
-                        <input type="text" id="srCode" placeholder="SR CODE" required />
+                        <input type="text" id="srCode" placeholder="SR CODE" required class="input-accent" />
                         <!-- REPLACE the existing password input line with this block -->
                         <div style="position: relative; width: 100%">
                             <input
@@ -149,20 +149,10 @@
                                 id="password"
                                 placeholder="PASSWORD"
                                 required
+                                class="input-accent"
                                 style="padding-right: 40px"
                             />
-                            <span
-                                id="togglePassword"
-                                style="
-                                    position: absolute;
-                                    right: 10px;
-                                    top: 20px;
-                                    cursor: pointer;
-                                    font-size: 1.2rem;
-                                    user-select: none;
-                                    color: #555;
-                                "
-                            >
+                            <span id="togglePassword" class="password-toggle">
                                 <i class="fas fa-eye-slash"></i>
                             </span>
                         </div>
@@ -382,8 +372,14 @@
                 <div class="admin-tool-card">
                     <h3><i class="fas fa-camera"></i> Upload to Memories</h3>
                     <form onsubmit="uploadGalleryItemIndex(event)" class="upload-form">
-                        <input type="text" id="idx-g-caption" placeholder="Caption" required />
-                        <input type="file" id="idx-g-file" required accept="image/*" />
+                        <input type="text" id="idx-g-caption" placeholder="Caption" required class="input-accent" />
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <button type="button" onclick="document.getElementById('idx-g-file').click()" class="sketch-btn success" style="font-size: var(--font-size-sm); padding: 6px 12px;">
+                                <i class="fas fa-image"></i> CHOOSE FILE
+                            </button>
+                            <span id="idx-g-file-name" style="font-family: var(--font-accent); font-size: var(--font-size-sm); color: var(--color-text-secondary);">No file chosen</span>
+                            <input type="file" id="idx-g-file" required accept="image/*" class="hidden" onchange="document.getElementById('idx-g-file-name').textContent = this.files[0]?.name || 'No file chosen'" />
+                        </div>
                         <button type="submit" id="idx-upload-btn" class="btn-primary">Upload</button>
                     </form>
                 </div>
@@ -436,7 +432,7 @@
             <div class="note-input-area">
                 <h3><i class="fas fa-sticky-note"></i> Leave a Sticky Note</h3>
                 <div class="note-input-row">
-                    <input type="text" id="noteInput" placeholder="Write something..." maxlength="30" />
+                    <input type="text" id="noteInput" placeholder="Write something..." maxlength="30" class="input-accent" />
                     <button onclick="postNote()" class="btn-primary" style="width: auto; margin-top: 0">POST</button>
                 </div>
                 <small><i>(Notes appear randomly on everyone's screen!)</i></small>

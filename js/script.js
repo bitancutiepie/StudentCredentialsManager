@@ -1536,7 +1536,7 @@ function showPublicProfile(name, avatarUrl, status) {
     // Add Contact Button if Admin
     const contactBtn =
         status === 'System Administrator'
-            ? `<button onclick="openRequestModal()" style="margin-top:10px; background:#0984e3; color:#fff; border: 2px solid #000; font-size: 1rem;"><i class="fas fa-paper-plane"></i> Contact Admin</button>`
+            ? `<button onclick="openRequestModal()" class="sketch-btn primary" style="margin-top:10px;"><i class="fas fa-paper-plane"></i> Contact Admin</button>`
             : '';
 
     const safeAvatar = avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
@@ -1548,7 +1548,7 @@ function showPublicProfile(name, avatarUrl, status) {
             </div>
             <p style="margin-top:15px; font-style:italic;">"${escapeHTML(status) || 'Member'}"</p>
             ${contactBtn}
-            <button onclick="document.getElementById('publicProfileModal').style.display='none'">CLOSE</button>
+            <button onclick="document.getElementById('publicProfileModal').style.display='none'" class="sketch-btn danger">CLOSE</button>
         </div>
     `;
     modal.style.display = 'flex';
@@ -2675,13 +2675,13 @@ window.openFilePreview = function (url, title) {
         </style>
         <div id="filePreviewModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; display:flex; justify-content:center; align-items:center;">
             <div class="sketch-box" style="width:90%; max-width:900px; height:85%; display:flex; flex-direction:column; padding:15px; background:#fff; position:relative; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
-                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px dashed #000; padding-bottom:10px; margin-bottom:10px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px dashed #000; padding-bottom:10px; margin-bottom:10px;">
                     <h3 style="margin:0; font-size:1.5rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:60%;"><i class="fas fa-eye"></i> ${title}</h3>
                     <div style="display:flex; gap:5px;">
                         <a href="${url}" target="_blank" download style="text-decoration:none;">
-                            <button class="preview-modal-btn" style="width:auto; margin:0; padding:5px 15px; font-size:1rem; background:#0984e3; color:#fff; border: 2px solid #000; border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; font-family: 'Patrick Hand';" title="Download"><i class="fas fa-download"></i></button>
+                            <button class="sketch-btn primary" title="Download"><i class="fas fa-download"></i></button>
                         </a>
-                        <button class="preview-modal-btn" onclick="document.getElementById('filePreviewModal').remove()" style="width:auto; margin:0; padding:5px 15px; font-size:1rem; background:#d63031; color:#fff; border: 2px solid #000; border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; font-family: 'Patrick Hand';">CLOSE</button>
+                        <button class="sketch-btn danger" onclick="document.getElementById('filePreviewModal').remove()">CLOSE</button>
                     </div>
                 </div>
                 <div style="flex:1; overflow:hidden; background:#fff; border:none; position:relative;">
