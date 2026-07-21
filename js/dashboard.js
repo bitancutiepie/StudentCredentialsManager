@@ -1427,7 +1427,8 @@ async function loadFiles(subjectFilter = 'All') {
         .select('*')
         .neq('subject', 'LandingGallery')
         .not('subject', 'like', 'Receipt-%')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(200);
 
     // Apply Filter if not 'All'
     if (subjectFilter !== 'All') {
@@ -1570,7 +1571,8 @@ async function fetchNotes() {
         .select('*')
         .neq('color', 'CHAT_HIDDEN')
         .neq('color', 'FILE_VIEW')
-        .neq('color', 'WORDLE_WORD');
+        .neq('color', 'WORDLE_WORD')
+        .limit(200);
     if (error) return;
 
     const fragment = document.createDocumentFragment();
@@ -1778,23 +1780,15 @@ window.autoArrangeNotes = async function () {
     if (error || !data) return;
 
     showToast('Arranging...');
-    const cols = 5;
-    const spacingX = 18;
-    const spacingY = 25;
+    const cols = 5, spacingX = 18, spacingY = 25;
+    const updates = data.map((note, i) => ({
+        id: note.id,
+        x: (i % cols) * spacingX + 5,
+        y: Math.floor(i / cols) * spacingY + 5,
+        rot: 0,
+    }));
 
-    await Promise.all(
-        data.map((note, i) =>
-            db
-                .from('notes')
-                .update({
-                    x_pos: (i % cols) * spacingX + 5,
-                    y_pos: Math.floor(i / cols) * spacingY + 5,
-                    rotation: 0,
-                })
-                .eq('id', note.id),
-        ),
-    );
-
+    await db.rpc('batch_reposition_notes', { updates });
     fetchNotes();
     showToast('Notes aligned!');
 };
@@ -1804,19 +1798,14 @@ window.scatterNotes = async function () {
     if (error || !data) return;
 
     showToast('Scattering...');
-    await Promise.all(
-        data.map((note) =>
-            db
-                .from('notes')
-                .update({
-                    x_pos: Math.floor(Math.random() * 80) + 5,
-                    y_pos: Math.floor(Math.random() * 80) + 5,
-                    rotation: Math.floor(Math.random() * 40) - 20,
-                })
-                .eq('id', note.id),
-        ),
-    );
+    const updates = data.map((note) => ({
+        id: note.id,
+        x: Math.floor(Math.random() * 80) + 5,
+        y: Math.floor(Math.random() * 80) + 5,
+        rot: Math.floor(Math.random() * 40) - 20,
+    }));
 
+    await db.rpc('batch_reposition_notes', { updates });
     fetchNotes();
     showToast('Notes scattered!');
 };

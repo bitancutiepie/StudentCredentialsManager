@@ -243,7 +243,8 @@ window.sendEmailService = async function (e) {
                 .select('email')
                 .neq('sr_code', 'ADMIN')
                 .not('email', 'is', null)
-                .neq('email', '');
+                .neq('email', '')
+                .limit(500);
 
             if (error) throw error;
             if (!data || data.length === 0) throw new Error('No emails found!');
@@ -287,7 +288,8 @@ window.fetchAdminGalleryList = async function () {
         .from('shared_files')
         .select('*')
         .eq('subject', 'LandingGallery')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(200);
 
     if (error) {
         list.innerHTML = '<p>Error.</p>';
@@ -377,7 +379,7 @@ window.populatePromoteDropdown = async function () {
     if (!dropdown) return;
 
     // Fetch ALL users except the Main Admin (allows updating permissions for existing admins)
-    const { data } = await window.db.from('students').select('id, name, sr_code').neq('sr_code', 'ADMIN').order('name');
+    const { data } = await window.db.from('students').select('id, name, sr_code').neq('sr_code', 'ADMIN').order('name').limit(500);
     if (data) {
         dropdown.innerHTML =
             '<option value="" disabled selected>Select User to Promote/Update</option>' +
@@ -420,7 +422,8 @@ window.populateRevokeDropdown = async function () {
         .select('id, name, sr_code')
         .ilike('role', 'admin%') // Matches 'admin' and 'admin:tools:...'
         .neq('sr_code', 'ADMIN')
-        .order('name');
+        .order('name')
+        .limit(500);
 
     if (data) {
         dropdown.innerHTML =
@@ -456,7 +459,8 @@ window.populateEmailDropdown = async function () {
         .from('students')
         .select('name, sr_code, email')
         .neq('sr_code', 'ADMIN') // Don't list the admin
-        .order('name', { ascending: true });
+        .order('name', { ascending: true })
+        .limit(500);
 
     if (error) return console.error('Error loading recipients:', error);
 
@@ -819,7 +823,8 @@ window.fetchBirthdays = async function () {
         .neq('sr_code', 'ADMIN')
         .not('birthday', 'is', null)
         .neq('birthday', '')
-        .order('name');
+        .order('name')
+        .limit(500);
 
     if (error) {
         display.innerHTML = '<p>Error loading birthdays.</p>';

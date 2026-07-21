@@ -254,12 +254,13 @@ window.refreshInboxList = async function (showLoader = true) {
 
     if (!user) return;
 
-    // 1. Fetch all messages involving user
+    // 1. Fetch recent messages involving user
     const { data: msgs, error } = await window.db
         .from('messages')
         .select('id, sender_id, receiver_id, content, created_at, is_read')
         .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(100);
 
     if (error) {
         console.error(error);

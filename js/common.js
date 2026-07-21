@@ -300,8 +300,8 @@ async function trackActivity() {
     const now = new Date();
     const lastTracked = sessionStorage.getItem('last_track_time');
 
-    // Throttle: Only update every 2 minutes
-    if (lastTracked && now - new Date(lastTracked) < 120000) return;
+    // Throttle: Only update every 10 minutes
+    if (lastTracked && now - new Date(lastTracked) < 600000) return;
 
     try {
         await window.db.from('students').update({ last_login: now.toISOString() }).eq('id', user.id);

@@ -187,7 +187,8 @@ window.refreshFiles = async function () {
         .select('*')
         .neq('subject', 'LandingGallery')
         .not('subject', 'like', 'Receipt-%')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(200);
     if (error) return console.error(error);
 
     globalFiles = data || [];

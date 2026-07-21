@@ -1725,7 +1725,8 @@ window.fetchNotes = async function () {
         .select('*')
         .neq('color', 'CHAT_HIDDEN')
         .neq('color', 'FILE_VIEW')
-        .neq('color', 'WORDLE_WORD');
+        .neq('color', 'WORDLE_WORD')
+        .limit(200);
     if (error) return;
 
     // Check if Admin (for delete capability)
@@ -1861,19 +1862,13 @@ window.toggleLike = async function (id) {
 
 async function updateLikesInDb(id, change) {
     try {
-        // Fetch current count to ensure accuracy
-        const { data, error: fetchError } = await supabaseClient.from('notes').select('likes').eq('id', id).single();
+        const { error } = await supabaseClient.rpc('adjust_likes', {
+            note_id: id,
+            delta: change,
+        });
 
-        if (fetchError) {
-            console.error('Error fetching like count:', fetchError.message, fetchError.details || '');
-            return false;
-        }
-
-        const newCount = Math.max(0, (data?.likes || 0) + change);
-        const { error: updateError } = await supabaseClient.from('notes').update({ likes: newCount }).eq('id', id);
-
-        if (updateError) {
-            console.error('Error updating like count:', updateError.message, updateError.details || '');
+        if (error) {
+            console.error('Error updating like count:', error.message, error.details || '');
             return false;
         }
         return true;
@@ -2366,7 +2361,8 @@ async function fetchLandingGallery() {
         .from('shared_files')
         .select('*')
         .eq('subject', 'LandingGallery')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(50);
 
     if (error || !data || data.length === 0) {
         section.classList.add('hidden');
@@ -2532,7 +2528,7 @@ async function fetchRequests() {
 
     container.innerHTML = '<p>Checking suggestion box...</p>';
 
-    const { data, error } = await supabaseClient.from('requests').select('*').order('created_at', { ascending: false });
+    const { data, error } = await supabaseClient.from('requests').select('*').order('created_at', { ascending: false }).limit(100);
 
     if (error) return console.error(error);
 
@@ -2581,7 +2577,8 @@ async function fetchAdminFiles() {
         .select('*')
         .neq('subject', 'LandingGallery')
         .not('subject', 'like', 'Receipt-%')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(200);
 
     if (error) return console.error(error);
 
@@ -2932,23 +2929,15 @@ window.autoArrangeNotes = async function () {
     if (error || !data) return;
 
     showToast('Arranging...');
-    const cols = 5;
-    const spacingX = 18;
-    const spacingY = 25;
+    const cols = 5, spacingX = 18, spacingY = 25;
+    const updates = data.map((note, i) => ({
+        id: note.id,
+        x: (i % cols) * spacingX + 5,
+        y: Math.floor(i / cols) * spacingY + 5,
+        rot: 0,
+    }));
 
-    await Promise.all(
-        data.map((note, i) =>
-            supabaseClient
-                .from('notes')
-                .update({
-                    x_pos: (i % cols) * spacingX + 5,
-                    y_pos: Math.floor(i / cols) * spacingY + 5,
-                    rotation: 0,
-                })
-                .eq('id', note.id),
-        ),
-    );
-
+    await supabaseClient.rpc('batch_reposition_notes', { updates });
     fetchNotes();
     showToast('Notes aligned!');
 };
@@ -2958,19 +2947,14 @@ window.scatterNotes = async function () {
     if (error || !data) return;
 
     showToast('Scattering...');
-    await Promise.all(
-        data.map((note) =>
-            supabaseClient
-                .from('notes')
-                .update({
-                    x_pos: Math.floor(Math.random() * 80) + 5,
-                    y_pos: Math.floor(Math.random() * 80) + 5,
-                    rotation: Math.floor(Math.random() * 40) - 20,
-                })
-                .eq('id', note.id),
-        ),
-    );
+    const updates = data.map((note) => ({
+        id: note.id,
+        x: Math.floor(Math.random() * 80) + 5,
+        y: Math.floor(Math.random() * 80) + 5,
+        rot: Math.floor(Math.random() * 40) - 20,
+    }));
 
+    await supabaseClient.rpc('batch_reposition_notes', { updates });
     fetchNotes();
     showToast('Notes scattered!');
 };

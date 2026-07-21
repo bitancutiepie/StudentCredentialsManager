@@ -300,32 +300,13 @@
     // ==================== RECORD BATTLE RESULT ====================
     async function recordBattleResult(result) {
         if (!window.db || !window.user) return;
-        if (result === 'draw') return; // Draws don't affect stats
+        if (result === 'draw') return;
 
         try {
-            if (result === 'win') {
-                // Increment my wins
-                var { data: me } = await window.db
-                    .from('students')
-                    .select('battle_wins')
-                    .eq('id', window.user.id)
-                    .single();
-                await window.db
-                    .from('students')
-                    .update({ battle_wins: ((me && me.battle_wins) || 0) + 1 })
-                    .eq('id', window.user.id);
-            } else if (result === 'lose') {
-                // Increment my losses
-                var { data: me2 } = await window.db
-                    .from('students')
-                    .select('battle_losses')
-                    .eq('id', window.user.id)
-                    .single();
-                await window.db
-                    .from('students')
-                    .update({ battle_losses: ((me2 && me2.battle_losses) || 0) + 1 })
-                    .eq('id', window.user.id);
-            }
+            await window.db.rpc('increment_battle_stat', {
+                user_id: window.user.id,
+                stat: result === 'win' ? 'wins' : 'losses',
+            });
         } catch (err) {
             console.error('Failed to record battle result:', err);
         }
