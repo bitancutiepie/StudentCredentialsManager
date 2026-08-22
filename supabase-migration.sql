@@ -64,3 +64,15 @@ BEGIN
   RETURN deleted;
 END;
 $$ LANGUAGE plpgsql;
+
+-- ============ SECTIONS & MULTI-BLOCK SUPPORT ============
+ALTER TABLE students ADD COLUMN IF NOT EXISTS section text DEFAULT 'BSIT-3106';
+ALTER TABLE schedule ADD COLUMN IF NOT EXISTS section text DEFAULT 'BSIT-3106';
+
+-- Update existing default values if previously set to BSIT-2101 or null
+UPDATE students SET section = 'BSIT-3106' WHERE section = 'BSIT-2101' OR section IS NULL;
+UPDATE schedule SET section = 'BSIT-3106' WHERE section = 'BSIT-2101' OR section IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_students_section ON students (section);
+CREATE INDEX IF NOT EXISTS idx_schedule_section ON schedule (section);
+

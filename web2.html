@@ -351,17 +351,36 @@
 
                     <!-- Text Info Stack -->
                     <div class="profile-text-stack">
-                        <div
-                            id="enrollment-badge"
-                            style="
-                                display: none;
-                                font-size: 0.85rem;
-                                font-weight: bold;
-                                padding: 4px 10px;
-                                border-radius: 4px;
-                                white-space: nowrap;
-                            "
-                        ></div>
+                        <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                            <div
+                                id="enrollment-badge"
+                                style="
+                                    display: none;
+                                    font-size: 0.85rem;
+                                    font-weight: bold;
+                                    padding: 4px 10px;
+                                    border-radius: 4px;
+                                    white-space: nowrap;
+                                "
+                            ></div>
+                            <div
+                                id="user-section-badge"
+                                style="
+                                    display: inline-block;
+                                    font-size: 0.85rem;
+                                    font-weight: bold;
+                                    padding: 4px 10px;
+                                    border-radius: 4px;
+                                    background: #6c5ce7;
+                                    color: #fff;
+                                    border: 1px solid #000;
+                                    white-space: nowrap;
+                                "
+                                title="Your Assigned Block / Section"
+                            >
+                                <i class="fas fa-layer-group"></i> <span id="user-section-name">BSIT-3106</span>
+                            </div>
+                        </div>
                         <p
                             id="welcome-msg"
                             style="
@@ -473,6 +492,9 @@
                         <button class="sketch-btn" onclick="showAdminTool('admin-storage-view', this)">
                             <i class="fas fa-hdd"></i> Storage
                         </button>
+                        <button class="sketch-btn" onclick="showAdminTool('admin-section-form', this)">
+                            <i class="fas fa-layer-group"></i> Blocks/Sections
+                        </button>
                         <button class="sketch-btn" onclick="showAdminTool('admin-promote-form', this)">
                             <i class="fas fa-crown"></i> Privileges
                         </button>
@@ -510,6 +532,77 @@
 
                     <div class="grid-container" style="grid-template-columns: 1fr">
                         <!-- Moved Forms -->
+                        <!-- NEW: Section & Block Manager Form -->
+                        <div class="admin-controls" id="admin-section-form" style="display: none;">
+                            <button
+                                onclick="showAdminTool(null)"
+                                class="sketch-btn danger"
+                                style="
+                                    position: absolute;
+                                    top: 10px;
+                                    right: 10px;
+                                    width: auto;
+                                    margin: 0;
+                                    padding: 5px 10px;
+                                    font-size: 0.9rem;
+                                "
+                            >
+                                Close
+                            </button>
+                            <h3>Admin's Note: Section & Block Manager <i class="fas fa-layer-group"></i></h3>
+                            <p style="font-size: 0.9rem; margin-bottom: 15px;">(Assign students to different blocks or clone schedules between sections)</p>
+
+                            <!-- Card 1: Assign Student Section -->
+                            <div class="class-card" style="margin-bottom: 20px; background: #fffdf0; border: 2px solid #000;">
+                                <h4 style="margin-top: 0; text-align: left;"><i class="fas fa-user-edit"></i> Assign Student to Block / Section</h4>
+                                <form onsubmit="assignStudentSection(event)" autocomplete="off">
+                                    <select id="section-student-select" required style="width: 100%; padding: 10px; margin-bottom: 10px; border: 2px solid #000; border-radius: 5px; font-family: 'Patrick Hand'; font-size: 1.1rem; background: #fff;">
+                                        <option value="" disabled selected>Loading students...</option>
+                                    </select>
+                                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                                        <select id="section-choice-select" onchange="toggleCustomSectionInput(this)" style="flex: 1; padding: 10px; border: 2px solid #000; border-radius: 5px; font-family: 'Patrick Hand'; font-size: 1.1rem; background: #fff;">
+                                            <option value="BSIT-3106">BSIT-3106</option>
+                                            <option value="RAIN AND GABO">RAIN AND GABO</option>
+                                            <option value="__NEW__">+ Create New Custom Block / Section...</option>
+                                        </select>
+                                        <input type="text" id="section-custom-input" placeholder="e.g. BSIT-2102 or Block B" class="hidden" style="flex: 1; padding: 10px; border: 2px solid #000; border-radius: 5px; font-family: 'Patrick Hand'; font-size: 1.1rem;" />
+                                    </div>
+                                    <button type="submit" class="sketch-btn" style="background: #000; color: #fff; width: 100%; justify-content: center;">
+                                        <i class="fas fa-save"></i> Save Student Section
+                                    </button>
+                                </form>
+                            </div>
+
+                            <!-- Card 2: Clone Section Schedule -->
+                            <div class="class-card" style="margin-bottom: 20px; background: #f4f6f9; border: 2px solid #000;">
+                                <h4 style="margin-top: 0; text-align: left;"><i class="fas fa-copy"></i> Clone Schedule to Another Block</h4>
+                                <p style="font-size: 0.85rem; color: #666; margin-bottom: 10px; text-align: left;">Duplicate all class entries from an existing block into a new block section.</p>
+                                <form onsubmit="cloneSectionSchedule(event)" autocomplete="off">
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; text-align: left;">
+                                        <div>
+                                            <label style="font-size: 0.9rem; font-weight: bold; font-family: 'Patrick Hand';">From Source Section:</label>
+                                            <select id="clone-source-section" style="width: 100%; padding: 8px; border: 2px solid #000; border-radius: 5px; font-family: 'Patrick Hand'; background: #fff;"></select>
+                                        </div>
+                                        <div>
+                                            <label style="font-size: 0.9rem; font-weight: bold; font-family: 'Patrick Hand';">To Target Section:</label>
+                                            <input type="text" id="clone-target-section" placeholder="e.g. BSIT-2102" required style="width: 100%; padding: 8px; border: 2px solid #000; border-radius: 5px; font-family: 'Patrick Hand';" />
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="sketch-btn" style="background: #0984e3; color: #fff; width: 100%; justify-content: center;">
+                                        <i class="fas fa-clone"></i> Clone All Class Entries
+                                    </button>
+                                </form>
+                            </div>
+
+                            <!-- Card 3: Active Sections Breakdown -->
+                            <div class="class-card" style="background: #fff; border: 2px solid #000;">
+                                <h4 style="margin-top: 0; text-align: left;"><i class="fas fa-users"></i> Students Grouped by Block / Section</h4>
+                                <div id="admin-sections-roster" style="max-height: 250px; overflow-y: auto;">
+                                    <div class="loader">Gathering section list...</div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="admin-controls" id="admin-schedule-form">
                             <button
                                 onclick="showAdminTool(null)"
@@ -528,6 +621,13 @@
                             </button>
                             <h3>Admin's Note: Add Class</h3>
                             <form onsubmit="addClass(event)" autocomplete="off">
+                                <div style="margin-bottom: 10px; text-align: left;">
+                                    <label style="font-weight: bold; font-family: 'Patrick Hand'; font-size: 1.1rem; display: block;">Target Section / Block:</label>
+                                    <select id="s-section" style="width: 100%; padding: 8px; border: 2px solid #000; border-radius: 5px; font-family: 'Patrick Hand'; font-size: 1.1rem; background: #fff;">
+                                        <option value="BSIT-3106">BSIT-3106</option>
+                                        <option value="RAIN AND GABO">RAIN AND GABO</option>
+                                    </select>
+                                </div>
                                 <select id="s-day" required>
                                     <option value="Monday">Monday</option>
                                     <option value="Tuesday">Tuesday</option>
@@ -1369,28 +1469,50 @@
                 <div id="schedule" class="tab-content">
                     <h2><i class="fas fa-clock"></i> Class Schedule</h2>
 
-                    <div class="filter-bar">
-                        <button class="sketch-btn" onclick="filterSchedule('Monday')">Monday</button>
-                        <button class="sketch-btn" onclick="filterSchedule('Tuesday')">Tuesday</button>
-                        <button class="sketch-btn" onclick="filterSchedule('Wednesday')">Wednesday</button>
-                        <button class="sketch-btn" onclick="filterSchedule('Thursday')">Thursday</button>
-                        <button class="sketch-btn" onclick="filterSchedule('Friday')">Friday</button>
-                        <button class="sketch-btn" onclick="filterSchedule('Saturday')">Saturday</button>
-                        <button class="sketch-btn" onclick="filterSchedule('All')">All</button>
-                        <button class="sketch-btn wallpaper-btn" onclick="openWallpaperModal()">
-                            <i class="fas fa-camera-retro"></i> Wallpaper
-                        </button>
-                        <button class="sketch-btn pdf-scanner-btn admin-only hidden" onclick="openPdfScanner()">
-                            <i class="fas fa-paste"></i> Paste Schedule
-                        </button>
-                        <button class="sketch-btn danger admin-only hidden" onclick="deleteAllSchedules()">
-                            <i class="fas fa-trash-alt"></i> Delete All Schedules
-                        </button>
+                    <div class="filter-bar" style="display: flex; flex-direction: column; gap: 12px; margin: 20px 0; align-items: center; width: 100%;">
+                        <!-- Top Row: Day filters and Block selector (Centered) -->
+                        <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; width: 100%;">
+                            <div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: center;">
+                                <button class="sketch-btn" onclick="filterSchedule('Monday')">Monday</button>
+                                <button class="sketch-btn" onclick="filterSchedule('Tuesday')">Tuesday</button>
+                                <button class="sketch-btn" onclick="filterSchedule('Wednesday')">Wednesday</button>
+                                <button class="sketch-btn" onclick="filterSchedule('Thursday')">Thursday</button>
+                                <button class="sketch-btn" onclick="filterSchedule('Friday')">Friday</button>
+                                <button class="sketch-btn" onclick="filterSchedule('Saturday')">Saturday</button>
+                                <button class="sketch-btn" onclick="filterSchedule('All')">All</button>
+                            </div>
+                            <div style="display: inline-flex; align-items: center; gap: 6px; background: #fff; padding: 4px 10px; border: 2px solid #000; border-radius: 6px; box-shadow: 2px 2px 0 #000;">
+                                <span style="font-family: 'Patrick Hand'; font-size: 1.1rem; font-weight: bold; color: #2d3436;"><i class="fas fa-layer-group"></i> Block:</span>
+                                <select id="schedule-section-filter" onchange="changeScheduleSectionFilter(this.value)" style="padding: 4px 8px; border: 1px solid #000; border-radius: 4px; font-family: 'Patrick Hand'; font-size: 1.05rem; background: #fffdf0; cursor: pointer;">
+                                    <option value="BSIT-3106">BSIT-3106</option>
+                                    <option value="RAIN AND GABO">RAIN AND GABO</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Bottom Row: Action Toolbar buttons (Centered) -->
+                        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: center; width: 100%;">
+                            <button class="sketch-btn wallpaper-btn" onclick="openWallpaperModal()">
+                                <i class="fas fa-camera-retro"></i> Wallpaper
+                            </button>
+                            <button class="sketch-btn pdf-scanner-btn admin-only hidden" onclick="openPdfScanner()">
+                                <i class="fas fa-paste"></i> Paste Schedule
+                            </button>
+                            <button class="sketch-btn danger admin-only hidden" onclick="deleteAllSchedules()">
+                                <i class="fas fa-trash-alt"></i> Delete Schedules
+                            </button>
+                        </div>
                     </div>
 
                     <h3 id="current-day-label" style="text-align: center; font-size: 1.5rem; color: #57606f">
                         Weekly View
                     </h3>
+
+                    <div id="schedule-section-badge" style="text-align: center; margin-bottom: 10px;">
+                        <span class="wimpy-tag" style="background: #6c5ce7; color: #fff; padding: 4px 12px; border-radius: 12px; font-family: 'Patrick Hand'; font-size: 1.1rem; border: 2px solid #000; display: inline-block;">
+                            📍 Showing Schedule for Block: <b id="active-section-display">BSIT-3106</b>
+                        </span>
+                    </div>
 
                     <div id="schedule-list" class="grid-container">
                         <div class="loader">Flipping pages...</div>
@@ -2035,9 +2157,18 @@
                 </div>
 
                 <div id="pdf-upload-zone" style="flex: 1; display: flex; flex-direction: column; gap: 10px">
-                    <p style="font-family: 'Patrick Hand'; font-size: 1.2rem; color: #555; margin: 0">
-                        Paste your schedule text from the portal below:
-                    </p>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <p style="font-family: 'Patrick Hand'; font-size: 1.2rem; color: #555; margin: 0">
+                            Paste your schedule text from the portal below:
+                        </p>
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <label style="font-family: 'Patrick Hand'; font-size: 1.1rem; font-weight: bold;">Target Block:</label>
+                            <select id="pdf-target-section" style="padding: 5px 10px; border: 2px solid #000; border-radius: 5px; font-family: 'Patrick Hand'; font-size: 1.1rem; background: #fff;">
+                                <option value="BSIT-3106">BSIT-3106</option>
+                                <option value="RAIN AND GABO">RAIN AND GABO</option>
+                            </select>
+                        </div>
+                    </div>
                     <textarea
                         id="pdf-paste-input"
                         placeholder="Paste Code, Description, Section, etc. here..."
@@ -2149,6 +2280,24 @@
                 <input type="hidden" id="edit-class-id" />
 
                 <div style="display: grid; grid-template-columns: 1fr; gap: 15px">
+                    <div>
+                        <label style="display: block; font-family: 'Patrick Hand'; font-size: 1.1rem"
+                            >Target Section / Block:</label
+                        >
+                        <input
+                            type="text"
+                            id="edit-class-section"
+                            placeholder="e.g. BSIT-3106 or RAIN AND GABO"
+                            style="
+                                width: 100%;
+                                padding: 8px;
+                                border: 2px solid #000;
+                                border-radius: 5px;
+                                font-family: 'Patrick Hand';
+                            "
+                        />
+                    </div>
+
                     <div>
                         <label style="display: block; font-family: 'Patrick Hand'; font-size: 1.1rem"
                             >Day of Week:</label
@@ -2324,7 +2473,7 @@
                                     </svg>
                                 </div>
                             </div>
-                            <span>Apply links to ALL instances of this subject</span>
+                            <span>Apply links to ALL instances of this subject (in this block)</span>
                         </label>
                     </div>
                 </div>

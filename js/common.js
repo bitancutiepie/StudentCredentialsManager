@@ -10,7 +10,60 @@ if (typeof window.supabase !== 'undefined' && cfg.SUPABASE_URL && cfg.SUPABASE_K
     console.warn('Supabase not ready. config.js must load first.');
 }
 
+// --- SHARED UTILITIES & SECTION CONSTANTS ---
+const DEFAULT_SECTION = 'BSIT-3106';
+window.DEFAULT_SECTION = DEFAULT_SECTION;
+
+/**
+ * Gets student's section or fallback to DEFAULT_SECTION.
+ */
+function getUserSection(userObj) {
+    if (!userObj) {
+        const storedUser = localStorage.getItem('wimpy_user') || sessionStorage.getItem('wimpy_user');
+        if (storedUser) {
+            try {
+                userObj = JSON.parse(storedUser);
+            } catch (e) {}
+        }
+    }
+    return (userObj && userObj.section && userObj.section.trim()) ? userObj.section.trim() : DEFAULT_SECTION;
+}
+window.getUserSection = getUserSection;
+
+/**
+ * Fetches all available unique sections from DB.
+ */
+async function fetchAvailableSections() {
+    if (!window.db) return [DEFAULT_SECTION, 'RAIN AND GABO'];
+    try {
+        const sectionsSet = new Set([DEFAULT_SECTION, 'RAIN AND GABO']);
+        
+        // Fetch from schedule table
+        const { data: schedData } = await window.db.from('schedule').select('section');
+        if (schedData) {
+            schedData.forEach((row) => {
+                if (row && row.section && row.section.trim()) sectionsSet.add(row.section.trim());
+            });
+        }
+
+        // Fetch from students table
+        const { data: studentData } = await window.db.from('students').select('section');
+        if (studentData) {
+            studentData.forEach((row) => {
+                if (row && row.section && row.section.trim()) sectionsSet.add(row.section.trim());
+            });
+        }
+
+        return Array.from(sectionsSet).sort();
+    } catch (err) {
+        console.warn('Failed to fetch available sections:', err);
+        return [DEFAULT_SECTION, 'RAIN AND GABO'];
+    }
+}
+window.fetchAvailableSections = fetchAvailableSections;
+
 // --- SHARED UTILITIES ---
+
 
 /**
  * Centralized student data fetching that includes enrollment receipts.
@@ -29,12 +82,28 @@ async function getStudentsWithDetails(forceRefresh = false) {
         return _studentsCache;
     }
 
-    // 1. Fetch Students
-    const { data: students, error } = await window.db
-        .from('students')
-        .select('id, name, avatar_url, sr_code, role, enrollment_status, email, password, full_name');
+    // 1. Fetch Students (with graceful fallback if section column doesn't exist yet)
+    let students = null;
+    let error = null;
+    try {
+        const res = await window.db
+            .from('students')
+            .select('id, name, avatar_url, sr_code, role, enrollment_status, email, password, full_name, section');
+        students = res.data;
+        error = res.error;
+    } catch (err) {
+        console.warn('Selecting section failed, retrying without section column...', err);
+    }
 
-    if (error) {
+    if (!students || error) {
+        const fallbackRes = await window.db
+            .from('students')
+            .select('id, name, avatar_url, sr_code, role, enrollment_status, email, password, full_name');
+        students = fallbackRes.data;
+        error = fallbackRes.error;
+    }
+
+    if (error || !students) {
         console.error('Error fetching students:', error);
         return [];
     }
@@ -51,6 +120,7 @@ async function getStudentsWithDetails(forceRefresh = false) {
     // 3. Map together & cache
     _studentsCache = students.map((s) => ({
         ...s,
+        section: (s.section && s.section.trim()) ? s.section.trim() : DEFAULT_SECTION,
         enrollment_receipt_url: receiptMap[`Receipt-${s.id}`] || null,
     }));
     _studentsCacheTime = now;

@@ -1,9 +1,19 @@
 // --- FIXED PASTE SCHEDULE SCANNER LOGIC ---
 
-window.openPdfScanner = function () {
+window.openPdfScanner = async function () {
     if (!window.isAdmin) return showToast('Only admins can scan schedules for now.');
     document.getElementById('pdfScannerModal').classList.remove('hidden');
     resetPdfScanner();
+
+    // Populate target section select
+    const targetSecEl = document.getElementById('pdf-target-section');
+    if (targetSecEl && window.fetchAvailableSections) {
+        const sections = await window.fetchAvailableSections();
+        const currentActive = window.activeScheduleSection || (window.getUserSection ? window.getUserSection(window.user) : DEFAULT_SECTION);
+        targetSecEl.innerHTML = sections
+            .map((s) => `<option value="${escapeHTML(s)}" ${s === currentActive ? 'selected' : ''}>${escapeHTML(s)}</option>`)
+            .join('');
+    }
 };
 
 window.resetPdfScanner = function () {
@@ -177,6 +187,14 @@ window.updateExtracted = function (idx, field, value) {
 window.saveExtractedClasses = async function () {
     if (pendingClasses.length === 0) return showToast('No classes to save.', 'error');
 
+    const targetSecEl = document.getElementById('pdf-target-section');
+    const targetSection = targetSecEl ? targetSecEl.value.trim() : (window.activeScheduleSection || (window.getUserSection ? window.getUserSection(window.user) : DEFAULT_SECTION));
+
+    const classesToInsert = pendingClasses.map((cls) => ({
+        ...cls,
+        section: targetSection || DEFAULT_SECTION,
+    }));
+
     const btn = document.getElementById('btn-save-extracted');
     if (btn) {
         btn.disabled = true;
@@ -184,14 +202,15 @@ window.saveExtractedClasses = async function () {
     }
 
     try {
-        const { error } = await window.db.from('schedule').insert(pendingClasses);
+        const { error } = await window.db.from('schedule').insert(classesToInsert);
         if (error) throw error;
 
-        showToast(`Saved ${pendingClasses.length} entries!`);
+        showToast(`Saved ${classesToInsert.length} entries for section ${targetSection}!`);
         document.getElementById('pdfScannerModal').classList.add('hidden');
 
-        if (window.loadSchedule) loadSchedule('All');
+        if (window.loadSchedule) loadSchedule('All', targetSection);
         if (window.populateSubjectOptions) populateSubjectOptions();
+        if (window.populateScheduleSectionFilterDropdown) window.populateScheduleSectionFilterDropdown();
     } catch (err) {
         console.error(err);
         showToast('Error: ' + err.message, 'error');

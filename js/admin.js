@@ -20,6 +20,7 @@ window.showAdminTool = function (toolId, btnElement) {
             'admin-blacklist-view': 'blacklist',
             'admin-announcement-form': 'announcement',
             'admin-birthday-view': 'birthday',
+            'admin-section-form': 'section',
         };
 
         const permKey = toolIdToPerm[toolId];
@@ -28,6 +29,11 @@ window.showAdminTool = function (toolId, btnElement) {
             if (permKey === 'promote' || permKey === 'revoke' || permKey === 'announcement') {
                 if (window.user.sr_code !== 'ADMIN') {
                     showToast('Only the BOSS can do this!', 'error');
+                    return;
+                }
+            } else if (permKey === 'section') {
+                if (!hasPermission('section') && !hasPermission('schedule') && window.user.sr_code !== 'ADMIN') {
+                    showToast("You don't have access to Section Management.", 'error');
                     return;
                 }
             } else if (!hasPermission(permKey)) {
@@ -55,6 +61,7 @@ window.showAdminTool = function (toolId, btnElement) {
         'admin-todo-form',
         'admin-announcement-form',
         'admin-birthday-view',
+        'admin-section-form',
     ];
     let isAlreadyOpen = false;
 
@@ -83,6 +90,7 @@ window.showAdminTool = function (toolId, btnElement) {
         if (toolId === 'admin-promote-form') window.populatePromoteDropdown();
         if (toolId === 'admin-revoke-form') window.populateRevokeDropdown();
         if (toolId === 'admin-birthday-view' && window.fetchBirthdays) window.fetchBirthdays();
+        if (toolId === 'admin-section-form' && window.loadAdminSectionManager) window.loadAdminSectionManager();
     } else {
         // If closing or clicking active, show hint
         if (hint) hint.style.display = 'block';
@@ -940,3 +948,207 @@ window.fetchBirthdays = async function () {
 
     display.innerHTML = summaryHtml + gridHtml;
 };
+
+// --- SECTION & MULTI-BLOCK MANAGER ---
+window.loadAdminSectionManager = async function () {
+    const studentSelect = document.getElementById('section-student-select');
+    const choiceSelect = document.getElementById('section-choice-select');
+    const cloneSource = document.getElementById('clone-source-section');
+    const rosterDiv = document.getElementById('admin-sections-roster');
+
+    if (!studentSelect || !rosterDiv) return;
+
+    rosterDiv.innerHTML = '<div class="loader">Gathering section lists...</div>';
+
+    // 1. Fetch available sections & all students
+    const availableSections = await fetchAvailableSections();
+    const students = await getStudentsWithDetails(true);
+
+    // 2. Populate Student Select
+    const validStudents = students.filter((s) => s.sr_code !== 'ADMIN').sort((a, b) => a.name.localeCompare(b.name));
+    studentSelect.innerHTML =
+        '<option value="" disabled selected>Select Student to Assign Section</option>' +
+        validStudents
+            .map(
+                (s) =>
+                    `<option value="${s.id}">${escapeHTML(s.name)} (${escapeHTML(s.sr_code)}) - Current: ${escapeHTML(s.section || DEFAULT_SECTION)}</option>`,
+            )
+            .join('');
+
+    // 3. Populate Section Options
+    if (choiceSelect) {
+        choiceSelect.innerHTML =
+            availableSections.map((sec) => `<option value="${escapeHTML(sec)}">${escapeHTML(sec)}</option>`).join('') +
+            '<option value="__NEW__">+ Create New Custom Block / Section...</option>';
+    }
+
+    if (cloneSource) {
+        cloneSource.innerHTML = availableSections
+            .map((sec) => `<option value="${escapeHTML(sec)}">${escapeHTML(sec)}</option>`)
+            .join('');
+    }
+
+    // Also populate Add Class form section dropdown
+    const addClassSecSelect = document.getElementById('s-section');
+    if (addClassSecSelect) {
+        addClassSecSelect.innerHTML = availableSections
+            .map((sec) => `<option value="${escapeHTML(sec)}">${escapeHTML(sec)}</option>`)
+            .join('');
+    }
+
+    // 4. Build Section Roster Breakdown
+    const groupedBySection = {};
+    availableSections.forEach((sec) => (groupedBySection[sec] = []));
+    validStudents.forEach((s) => {
+        const sec = s.section || DEFAULT_SECTION;
+        if (!groupedBySection[sec]) groupedBySection[sec] = [];
+        groupedBySection[sec].push(s);
+    });
+
+    let rosterHtml = '';
+    Object.keys(groupedBySection).forEach((sec) => {
+        const list = groupedBySection[sec];
+        rosterHtml += `
+            <div class="class-card" style="margin-bottom: 12px; border-left: 5px solid #6c5ce7; background: #fff; text-align: left;">
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px dashed #ccc; padding-bottom: 5px; margin-bottom: 8px;">
+                    <h4 style="margin: 0; color: #2d3436;"><i class="fas fa-layer-group"></i> Block / Section: <b>${escapeHTML(sec)}</b> (${list.length} students)</h4>
+                    <div style="display:flex; gap:5px;">
+                        <button onclick="window.loadSchedule('All', '${escapeHTML(sec)}'); showToast('Loaded ${escapeHTML(sec)} schedule');" class="sketch-btn" style="padding: 3px 8px; font-size: 0.8rem; background: #0984e3; color: #fff;">View Schedule</button>
+                        <button onclick="window.deleteSectionSchedule('${escapeHTML(sec)}')" class="sketch-btn danger" style="padding: 3px 8px; font-size: 0.8rem;" title="Delete all classes for this section">Delete Sched</button>
+                    </div>
+                </div>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+        `;
+
+        if (list.length === 0) {
+            rosterHtml +=
+                '<span style="font-style: italic; color: #999; font-size: 0.9rem;">No students assigned to this section yet.</span>';
+        } else {
+            list.forEach((s) => {
+                const isUserAdmin = s.role && s.role.startsWith('admin');
+                const roleBadge = isUserAdmin
+                    ? `<span style="background:#e17055; color:#fff; padding:1px 5px; border-radius:3px; font-size:0.75rem;">ADMIN</span>`
+                    : '';
+                rosterHtml += `
+                    <div style="background: #f8f9fa; border: 1px solid #000; border-radius: 4px; padding: 4px 8px; font-family: 'Patrick Hand'; font-size: 1rem; display: flex; align-items: center; gap: 6px;">
+                        <b>${escapeHTML(s.name)}</b> ${roleBadge}
+                    </div>
+                `;
+            });
+        }
+
+        rosterHtml += `</div></div>`;
+    });
+
+    rosterDiv.innerHTML = rosterHtml;
+};
+
+window.toggleCustomSectionInput = function (selectEl) {
+    const customInput = document.getElementById('section-custom-input');
+    if (!customInput) return;
+    if (selectEl.value === '__NEW__') {
+        customInput.classList.remove('hidden');
+        customInput.focus();
+    } else {
+        customInput.classList.add('hidden');
+    }
+};
+
+window.assignStudentSection = async function (e) {
+    if (e) e.preventDefault();
+    const studentId = document.getElementById('section-student-select').value;
+    const choiceSelect = document.getElementById('section-choice-select');
+    const customInput = document.getElementById('section-custom-input');
+
+    if (!studentId) return showToast('Please select a student.', 'error');
+
+    let newSection = choiceSelect.value;
+    if (newSection === '__NEW__') {
+        newSection = customInput.value.trim().toUpperCase();
+    }
+    if (!newSection) return showToast('Please specify a section name.', 'error');
+
+    try {
+        const { error } = await window.db.from('students').update({ section: newSection }).eq('id', studentId);
+        if (error) throw error;
+
+        // If updated student is current user, update local session state
+        if (window.user && window.user.id === studentId) {
+            window.user.section = newSection;
+            const userStr = localStorage.getItem('wimpy_user') || sessionStorage.getItem('wimpy_user');
+            if (userStr) {
+                const u = JSON.parse(userStr);
+                u.section = newSection;
+                const payload = JSON.stringify(u);
+                if (localStorage.getItem('wimpy_user')) localStorage.setItem('wimpy_user', payload);
+                else sessionStorage.setItem('wimpy_user', payload);
+            }
+        }
+
+        showToast(`Assigned section "${newSection}" successfully!`);
+        window.loadAdminSectionManager();
+        if (window.populateScheduleSectionFilterDropdown) window.populateScheduleSectionFilterDropdown();
+    } catch (err) {
+        showToast('Error updating section: ' + err.message, 'error');
+    }
+};
+
+window.cloneSectionSchedule = async function (e) {
+    if (e) e.preventDefault();
+    const sourceSec = document.getElementById('clone-source-section').value;
+    const targetSec = document.getElementById('clone-target-section').value.trim().toUpperCase();
+
+    if (!sourceSec || !targetSec) return showToast('Please specify both source and target sections.', 'error');
+    if (sourceSec === targetSec) return showToast('Source and Target sections must be different.', 'error');
+
+    try {
+        // Fetch source entries
+        const { data: sourceItems, error: fetchErr } = await window.db
+            .from('schedule')
+            .select('*')
+            .eq('section', sourceSec);
+        if (fetchErr) throw fetchErr;
+
+        if (!sourceItems || sourceItems.length === 0) {
+            return showToast(`No class schedule items found in section "${sourceSec}".`, 'error');
+        }
+
+        // Prepare cloned items
+        const clonedItems = sourceItems.map((item) => {
+            const copy = { ...item };
+            delete copy.id;
+            delete copy.created_at;
+            copy.section = targetSec;
+            return copy;
+        });
+
+        const { error: insertErr } = await window.db.from('schedule').insert(clonedItems);
+        if (insertErr) throw insertErr;
+
+        showToast(`Cloned ${clonedItems.length} class entries to "${targetSec}"!`);
+        document.getElementById('clone-target-section').value = '';
+        window.loadAdminSectionManager();
+        if (window.populateScheduleSectionFilterDropdown) window.populateScheduleSectionFilterDropdown();
+        window.loadSchedule('All', targetSec);
+    } catch (err) {
+        showToast('Error cloning schedule: ' + err.message, 'error');
+    }
+};
+
+window.deleteSectionSchedule = async function (sectionName) {
+    if (!isAdmin) return;
+    if (!(await showWimpyConfirm(`Delete ALL schedule entries for Section "${sectionName}"?`))) return;
+
+    try {
+        const { error } = await window.db.from('schedule').delete().eq('section', sectionName);
+        if (error) throw error;
+
+        showToast(`Schedule for "${sectionName}" deleted.`);
+        window.loadAdminSectionManager();
+        if (window.populateScheduleSectionFilterDropdown) window.populateScheduleSectionFilterDropdown();
+        window.loadSchedule('All');
+    } catch (err) {
+        showToast('Error deleting schedule: ' + err.message, 'error');
+    }
+};
+

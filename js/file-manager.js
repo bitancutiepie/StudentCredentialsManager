@@ -611,7 +611,14 @@ window.generateWallpaper = async function (width, height, bgStyle, e, customBgDa
 
     let scheduleData = [];
     if (client) {
-        const { data, error } = await client.from('schedule').select('*').order('start_time', { ascending: true });
+        const activeSec = window.activeScheduleSection || (window.getUserSection ? window.getUserSection(window.user) : 'BSIT-3106');
+        let query = client.from('schedule').select('*').order('start_time', { ascending: true }).eq('section', activeSec);
+        let { data, error } = await query;
+        if ((!data || error) && client) {
+            const fallbackRes = await client.from('schedule').select('*').order('start_time', { ascending: true });
+            data = fallbackRes.data;
+            error = fallbackRes.error;
+        }
         if (!error && data) {
             scheduleData = data;
         }
@@ -756,7 +763,7 @@ window.generateWallpaper = async function (width, height, bgStyle, e, customBgDa
         headerBox.appendChild(mainTitle);
 
         const subTitle = document.createElement('h2');
-        subTitle.innerText = 'BSIT 2106';
+        subTitle.innerText = window.activeScheduleSection || (window.getUserSection ? window.getUserSection(window.user) : 'BSIT-3106');
         Object.assign(subTitle.style, {
             fontFamily: '"Patrick Hand", cursive',
             fontSize: isPortrait ? '2rem' : '2.5rem',

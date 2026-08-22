@@ -39,9 +39,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Parallel init: non-blocking setup
     const day = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+    updateSectionBadge();
     await Promise.all([
         initLiveTracking(),
         initMessaging(),
+        populateScheduleSectionFilterDropdown(),
         loadSchedule(day),
         loadAssignments(),
         loadEvents(),
@@ -99,8 +101,9 @@ function checkSession() {
         welcomeEl.innerText = `Hey ${user.name}! 2nd Sem na, aral mabuti.`;
     }
 
-    // Enrollment Status Badge
+    // Enrollment Status & Section Badges
     updateEnrollmentBadge();
+    updateSectionBadge();
 
     // Check if Admin
     if (user.sr_code === 'ADMIN' || (user.role && (user.role === 'admin' || user.role.startsWith('admin:')))) {
@@ -240,6 +243,15 @@ function updateEnrollmentBadge() {
     }
 }
 
+function updateSectionBadge() {
+    const sectionNameEl = document.getElementById('user-section-name');
+    const sectionBadgeEl = document.getElementById('user-section-badge');
+    if (!sectionBadgeEl) return;
+    const userSec = getUserSection(window.user);
+    if (sectionNameEl) sectionNameEl.innerText = userSec;
+    sectionBadgeEl.style.display = 'inline-block';
+}
+
 // logout removed (in common.js)
 
 window.toggleWideMode = function () {
@@ -310,9 +322,48 @@ window.switchGame = function (game, btn) {
     }
 };
 
+window.activeScheduleSection = null;
+
+window.populateScheduleSectionFilterDropdown = async function () {
+    const selectEl = document.getElementById('schedule-section-filter');
+    if (!selectEl) return;
+
+    const sections = await fetchAvailableSections();
+    const userSec = getUserSection(window.user);
+    const currentActive = window.activeScheduleSection || userSec;
+
+    selectEl.innerHTML = sections
+        .map((s) => `<option value="${escapeHTML(s)}" ${s === currentActive ? 'selected' : ''}>${escapeHTML(s)}</option>`)
+        .join('');
+
+    window.activeScheduleSection = currentActive;
+    updateActiveSectionDisplay(currentActive);
+};
+
+function updateActiveSectionDisplay(sec) {
+    const displayEl = document.getElementById('active-section-display');
+    if (displayEl) displayEl.innerText = sec;
+}
+
+window.changeScheduleSectionFilter = function (sec) {
+    window.activeScheduleSection = sec;
+    updateActiveSectionDisplay(sec);
+    const dayLabel = document.getElementById('current-day-label');
+    const currentDayText = dayLabel ? dayLabel.innerText : '';
+    let day = 'All';
+    if (currentDayText.includes('Monday')) day = 'Monday';
+    else if (currentDayText.includes('Tuesday')) day = 'Tuesday';
+    else if (currentDayText.includes('Wednesday')) day = 'Wednesday';
+    else if (currentDayText.includes('Thursday')) day = 'Thursday';
+    else if (currentDayText.includes('Friday')) day = 'Friday';
+    else if (currentDayText.includes('Saturday')) day = 'Saturday';
+
+    loadSchedule(day, sec);
+};
+
 // --- SCHEDULE LOGIC ---
 window.filterSchedule = function (day) {
-    loadSchedule(day);
+    loadSchedule(day, window.activeScheduleSection);
 };
 
 async function fetchData(table, orderCol, ascending = true) {
@@ -324,18 +375,42 @@ async function fetchData(table, orderCol, ascending = true) {
     return data;
 }
 
-async function loadSchedule(dayFilter) {
+async function loadSchedule(dayFilter, sectionFilter) {
     const list = document.getElementById('schedule-list');
     if (!list) return;
+
+    const userSection = getUserSection(window.user);
+    const activeSec = sectionFilter || window.activeScheduleSection || userSection;
+    window.activeScheduleSection = activeSec;
+    updateActiveSectionDisplay(activeSec);
 
     document.getElementById('current-day-label').innerText =
         dayFilter === 'All' ? 'Weekly Schedule' : `${dayFilter} Classes`;
     list.innerHTML = '<div class="loader">Checking notebook...</div>';
 
-    let query = db.from('schedule').select('*').order('start_time', { ascending: true });
-    if (dayFilter !== 'All') query = query.eq('day_of_week', dayFilter);
+    let data = null;
+    let error = null;
 
-    const { data, error } = await query;
+    // Scoped section query
+    try {
+        let query = db.from('schedule').select('*').order('start_time', { ascending: true }).eq('section', activeSec);
+        if (dayFilter !== 'All') query = query.eq('day_of_week', dayFilter);
+        const res = await query;
+        data = res.data;
+        error = res.error;
+    } catch (err) {
+        console.warn('Section query failed, retrying fallback...', err);
+    }
+
+    // Fallback if query failed
+    if (!data || error) {
+        let fallbackQuery = db.from('schedule').select('*').order('start_time', { ascending: true });
+        if (dayFilter !== 'All') fallbackQuery = fallbackQuery.eq('day_of_week', dayFilter);
+        const fallbackRes = await fallbackQuery;
+        data = fallbackRes.data;
+        error = fallbackRes.error;
+    }
+
     if (error) {
         console.error(error);
         list.innerHTML = '<p>Error loading schedule. Greg messed up.</p>';
@@ -343,7 +418,7 @@ async function loadSchedule(dayFilter) {
     }
 
     if (!data || data.length === 0) {
-        list.innerHTML = '<p style="text-align:center; font-style:italic;">No classes today. Sleep time!</p>';
+        list.innerHTML = `<p style="text-align:center; font-style:italic;">No classes for ${escapeHTML(activeSec)}. Sleep time!</p>`;
         return;
     }
 
@@ -351,6 +426,7 @@ async function loadSchedule(dayFilter) {
         .map((cls, index) => {
             const start12h = formatTime12h(cls.start_time);
             const end12h = formatTime12h(cls.end_time);
+            const classSec = cls.section || DEFAULT_SECTION;
 
             const deleteBtn = isAdmin
                 ? `<button onclick="event.stopPropagation(); deleteClass(${cls.id})" class="sketch-btn danger" style="position:absolute; top:10px; right:10px; padding: 5px 10px; font-size:0.9rem; z-index:15;">X</button>`
@@ -368,7 +444,7 @@ async function loadSchedule(dayFilter) {
             <div class="class-card" style="animation-delay: ${index * 0.1}s; ${isAdmin ? 'border-style: solid; border-width: 2px;' : ''}">
                 ${deleteBtn}
                 <div class="class-header">
-                    <span class="subject-code">${escapeHTML(cls.subject_code)}</span>
+                    <span class="subject-code">${escapeHTML(cls.subject_code)} <small style="background:#6c5ce7; color:#fff; padding:1px 6px; border-radius:4px; font-size:0.75rem; border:1px solid #000;">${escapeHTML(classSec)}</small></span>
                     <span class="time-badge">${start12h} - ${end12h}</span>
                 </div>
                 <h3>${escapeHTML(cls.subject_name)}</h3>
@@ -387,7 +463,7 @@ async function loadSchedule(dayFilter) {
                             : ''
                     }
                 </div>
-                <small style="display:block; margin-top:5px; color:#666;">${cls.day_of_week}</small>
+                <small style="display:block; margin-top:5px; color:#666;">${cls.day_of_week} &bull; Section: ${escapeHTML(classSec)}</small>
             </div>
         `;
         })
@@ -667,24 +743,29 @@ window.addClass = async function (e) {
     e.preventDefault();
     if (!isAdmin) return;
 
+    const sectionInput = document.getElementById('s-section');
+    const targetSec = sectionInput ? sectionInput.value.trim() : (window.activeScheduleSection || getUserSection(window.user));
+
     const newClass = {
         day_of_week: document.getElementById('s-day').value,
-        subject_code: document.getElementById('s-code').value,
-        subject_name: document.getElementById('s-name').value,
+        subject_code: document.getElementById('s-code').value.trim(),
+        subject_name: document.getElementById('s-name').value.trim(),
         start_time: document.getElementById('s-start').value,
         end_time: document.getElementById('s-end').value,
-        room: document.getElementById('s-room').value,
-        instructor: document.getElementById('s-instructor').value,
-        meet_link: document.getElementById('s-meet').value,
-        classroom_link: document.getElementById('s-class').value,
+        room: document.getElementById('s-room').value.trim(),
+        instructor: document.getElementById('s-instructor').value.trim(),
+        meet_link: document.getElementById('s-meet').value.trim(),
+        classroom_link: document.getElementById('s-class').value.trim(),
+        section: targetSec || DEFAULT_SECTION,
     };
 
     const { error } = await db.from('schedule').insert([newClass]);
-    if (error) showToast('Error adding class: ' + error.message);
+    if (error) showToast('Error adding class: ' + error.message, 'error');
     else {
-        showToast('Class added!');
-        loadSchedule(newClass.day_of_week);
-        populateSubjectOptions(); // <--- Refresh the dropdowns immediately
+        showToast(`Class added to ${newClass.section}!`);
+        loadSchedule(newClass.day_of_week, newClass.section);
+        populateSubjectOptions();
+        window.populateScheduleSectionFilterDropdown();
         e.target.reset();
     }
 };
@@ -746,18 +827,32 @@ window.deleteClass = async function (id) {
 
 window.deleteAllSchedules = async function () {
     if (!isAdmin) return showToast('Nice try, hacker.');
-    if (!(await showWimpyConfirm('⚠️ DELETE ALL SCHEDULES? This cannot be undone!'))) return;
+    const activeSec = window.activeScheduleSection || getUserSection(window.user);
 
-    // Double confirmation for safety
-    if (!(await showWimpyConfirm('Are you ABSOLUTELY sure? All classes will be permanently deleted!'))) return;
+    const choice = confirm(
+        `Click OK to delete schedules ONLY for Block "${activeSec}".\nClick CANCEL to delete ALL schedules across ALL blocks.`,
+    );
 
-    const { error } = await db.from('schedule').delete().neq('id', 0); // Delete all rows
+    let query = db.from('schedule').delete();
+    let labelText = '';
+    if (choice) {
+        query = query.eq('section', activeSec);
+        labelText = `schedules for Block "${activeSec}"`;
+    } else {
+        query = query.neq('id', 0);
+        labelText = `ALL schedules across ALL blocks`;
+    }
+
+    if (!(await showWimpyConfirm(`⚠️ DELETE ${labelText.toUpperCase()}? This cannot be undone!`))) return;
+
+    const { error } = await query;
     if (error) {
         showToast('Error deleting schedules: ' + error.message, 'error');
     } else {
-        showToast('All schedules deleted.');
+        showToast(`Deleted ${labelText}.`);
         loadSchedule('All');
-        populateSubjectOptions(); // Refresh subject dropdowns since all subjects are gone
+        populateSubjectOptions();
+        window.populateScheduleSectionFilterDropdown();
     }
 };
 
@@ -777,6 +872,9 @@ window.openEditClassModal = async function (id) {
     document.getElementById('edit-class-instructor').value = cls.instructor || '';
     document.getElementById('edit-class-meet').value = cls.meet_link || '';
     document.getElementById('edit-class-classroom').value = cls.classroom_link || '';
+    if (document.getElementById('edit-class-section')) {
+        document.getElementById('edit-class-section').value = cls.section || DEFAULT_SECTION;
+    }
 
     const modal = document.getElementById('editClassModal');
     if (modal) modal.classList.remove('hidden');
@@ -800,19 +898,24 @@ window.saveClassEdit = async function () {
         meet_link: document.getElementById('edit-class-meet').value.trim(),
         classroom_link: document.getElementById('edit-class-classroom').value.trim(),
     };
+    if (document.getElementById('edit-class-section')) {
+        updateData.section = document.getElementById('edit-class-section').value.trim() || DEFAULT_SECTION;
+    }
 
     if (!id) return;
 
     try {
         if (syncLinks && subjectCode) {
-            // Update all classes with the same subject code
+            // Update all classes with the same subject code IN THIS SECTION ONLY
+            const targetSection = updateData.section || window.activeScheduleSection || (window.getUserSection ? window.getUserSection(window.user) : DEFAULT_SECTION);
             const { error: syncError } = await db
                 .from('schedule')
                 .update({
                     meet_link: updateData.meet_link,
                     classroom_link: updateData.classroom_link,
                 })
-                .eq('subject_code', subjectCode);
+                .eq('subject_code', subjectCode)
+                .eq('section', targetSection);
 
             if (syncError) console.warn('Failed to sync links:', syncError);
         }
@@ -898,8 +1001,23 @@ let currentLiveClassLink = null;
 async function initLiveClassChecker() {
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const todayName = days[new Date().getDay()];
+    const userSec = getUserSection(window.user);
 
-    const { data, error } = await db.from('schedule').select('*').eq('day_of_week', todayName);
+    let data = null;
+    let error = null;
+
+    try {
+        const res = await db.from('schedule').select('*').eq('day_of_week', todayName).eq('section', userSec);
+        data = res.data;
+        error = res.error;
+    } catch (err) {
+        console.warn('Live class section query failed, retrying fallback...', err);
+    }
+
+    if (!data || error) {
+        const fallbackRes = await db.from('schedule').select('*').eq('day_of_week', todayName);
+        data = fallbackRes.data;
+    }
 
     if (data) {
         todaysClasses = data;
