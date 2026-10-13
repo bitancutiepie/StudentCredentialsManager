@@ -2149,6 +2149,26 @@ h2:hover {
     border: 1.5px solid #000;
 }
 
+/* --- TERM SUBFOLDERS (Prelims / Midterms / Finals drill-in) --- */
+.folder-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    background: #fffdf0;
+    border: 2px dashed #000;
+    border-radius: 10px;
+    padding: 10px 14px;
+}
+
+.term-folder {
+    border-style: dashed;
+}
+
+.term-folder.active {
+    background: #fff;
+}
+
 @media (max-width: 600px) {
     .subject-folder-grid {
         grid-template-columns: repeat(2, 1fr);

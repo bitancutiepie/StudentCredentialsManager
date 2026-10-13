@@ -163,11 +163,13 @@ window.uploadFile = async function (e) {
     const fileInput = document.getElementById('f-file');
     const titleInput = document.getElementById('f-title');
     const subjectInput = document.getElementById('f-subject');
+    const termInput = document.getElementById('f-term');
     const btn = document.getElementById('upload-btn');
     const file = fileInput.files[0];
 
     if (!file) return showToast('Please select a file.');
     if (!subjectInput.value) return showToast('Please select a subject.');
+    if (!termInput || !termInput.value) return showToast('Please select a term (Prelims / Midterms / Finals).');
 
     btn.disabled = true;
     btn.innerHTML = 'Uploading...';
@@ -186,11 +188,12 @@ window.uploadFile = async function (e) {
         // 2. Get URL
         const { data: urlData } = window.db.storage.from('class-resources').getPublicUrl(fileName);
 
-        // 3. Save to DB with Subject
+        // 3. Save to DB with Subject + Term (Prelims/Midterms/Finals)
         const { error: dbError } = await window.db.from('shared_files').insert([
             {
                 title: titleInput.value,
                 subject: subjectInput.value,
+                term: termInput.value,
                 file_url: urlData.publicUrl,
                 file_type: file.type,
             },
@@ -198,8 +201,13 @@ window.uploadFile = async function (e) {
 
         if (dbError) throw dbError;
 
-        showToast('File added to ' + subjectInput.value + ' folder!');
-        if (window.loadFiles) window.loadFiles(subjectInput.value);
+        showToast('File added to ' + subjectInput.value + ' > ' + termInput.value + '!');
+        if (window.refreshFiles) await window.refreshFiles();
+        if (window.selectedSubject === subjectInput.value && window.openTermFolder) {
+            window.openTermFolder(termInput.value);
+        } else if (window.loadFiles) {
+            // loadFiles already refreshes; keep drill position if possible
+        }
         e.target.reset();
     } catch (error) {
         console.error(error);

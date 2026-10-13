@@ -1479,7 +1479,8 @@ async function populateSubjectOptions() {
             '#636e72',
         ];
 
-        // Build folder cards
+        // Build folder cards (drill-in: subject -> Prelims/Midterms/Finals)
+        const escAttr = (s) => String(s).replace(/'/g, "\\'");
         let html = `
             <div class="subject-folder active" style="--folder-color: #2d3436;" onclick="filterFiles('All', this)">
                 <div style="position:absolute; top:0; left:0; right:0; height:6px; background:#2d3436; border-radius:9px 9px 0 0;"></div>
@@ -1487,7 +1488,7 @@ async function populateSubjectOptions() {
                 <span class="folder-name">All Files</span>
                 <span class="folder-count" id="fc-all">...</span>
             </div>
-            <div class="subject-folder" style="--folder-color: #636e72;" onclick="filterFiles('General', this)">
+            <div class="subject-folder" style="--folder-color: #636e72;" onclick="openSubjectFolder('General', this)">
                 <div style="position:absolute; top:0; left:0; right:0; height:6px; background:#636e72; border-radius:9px 9px 0 0;"></div>
                 <span class="folder-emoji"><i class="fas fa-folder"></i></span>
                 <span class="folder-name">General</span>
@@ -1500,7 +1501,7 @@ async function populateSubjectOptions() {
             const displayName = subjectMap[code];
             const iconClass = getSubjectIcon(displayName, code);
             html += `
-                <div class="subject-folder" style="--folder-color: ${color};" onclick="filterFiles('${code}', this)">
+                <div class="subject-folder" style="--folder-color: ${color};" onclick="openSubjectFolder('${escAttr(code)}', this)">
                     <div style="position:absolute; top:0; left:0; right:0; height:6px; background:${color}; border-radius:9px 9px 0 0;"></div>
                     <span class="folder-emoji" style="color:${color};"><i class="fas ${iconClass}"></i></span>
                     <span class="folder-name" title="${displayName}">${displayName}</span>

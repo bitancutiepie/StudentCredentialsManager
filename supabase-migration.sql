@@ -76,3 +76,19 @@ UPDATE schedule SET section = 'BSIT-3106' WHERE section = 'BSIT-2101' OR section
 CREATE INDEX IF NOT EXISTS idx_students_section ON students (section);
 CREATE INDEX IF NOT EXISTS idx_schedule_section ON schedule (section);
 
+-- ============ PRELIMS / MIDTERMS / FINALS TERM SUPPORT ============
+-- Run once in Supabase SQL Editor. All currently uploaded files become Prelims.
+ALTER TABLE shared_files ADD COLUMN IF NOT EXISTS term text DEFAULT 'Prelims';
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'shared_files_term_check'
+    ) THEN
+        ALTER TABLE shared_files ADD CONSTRAINT shared_files_term_check
+        CHECK (term IN ('Prelims', 'Midterms', 'Finals'));
+    END IF;
+END $$;
+CREATE INDEX IF NOT EXISTS idx_shared_files_term ON shared_files (term);
+CREATE INDEX IF NOT EXISTS idx_shared_files_subject_term ON shared_files (subject, term);
+UPDATE shared_files SET term = 'Prelims' WHERE term IS NULL;
+

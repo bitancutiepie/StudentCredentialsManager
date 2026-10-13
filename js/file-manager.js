@@ -178,6 +178,15 @@ window.viewFileHistory = async function (fileId, title) {
 };
 
 // --- 2. FETCH & RENDER FILES ---
+// Drill-in state: null = top level (subject grid), otherwise inside a subject
+window.selectedSubject = null;
+window.selectedTerm = null;
+window.TERM_LIST = ['Prelims', 'Midterms', 'Finals'];
+window.getFileTerm = function (f) {
+    const t = (f && f.term) || 'Prelims';
+    return window.TERM_LIST.includes(t) ? t : 'Prelims';
+};
+
 window.refreshFiles = async function () {
     const list = document.getElementById('file-list');
     if (!list) return;
@@ -191,15 +200,26 @@ window.refreshFiles = async function () {
         .limit(200);
     if (error) return console.error(error);
 
-    globalFiles = data || [];
-    renderFileList(globalFiles);
+    globalFiles = (data || []).map((f) => ({ ...f, term: window.getFileTerm(f) }));
+    // Re-apply current drill filter so refresh keeps the user in place
+    if (window.selectedSubject) {
+        if (window.selectedTerm) window.openTermFolder(window.selectedTerm, null, true);
+        else window.openSubjectFolder(window.selectedSubject, null, true);
+    } else {
+        renderFileList(globalFiles);
+    }
     if (window.updateFolderCounts) updateFolderCounts();
 };
 
 window.renderFileList = function (files) {
     const list = document.getElementById('file-list');
+    if (!list) return;
     if (!files.length) {
-        list.innerHTML = '<p>No files found.</p>';
+        const hint =
+            window.selectedSubject && window.selectedTerm
+                ? `No files in ${window.getSubjectDisplayName(window.selectedSubject)} > ${window.selectedTerm} yet.`
+                : 'No files found in this folder.';
+        list.innerHTML = `<p style="text-align:center; width:100%; font-style:italic; color:#666;">${hint}</p>`;
         return;
     }
 
@@ -226,6 +246,8 @@ window.renderFileList = function (files) {
                       : subjectCode;
             const displayTitle = typeof escapeHTML === 'function' ? escapeHTML(file.title) : safeTitle;
             const displaySubject = typeof escapeHTML === 'function' ? escapeHTML(subject) : subject;
+            const fileTerm = window.getFileTerm ? window.getFileTerm(file) : file.term || 'Prelims';
+            const displayTerm = typeof escapeHTML === 'function' ? escapeHTML(fileTerm) : fileTerm;
 
             const createdAt = new Date(file.created_at);
             const isNew = createdAt > dateLimit && subject !== 'General';
@@ -263,7 +285,7 @@ window.renderFileList = function (files) {
                     <div class="file-card-top" style="background:${iconColor}15; border-bottom: 2px dashed ${iconColor}40; padding:8px 12px; margin:-12px -12px 10px -12px; border-radius:9px 9px 0 0; display:flex; align-items:center; justify-content:space-between;">
                         <div style="display:flex; align-items:center; gap:6px;">
                             <i class="fas ${iconClass}" style="color:${iconColor}; font-size:0.85rem;"></i>
-                            <span style="color:${iconColor}; font-weight:bold; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.5px;">${displaySubject}</span>
+                            <span style="color:${iconColor}; font-weight:bold; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.5px;">${displaySubject} • ${displayTerm}</span>
                             ${badgeHtml}
                         </div>
                         <span style="font-size:0.7rem; color:#999;"><i class="fas fa-clock"></i> ${timeAgo ? timeAgo(file.created_at) : createdAt.toLocaleDateString()}</span>
@@ -288,21 +310,126 @@ window.renderFileList = function (files) {
 };
 
 // Override Search/Filter
-window.searchFiles = function () {
-    const q = document.getElementById('file-search').value.toLowerCase();
-    renderFileList(globalFiles.filter((f) => f.title.toLowerCase().includes(q) || f.subject.toLowerCase().includes(q)));
+window.getFilteredBase = function () {
+    if (!window.selectedSubject) return globalFiles;
+    const bySubject = globalFiles.filter((f) => f.subject === window.selectedSubject);
+    if (!window.selectedTerm) return bySubject;
+    return bySubject.filter((f) => window.getFileTerm(f) === window.selectedTerm);
 };
+
+window.searchFiles = function () {
+    const input = document.getElementById('file-search');
+    const q = (input ? input.value : '').toLowerCase();
+    const base = window.getFilteredBase();
+    if (!q) return renderFileList(base);
+    renderFileList(
+        base.filter(
+            (f) =>
+                (f.title || '').toLowerCase().includes(q) ||
+                (f.subject || '').toLowerCase().includes(q) ||
+                window.getFileTerm(f).toLowerCase().includes(q),
+        ),
+    );
+};
+
+window.getSubjectDisplayName = function (s) {
+    if (s === 'All' || s === 'General') return s;
+    return window.subjectMapping ? window.subjectMapping[s] || s : s;
+};
+
 window.filterFiles = function (s, folderEl) {
-    // 1. Toggle active state on folder cards
-    document.querySelectorAll('.subject-folder').forEach((f) => f.classList.remove('active'));
+    // 'All' resets drill-in. Any specific subject drills in (back-compat for old callers).
+    if (s === 'All') return window.goBackToSubjects(true);
+    return window.openSubjectFolder(s, folderEl);
+};
+
+window.openSubjectFolder = function (s, folderEl, silent) {
+    window.selectedSubject = s;
+    window.selectedTerm = null;
+
+    document.querySelectorAll('#subject-folder-grid .subject-folder').forEach((f) => f.classList.remove('active'));
     if (folderEl) folderEl.classList.add('active');
 
-    // 2. Update label
-    const displayName = s === 'All' || s === 'General' ? s : window.subjectMapping ? window.subjectMapping[s] || s : s;
-    document.getElementById('file-filter-label').innerText = '📂 Showing: ' + displayName;
+    const grid = document.getElementById('subject-folder-grid');
+    const termView = document.getElementById('term-folder-view');
+    if (grid) grid.classList.add('hidden');
+    if (termView) termView.classList.remove('hidden');
 
-    // 3. Filter & render
-    renderFileList(s === 'All' ? globalFiles : globalFiles.filter((f) => f.subject === s));
+    const displayName = window.getSubjectDisplayName(s);
+    const crumb = document.getElementById('folder-breadcrumb-label');
+    if (crumb) crumb.textContent = '📂 ' + displayName + ' → choose term';
+    document.getElementById('file-filter-label').innerText = '📂 Showing: ' + displayName + ' (select Prelims / Midterms / Finals)';
+
+    renderTermFolders();
+    // Show all files of subject until a term is picked
+    renderFileList(globalFiles.filter((f) => f.subject === s));
+    if (!silent && window.updateFolderCounts) updateFolderCounts();
+};
+
+window.openTermFolder = function (term, folderEl, silent) {
+    if (!window.selectedSubject) return;
+    window.selectedTerm = term;
+
+    document.querySelectorAll('#term-folder-grid .subject-folder').forEach((f) => f.classList.remove('active'));
+    if (folderEl) folderEl.classList.add('active');
+
+    const displayName = window.getSubjectDisplayName(window.selectedSubject);
+    const crumb = document.getElementById('folder-breadcrumb-label');
+    if (crumb) crumb.textContent = '📂 ' + displayName + ' > ' + term;
+    document.getElementById('file-filter-label').innerText = '📂 Showing: ' + displayName + ' > ' + term;
+
+    const q = (document.getElementById('file-search') || {}).value || '';
+    if (q) return window.searchFiles();
+    renderFileList(
+        globalFiles.filter((f) => f.subject === window.selectedSubject && window.getFileTerm(f) === term),
+    );
+    if (!silent && window.updateFolderCounts) updateFolderCounts();
+};
+
+window.goBackToSubjects = function (showAll) {
+    window.selectedSubject = null;
+    window.selectedTerm = null;
+
+    const grid = document.getElementById('subject-folder-grid');
+    const termView = document.getElementById('term-folder-view');
+    if (grid) grid.classList.remove('hidden');
+    if (termView) termView.classList.add('hidden');
+
+    const searchInput = document.getElementById('file-search');
+    if (searchInput) searchInput.value = '';
+
+    document.querySelectorAll('#subject-folder-grid .subject-folder').forEach((f) => f.classList.remove('active'));
+    const allCard = document.querySelector('#subject-folder-grid .subject-folder');
+    if (allCard) allCard.classList.add('active');
+
+    document.getElementById('file-filter-label').innerText = '📂 Showing: All Files';
+    renderFileList(globalFiles);
+    if (window.updateFolderCounts) updateFolderCounts();
+};
+
+window.renderTermFolders = function () {
+    const termGrid = document.getElementById('term-folder-grid');
+    if (!termGrid || !window.selectedSubject) return;
+    const meta = {
+        Prelims: { color: '#00b894', icon: 'fa-seedling' },
+        Midterms: { color: '#f39c12', icon: 'fa-book-open' },
+        Finals: { color: '#d63031', icon: 'fa-graduation-cap' },
+    };
+    termGrid.innerHTML = window.TERM_LIST.map((term) => {
+        const m = meta[term];
+        const count = globalFiles.filter(
+            (f) => f.subject === window.selectedSubject && window.getFileTerm(f) === term,
+        ).length;
+        const active = window.selectedTerm === term ? ' active' : '';
+        return `
+            <div class="subject-folder term-folder${active}" style="--folder-color: ${m.color};" onclick="openTermFolder('${term}', this)">
+                <div style="position:absolute; top:0; left:0; right:0; height:6px; background:${m.color}; border-radius:9px 9px 0 0;"></div>
+                <span class="folder-emoji" style="color:${m.color};"><i class="fas ${m.icon}"></i></span>
+                <span class="folder-name">${term}</span>
+                <span class="folder-count" id="fc-term-${term}">${count} files</span>
+            </div>
+        `;
+    }).join('');
 };
 
 // Update folder count badges after files load
@@ -312,15 +439,26 @@ window.updateFolderCounts = function () {
     const allEl = document.getElementById('fc-all');
     if (allEl) allEl.textContent = globalFiles.length + ' files';
 
+    const countFor = (subject, term) =>
+        globalFiles.filter((f) => f.subject === subject && (!term || window.getFileTerm(f) === term)).length;
+
     // General count
     const genEl = document.getElementById('fc-General');
-    if (genEl) genEl.textContent = globalFiles.filter((f) => f.subject === 'General').length + ' files';
+    if (genEl) genEl.textContent = countFor('General') + ' files';
 
     // Per-subject counts
     if (window.subjectMapping) {
         Object.keys(window.subjectMapping).forEach((code) => {
             const el = document.getElementById('fc-' + code);
-            if (el) el.textContent = globalFiles.filter((f) => f.subject === code).length + ' files';
+            if (el) el.textContent = countFor(code) + ' files';
+        });
+    }
+
+    // Per-term counts inside drill-in view
+    if (window.selectedSubject) {
+        window.TERM_LIST.forEach((term) => {
+            const el = document.getElementById('fc-term-' + term);
+            if (el) el.textContent = countFor(window.selectedSubject, term) + ' files';
         });
     }
 };
@@ -343,7 +481,7 @@ window.deleteFile = async function (id) {
 // Override loadFiles to maintain consistency with dashboard.js calls
 window.loadFiles = async function (subject) {
     await refreshFiles();
-    if (subject && subject !== 'All') filterFiles(subject);
+    if (subject && subject !== 'All') window.openSubjectFolder(subject);
 };
 
 // Load on start (Delayed slightly to ensure DOM is ready)

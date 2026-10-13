@@ -741,6 +741,14 @@
                                     <!-- JavaScript will add your Schedule subjects here -->
                                 </select>
 
+                                <!-- Term Selection (Prelims / Midterms / Finals) -->
+                                <select id="f-term" required style="margin-bottom: 10px">
+                                    <option value="" disabled selected>Select Term (Prelims / Midterms / Finals)</option>
+                                    <option value="Prelims">Prelims</option>
+                                    <option value="Midterms">Midterms</option>
+                                    <option value="Finals">Finals</option>
+                                </select>
+
                                 <input
                                     type="file"
                                     id="f-file"
@@ -1717,6 +1725,19 @@
                     <!-- Subject Folder Grid (Kid-Friendly Filter) -->
                     <div id="subject-folder-grid" class="subject-folder-grid">
                         <!-- JavaScript will populate colorful folder cards here -->
+                    </div>
+
+                    <!-- Term Subfolder View (Prelims / Midterms / Finals drill-in) -->
+                    <div id="term-folder-view" class="hidden" style="margin-bottom: 25px">
+                        <div id="folder-breadcrumb" class="folder-breadcrumb">
+                            <button onclick="goBackToSubjects()" class="sketch-btn" style="width: auto; padding: 6px 14px; font-size: 1rem; margin: 0;">
+                                <i class="fas fa-arrow-left"></i> Back
+                            </button>
+                            <span id="folder-breadcrumb-label" style="font-family: 'Patrick Hand'; font-size: 1.2rem;">📂 Subject</span>
+                        </div>
+                        <div id="term-folder-grid" class="subject-folder-grid" style="margin-top: 12px; margin-bottom: 0">
+                            <!-- JavaScript populates Prelims / Midterms / Finals cards here -->
+                        </div>
                     </div>
 
                     <!-- The Dynamic File List -->
