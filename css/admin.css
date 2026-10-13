@@ -76,7 +76,10 @@
     padding: 15px;
     border: 2px dashed #ccc;
     border-radius: 10px;
-    transition: all 0.3s;
+    transition:
+        background 180ms var(--ease-out),
+        border-color 180ms var(--ease-out),
+        box-shadow 180ms var(--ease-out);
 }
 
 #adminDashboard form:hover {

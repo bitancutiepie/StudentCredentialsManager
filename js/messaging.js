@@ -97,7 +97,7 @@ window.openChatModal = async function (partnerId, partnerName) {
     if (partnerId === user.id) return showToast('Talking to yourself?');
 
     currentChatPartnerId = partnerId;
-    document.getElementById('chat-with-name').innerHTML = `<i class="fas fa-comments"></i> Chat with ${partnerName}`;
+    document.getElementById('chat-with-name').innerHTML = `<i class="fas fa-comments"></i> Chat with ${escapeHTML(partnerName)}`;
     document.getElementById('chat-target-id').value = partnerId;
     document.getElementById('chatModal').classList.remove('hidden');
 
@@ -406,8 +406,8 @@ window.fetchAdminMessages = async function () {
                  style="background:#fff; border:2px solid #000; padding:10px; margin-bottom:8px; border-radius:5px; cursor:pointer; transition:transform 0.1s; display:flex; justify-content:space-between; align-items:center;"
                  onmouseover="this.style.transform='scale(1.01)'" onmouseout="this.style.transform='scale(1)'">
                 <div style="flex:1;">
-                    <div style="font-weight:bold; font-size:1.1rem;">${name1} <i class="fas fa-exchange-alt" style="font-size:0.8rem; color:#666;"></i> ${name2}</div>
-                    <div style="font-size:0.9rem; color:#555;">${preview}</div>
+                    <div style="font-weight:bold; font-size:1.1rem;">${escapeHTML(name1)} <i class="fas fa-exchange-alt" style="font-size:0.8rem; color:#666;"></i> ${escapeHTML(name2)}</div>
+                    <div style="font-size:0.9rem; color:#555;">${escapeHTML(preview)}</div>
                     <div style="font-size:0.8rem; color:#888;">${conv.count} messages • Last: ${date}</div>
                 </div>
                 <div style="font-size:1.2rem; color:#000;"><i class="fas fa-chevron-right"></i></div>
@@ -445,7 +445,7 @@ window.viewAdminConversation = async function (id1, id2) {
     const header = `
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:2px dashed #000; padding-bottom:10px;">
             <button onclick="fetchAdminMessages()" class="sketch-btn" style="width:auto; padding:5px 10px; font-size:0.9rem;"><i class="fas fa-arrow-left"></i> Back</button>
-            <div style="font-weight:bold; font-size:1rem;">${name1} & ${name2}</div>
+            <div style="font-weight:bold; font-size:1rem;">${escapeHTML(name1)} & ${escapeHTML(name2)}</div>
             <button onclick="deleteConversation('${id1}', '${id2}')" class="sketch-btn danger" style="width:auto; padding:5px 10px; font-size:0.9rem;"><i class="fas fa-trash"></i> Delete All</button>
         </div>
     `;
@@ -456,8 +456,8 @@ window.viewAdminConversation = async function (id1, id2) {
             const date = new Date(m.created_at).toLocaleString();
             return `
             <div style="background:#f1f2f6; border:1px solid #ccc; padding:8px; margin-bottom:5px; border-radius:5px; position:relative;">
-                <div style="font-size:0.75rem; color:#666; margin-bottom:3px;"><b>${senderName}</b> • ${date}</div>
-                <div style="font-family:'Patrick Hand'; font-size:1.1rem; padding-right:25px; word-break:break-word;">${m.content}</div>
+                <div style="font-size:0.75rem; color:#666; margin-bottom:3px;"><b>${escapeHTML(senderName)}</b> • ${date}</div>
+                <div style="font-family:'Patrick Hand'; font-size:1.1rem; padding-right:25px; word-break:break-word;">${escapeHTML(m.content)}</div>
                 <button onclick="deleteMessage('${m.id}', '${id1}', '${id2}')" class="sketch-btn danger" style="position:absolute; top:5px; right:5px; padding:0 5px; width:20px; height:20px; font-size:0.8rem; line-height:1; display:flex; align-items:center; justify-content:center;">X</button>
             </div>
         `;

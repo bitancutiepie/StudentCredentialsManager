@@ -1,8 +1,8 @@
 # The Wimpy Credentials Book
 
-[![Status](https://img.shields.io/badge/Status-Active-success?style=flat-square)](https://github.com/yourusername/sistema-ni-jv)
-[![Stack](https://img.shields.io/badge/Stack-HTML5_%7C_CSS3_%7C_JavaScript_%7C_Supabase-blue?style=flat-square)]()
-[![Database](https://img.shields.io/badge/Database-PostgreSQL-336791?style=flat-square&logo=postgresql)]()
+[![Status](https://img.shields.io/badge/Status-Active-success?style=flat-square)](https://github.com/bitancutiepie/StudentCredentialsManager)
+[![Stack](https://img.shields.io/badge/Stack-HTML5_%7C_CSS3_%7C_JavaScript_%7C_Supabase-blue?style=flat-square)](https://github.com/bitancutiepie/StudentCredentialsManager)
+[![Database](https://img.shields.io/badge/Database-PostgreSQL-336791?style=flat-square&logo=postgresql)](https://github.com/bitancutiepie/StudentCredentialsManager)
 
 > A real-time student companion application with a hand-drawn sketchbook aesthetic.
 
@@ -41,7 +41,7 @@ The Wimpy Credentials Book is a web-based academic management platform designed 
 |-------|-----------|
 | Frontend | HTML5, CSS3 (Flexbox, Grid, CSS Variables, Animations), Vanilla JavaScript (ES6+) |
 | Backend | Supabase (PostgreSQL, Realtime, Storage, Auth) |
-| Fonts | Patrick Hand, Outfit (Google Fonts) |
+| Fonts | Patrick Hand, Permanent Marker, Outfit (Google Fonts) |
 | Icons | FontAwesome 6.5 |
 | APIs | EmailJS, html2canvas, PDF.js |
 
@@ -56,10 +56,14 @@ The Wimpy Credentials Book is a web-based academic management platform designed 
 │                 Static Hosting                    │
 │  (GitHub Pages / any static file server)          │
 │                                                   │
-│  index.html  ── script.js                         │
-│  web2.html   ── dashboard.js, admin.js,           │
-│                 messaging.js, group-chat.js        │
-│  css/         ── common.css, auth.css, admin.css   │
+│  index.html  ── js/script.js                      │
+│  web2.html   ── js/dashboard.js, js/admin.js,       │
+│                 js/messaging.js, js/group-chat.js,   │
+│                 js/creature-battle.js, js/minesweeper.js, │
+│                 js/wordle.js, js/file-manager.js,    │
+│                 js/pdf-scanner.js                    │
+│  css/         ── common.css, auth.css, admin.css,    │
+│                 dashboard.css, games.css, group-chat.css │
 │  js/          ── config.js, common.js              │
 └──────────┬──────────────────────────┬─────────────┘
            │                          │
@@ -92,8 +96,8 @@ The Wimpy Credentials Book is a web-based academic management platform designed 
 
 | Table | Purpose | Key Columns |
 |-------|---------|-------------|
-| `students` | User accounts & profiles | id, sr_code, name, role, enrollment_status, battle_wins |
-| `schedule` | Weekly class timetable | subject_code, start_time, end_time, day_of_week, room |
+| `students` | User accounts & profiles | id, sr_code, name, full_name, email, avatar_url, role, enrollment_status, section, last_login, battle_wins, battle_losses |
+| `schedule` | Weekly class timetable | subject_code, subject_name, start_time, end_time, day_of_week, room, instructor, section, meet_link, classroom_link |
 | `assignments` | Homework tracking | title, subject, description, due_date |
 | `events` | Calendar events | title, event_date, description |
 | `shared_files` | Uploaded resources | title, subject, file_url, file_type, created_at |
@@ -137,8 +141,8 @@ The Wimpy Credentials Book is a web-based academic management platform designed 
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/sistema-ni-jv.git
-cd sistema-ni-jv
+git clone https://github.com/bitancutiepie/StudentCredentialsManager.git
+cd StudentCredentialsManager
 
 # Serve locally (any static file server)
 npx serve .

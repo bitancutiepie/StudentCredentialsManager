@@ -33,7 +33,7 @@
         </script>
         <!-- Fonts -->
         <link
-            href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Permanent+Marker&display=swap"
+            href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Permanent+Marker&family=Outfit:wght@400;500;600;700&display=swap"
             rel="stylesheet"
         />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
@@ -42,6 +42,7 @@
         <link rel="stylesheet" href="css/dashboard.css" />
         <link rel="stylesheet" href="css/games.css" />
         <link rel="stylesheet" href="css/group-chat.css" />
+        <link rel="stylesheet" href="css/admin.css" />
     </head>
 
     <body>
@@ -72,7 +73,6 @@
         >
             <img
                 src="assets/images/monster.png"
-                id="hamilaw-img"
                 style="width: 100%; height: 100%; object-fit: contain"
             />
         </div>
@@ -105,7 +105,7 @@
                 <button
                     class="tab-btn admin-only hidden"
                     onclick="switchTab('admin-tools', event)"
-                    style="background: #2d3436; color: #fff; transform: rotate(-2deg)"
+                    style="background: #2d3436; color: #fff; --tab-rotate: -2deg"
                 >
                     Admin Tools
                 </button>
@@ -562,7 +562,7 @@
                                     <div style="display: flex; gap: 10px; margin-bottom: 10px;">
                                         <select id="section-choice-select" onchange="toggleCustomSectionInput(this)" style="flex: 1; padding: 10px; border: 2px solid #000; border-radius: 5px; font-family: 'Patrick Hand'; font-size: 1.1rem; background: #fff;">
                                             <option value="BSIT-3106">BSIT-3106</option>
-                                            <option value="RAIN AND GABO">RAIN AND GABO</option>
+                                            
                                             <option value="__NEW__">+ Create New Custom Block / Section...</option>
                                         </select>
                                         <input type="text" id="section-custom-input" placeholder="e.g. BSIT-2102 or Block B" class="hidden" style="flex: 1; padding: 10px; border: 2px solid #000; border-radius: 5px; font-family: 'Patrick Hand'; font-size: 1.1rem;" />
@@ -625,7 +625,7 @@
                                     <label style="font-weight: bold; font-family: 'Patrick Hand'; font-size: 1.1rem; display: block;">Target Section / Block:</label>
                                     <select id="s-section" style="width: 100%; padding: 8px; border: 2px solid #000; border-radius: 5px; font-family: 'Patrick Hand'; font-size: 1.1rem; background: #fff;">
                                         <option value="BSIT-3106">BSIT-3106</option>
-                                        <option value="RAIN AND GABO">RAIN AND GABO</option>
+                                        
                                     </select>
                                 </div>
                                 <select id="s-day" required>
@@ -1485,7 +1485,7 @@
                                 <span style="font-family: 'Patrick Hand'; font-size: 1.1rem; font-weight: bold; color: #2d3436;"><i class="fas fa-layer-group"></i> Block:</span>
                                 <select id="schedule-section-filter" onchange="changeScheduleSectionFilter(this.value)" style="padding: 4px 8px; border: 1px solid #000; border-radius: 4px; font-family: 'Patrick Hand'; font-size: 1.05rem; background: #fffdf0; cursor: pointer;">
                                     <option value="BSIT-3106">BSIT-3106</option>
-                                    <option value="RAIN AND GABO">RAIN AND GABO</option>
+                                    
                                 </select>
                             </div>
                         </div>
@@ -2165,7 +2165,7 @@
                             <label style="font-family: 'Patrick Hand'; font-size: 1.1rem; font-weight: bold;">Target Block:</label>
                             <select id="pdf-target-section" style="padding: 5px 10px; border: 2px solid #000; border-radius: 5px; font-family: 'Patrick Hand'; font-size: 1.1rem; background: #fff;">
                                 <option value="BSIT-3106">BSIT-3106</option>
-                                <option value="RAIN AND GABO">RAIN AND GABO</option>
+                                
                             </select>
                         </div>
                     </div>
@@ -2287,7 +2287,7 @@
                         <input
                             type="text"
                             id="edit-class-section"
-                            placeholder="e.g. BSIT-3106 or RAIN AND GABO"
+                            placeholder="e.g. BSIT-3106"
                             style="
                                 width: 100%;
                                 padding: 8px;
@@ -3144,18 +3144,18 @@
         </div>
 
         <!-- SCRIPTS -->
-        <script src="js/config.js"></script>
-        <script src="js/common.js"></script>
-        <script src="js/dashboard.js?v=202405152300"></script>
+        <script src="js/config.js?v=2.0"></script>
+        <script src="js/common.js?v=2.0"></script>
+        <script src="js/dashboard.js?v=2.0"></script>
         <!-- Update this version number on every deployment -->
-        <script src="js/messaging.js"></script>
-        <script src="js/admin.js"></script>
-        <script src="js/pdf-scanner.js"></script>
-        <script src="js/wordle.js"></script>
-        <script src="js/minesweeper.js"></script>
-        <script src="js/creature-battle.js"></script>
+        <script src="js/messaging.js?v=2.0"></script>
+        <script src="js/admin.js?v=2.0"></script>
+        <script src="js/pdf-scanner.js?v=2.0"></script>
+        <script src="js/wordle.js?v=2.0"></script>
+        <script src="js/minesweeper.js?v=2.0"></script>
+        <script src="js/creature-battle.js?v=2.0"></script>
 
-        <script src="js/file-manager.js"></script>
+        <script src="js/file-manager.js?v=2.0"></script>
 
         <!-- GROUP CHAT MODAL -->
         <div id="groupChatModal" class="hidden">

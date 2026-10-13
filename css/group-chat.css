@@ -176,7 +176,15 @@
     cursor: pointer;
     font-family: 'Patrick Hand', cursive;
     color: #666;
-    transition: all 0.15s;
+    transition:
+        border-color 150ms var(--ease-out),
+        color 150ms var(--ease-out),
+        background 150ms var(--ease-out),
+        transform 150ms var(--ease-out);
+}
+
+.gc-admin-btn:active {
+    transform: scale(0.96);
 }
 
 .gc-admin-btn:hover {
@@ -200,11 +208,18 @@
     padding: 10px;
     border-radius: 3px;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition:
+        transform 180ms var(--ease-out),
+        background 180ms var(--ease-out),
+        box-shadow 180ms var(--ease-out);
     position: relative;
     font-size: 1rem;
     box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.05);
     text-align: left;
+}
+
+.ann-mini-card:active {
+    transform: scale(0.97);
 }
 
 .ann-mini-card:hover {

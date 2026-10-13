@@ -139,14 +139,15 @@ html {
     box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
     clip-path: polygon(0% 0%, 95% 0%, 100% 50%, 95% 100%, 0% 100%);
     position: relative;
+    transform: rotate(var(--tab-rotate, 0deg));
 }
 
 .tab-btn:hover {
-    transform: translateX(10px);
+    transform: rotate(var(--tab-rotate, 0deg)) translateX(10px);
 }
 
 .tab-btn.active {
-    transform: translateX(15px);
+    transform: rotate(var(--tab-rotate, 0deg)) translateX(15px);
     box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.1);
 }
 
@@ -154,35 +155,35 @@ html {
 .tab-btn:nth-child(1) {
     background: #ff7675;
     color: white;
-    transform: rotate(-2deg);
+    --tab-rotate: -2deg;
 }
 
 /* Schedule */
 .tab-btn:nth-child(2) {
     background: #74b9ff;
     color: white;
-    transform: rotate(1deg);
+    --tab-rotate: 1deg;
 }
 
 /* Assignments */
 .tab-btn:nth-child(3) {
     background: #55efc4;
     color: #2d3436;
-    transform: rotate(-1deg);
+    --tab-rotate: -1deg;
 }
 
 /* Calendar */
 .tab-btn:nth-child(4) {
     background: #ffeaa7;
     color: #2d3436;
-    transform: rotate(2deg);
+    --tab-rotate: 2deg;
 }
 
 /* Links */
 .tab-btn:nth-child(5) {
     background: #a29bfe;
     color: #2d3436;
-    transform: rotate(-1deg);
+    --tab-rotate: -1deg;
 }
 
 /* Help */
@@ -199,7 +200,7 @@ html {
     );
     position: relative;
     /* Smooth transitions for tab switching height changes */
-    transition: min-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: min-height 250ms var(--ease-out);
 }
 
 /* The Vertical Red Margin Line */
@@ -227,7 +228,7 @@ h1 {
 
 /* --- TAB SWITCHING ANIMATION --- */
 .tab-content {
-    animation: paperSlideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: paperSlideIn 220ms var(--ease-out);
     transform-origin: top left;
 }
 
@@ -298,7 +299,9 @@ h2:hover {
         3px 3px 0 #000,
         0 4px 15px rgba(0, 0, 0, 0.08);
     position: relative;
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    transition:
+        transform 200ms var(--ease-out),
+        box-shadow 200ms var(--ease-out);
     border: 2px solid #000;
     opacity: 0;
     animation: paperDeal 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
@@ -337,7 +340,9 @@ h2:hover {
     border-bottom-right-radius: 4px;
     padding: 25px 20px 20px 25px;
     box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.05);
-    transition: all 0.25s ease;
+    transition:
+        transform 200ms var(--ease-out),
+        box-shadow 200ms var(--ease-out);
 }
 
 #assignment-list .class-card:hover {
@@ -404,10 +409,11 @@ h2:hover {
     height: 18px;
     background: rgba(255, 255, 255, 0.7);
     border: 1px solid rgba(0, 0, 0, 0.08);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     z-index: 2;
     transform: rotate(-3deg);
-    transition: all 0.2s ease;
+    transition:
+        transform 160ms var(--ease-out),
+        background 160ms var(--ease-out);
 }
 
 #assignment-list .class-card:hover::before {
@@ -1311,7 +1317,9 @@ h2:hover {
     border: 3px solid #fff;
     position: relative;
     cursor: pointer;
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition:
+        transform 200ms var(--ease-out),
+        box-shadow 200ms var(--ease-out);
     background-color: #f1f2f6;
     margin-left: -15px;
     box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.1);
@@ -1328,6 +1336,10 @@ h2:hover {
     z-index: 100 !important;
     margin-right: 15px;
     box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+}
+
+.live-user-bubble:active {
+    transform: scale(1.15) translateY(-4px) rotate(2deg);
 }
 
 .live-user-bubble img {
@@ -1537,14 +1549,21 @@ h2:hover {
     gap: 10px;
     border-radius: 5px;
     transform: rotate(-2deg);
-    animation: buttonWiggle 3s infinite ease-in-out;
-    transition: all 0.2s ease;
+    transition:
+        transform 180ms var(--ease-out),
+        background 180ms var(--ease-out),
+        color 180ms var(--ease-out),
+        box-shadow 180ms var(--ease-out);
 }
 
 .fab-message:hover {
-    transform: scale(1.1) rotate(0deg);
+    transform: scale(1.06) rotate(0deg);
     background: #000;
     color: #fff;
+}
+
+.fab-message:active {
+    transform: scale(0.97) rotate(0deg);
 }
 
 @media (max-width: 768px) {
@@ -1575,14 +1594,20 @@ h2:hover {
     gap: 10px;
     border-radius: 5px;
     transform: rotate(1deg);
-    animation: buttonWiggle 3s infinite ease-in-out;
-    transition: all 0.2s ease;
+    transition:
+        transform 180ms var(--ease-out),
+        background 180ms var(--ease-out),
+        box-shadow 180ms var(--ease-out);
 }
 
 .fab-groupchat:hover {
-    transform: scale(1.1) rotate(0deg);
+    transform: scale(1.06) rotate(0deg);
     background: #6c5ce7;
     box-shadow: 10px 10px 0px rgba(0, 0, 0, 0.3);
+}
+
+.fab-groupchat:active {
+    transform: scale(0.97) rotate(0deg);
 }
 
 @media (max-width: 768px) {
@@ -1613,14 +1638,20 @@ h2:hover {
     gap: 10px;
     border-radius: 5px;
     transform: rotate(2deg);
-    animation: buttonWiggle 3s infinite ease-in-out;
-    transition: all 0.2s ease;
+    transition:
+        transform 180ms var(--ease-out),
+        background 180ms var(--ease-out),
+        box-shadow 180ms var(--ease-out);
 }
 
 .fab-prelims:hover {
-    transform: scale(1.1) rotate(0deg);
+    transform: scale(1.06) rotate(0deg);
     background: #5a4bd1;
     box-shadow: 10px 10px 0px rgba(0, 0, 0, 0.3);
+}
+
+.fab-prelims:active {
+    transform: scale(0.97) rotate(0deg);
 }
 
 @media (max-width: 768px) {
@@ -1635,8 +1666,12 @@ h2:hover {
 /* --- Extracted Styles --- */
 
 .preview-modal-btn {
-    transition: all 0.2s !important;
+    transition: transform 160ms var(--ease-out) !important;
     cursor: pointer !important;
+}
+
+.preview-modal-btn:active {
+    transform: scale(0.96) !important;
 }
 
 .preview-modal-btn:hover {
@@ -1672,7 +1707,10 @@ h2:hover {
     /* Needed for popup absolute positioning */
     overflow: visible !important;
     /* Allow popup to spill out */
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    transition:
+        transform 180ms var(--ease-out),
+        background 180ms var(--ease-out),
+        box-shadow 180ms var(--ease-out);
 }
 
 .cal-day.has-event {
@@ -1714,7 +1752,7 @@ h2:hover {
 
 .cal-day:hover .cal-hover-popup {
     display: block;
-    animation: popIn 0.3s ease-out;
+    animation: popIn 180ms var(--ease-out);
 }
 
 .cal-hover-popup h4 {
@@ -1768,7 +1806,7 @@ h2:hover {
 @keyframes popIn {
     from {
         opacity: 0;
-        transform: translateX(-50%) translateY(10px) rotate(0deg) scale(0.8);
+        transform: translateX(-50%) translateY(6px) rotate(0deg) scale(0.95);
     }
 
     to {
@@ -1909,7 +1947,10 @@ h2:hover {
     white-space: nowrap;
     opacity: 0;
     pointer-events: none;
-    transition: all 0.2s;
+    transform: translateY(2px) scale(0.96);
+    transition:
+        opacity 140ms var(--ease-out),
+        transform 140ms var(--ease-out);
     z-index: 100;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
     border: 1px solid #fff;
@@ -1928,7 +1969,7 @@ h2:hover {
 
 .todo-item:hover .todo-tooltip {
     opacity: 1;
-    transform: translateY(-5px);
+    transform: translateY(-4px) scale(1);
 }
 
 /* Avatar Pop Animation */
@@ -2017,9 +2058,16 @@ h2:hover {
     text-align: center;
     cursor: pointer;
     position: relative;
-    transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+    transition:
+        transform 180ms var(--ease-out),
+        box-shadow 180ms var(--ease-out),
+        background 180ms var(--ease-out);
     box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.1);
     overflow: hidden;
+}
+
+.subject-folder:active {
+    transform: translateY(-1px) scale(0.98);
 }
 
 .subject-folder::before {
@@ -2122,7 +2170,6 @@ h2:hover {
     }
 }
 
-/* File Card specific refinements */
 .file-card-mini {
     width: 100%;
     box-sizing: border-box;
@@ -2133,7 +2180,10 @@ h2:hover {
     display: flex;
     flex-direction: column;
     box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.1);
-    transition: all 0.2s ease-out;
+    transition:
+        transform 180ms var(--ease-out),
+        box-shadow 180ms var(--ease-out),
+        border-color 180ms var(--ease-out);
     cursor: pointer;
     position: relative;
     overflow: hidden;
@@ -2145,6 +2195,10 @@ h2:hover {
     transform: translateY(-4px);
     box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.15);
     border-color: #333;
+}
+
+.file-card-mini:active {
+    transform: translateY(-2px) scale(0.99);
 }
 
 .file-icon-box {
@@ -2174,12 +2228,18 @@ h2:hover {
     font-size: 0.9rem;
     padding: 4px 6px;
     border-radius: 4px;
-    transition: all 0.15s;
+    transition:
+        transform 140ms var(--ease-out),
+        background 140ms var(--ease-out);
 }
 
 .sketch-icon-btn:hover {
     background: #f1f2f6;
     transform: scale(1.15);
+}
+
+.sketch-icon-btn:active {
+    transform: scale(0.95);
 }
 
 .file-subject-label {
@@ -2330,7 +2390,10 @@ h2:hover {
     align-items: center;
     gap: 15px;
     box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.1);
-    transition: all 0.2s ease;
+    transition:
+        transform 180ms var(--ease-out),
+        box-shadow 180ms var(--ease-out),
+        background 180ms var(--ease-out);
     position: relative;
 }
 
@@ -2338,6 +2401,10 @@ h2:hover {
     transform: translate(-2px, -2px);
     box-shadow: 7px 7px 0 rgba(0, 0, 0, 0.1);
     background: #fffdf0;
+}
+
+.highlight-item.interactive:active {
+    transform: scale(0.98);
 }
 
 .highlight-item i {
@@ -2414,7 +2481,9 @@ h2:hover {
     padding: 0;
     position: relative;
     min-height: 140px;
-    transition: all 0.3s ease;
+    transition:
+        transform 180ms var(--ease-out),
+        box-shadow 180ms var(--ease-out);
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -2424,6 +2493,10 @@ h2:hover {
     transform: scale(1.03) rotate(-0.5deg);
     box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.2);
     z-index: 5;
+}
+
+.bday-month-card:active {
+    transform: scale(0.99);
 }
 
 .bday-month-card.current-month {
@@ -2605,56 +2678,58 @@ h2:hover {
     bottom: 5px;
     right: 5px;
     font-size: 1.2rem;
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
     opacity: 0.08;
     pointer-events: none;
 }
 
 .bday-month-card:nth-child(1)::after {
-    content: '🎁';
+    content: '\f06b'; /* fa-gift */
 }
 
 .bday-month-card:nth-child(2)::after {
-    content: '💝';
+    content: '\f004'; /* fa-heart */
 }
 
 .bday-month-card:nth-child(3)::after {
-    content: '🎈';
+    content: '\f005'; /* fa-star */
 }
 
 .bday-month-card:nth-child(4)::after {
-    content: '🎀';
+    content: '\f4d6'; /* fa-ribbon */
 }
 
 .bday-month-card:nth-child(5)::after {
-    content: '🎉';
+    content: '\f118'; /* fa-smile */
 }
 
 .bday-month-card:nth-child(6)::after {
-    content: '🎂';
+    content: '\f1fd'; /* fa-birthday-cake */
 }
 
 .bday-month-card:nth-child(7)::after {
-    content: '🎊';
+    content: '\f521'; /* fa-crown */
 }
 
 .bday-month-card:nth-child(8)::after {
-    content: '🧁';
+    content: '\f3a5'; /* fa-gem */
 }
 
 .bday-month-card:nth-child(9)::after {
-    content: '🎁';
+    content: '\f06b'; /* fa-gift */
 }
 
 .bday-month-card:nth-child(10)::after {
-    content: '🎃';
+    content: '\f6e2'; /* fa-ghost */
 }
 
 .bday-month-card:nth-child(11)::after {
-    content: '🎈';
+    content: '\f0f3'; /* fa-bell */
 }
 
 .bday-month-card:nth-child(12)::after {
-    content: '🎄';
+    content: '\f1bb'; /* fa-tree */
 }
 
 .bday-month-count {
@@ -2721,7 +2796,10 @@ h2:hover {
     box-shadow:
         0 8px 25px rgba(0, 0, 0, 0.3),
         0 0 0 2px rgba(255, 255, 255, 0.15);
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition:
+        transform 180ms var(--ease-out),
+        background 180ms var(--ease-out),
+        box-shadow 180ms var(--ease-out);
     border: 2px solid #fff;
     white-space: nowrap;
 }
@@ -2730,6 +2808,10 @@ h2:hover {
     transform: translateX(-50%) translateY(-3px) scale(1.05);
     background: #000;
     box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+}
+
+#class-countdown-pill:active {
+    transform: translateX(-50%) translateY(0) scale(0.98);
 }
 
 #class-countdown-pill .pill-pulse {
@@ -2755,7 +2837,7 @@ h2:hover {
 
 @keyframes pillPulse {
     0% {
-        transform: scale(0.5);
+        transform: scale(0.85);
         opacity: 0;
     }
     50% {

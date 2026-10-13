@@ -903,9 +903,10 @@ window.openStudentDetails = function (id) {
     const avatar =
         student.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random`;
 
-    const safeName = student.name.replace(/'/g, "\\'");
-    const safeCode = student.sr_code.replace(/'/g, "\\'");
-    const safeAvatar = (student.avatar_url || '').replace(/'/g, "\\'");
+    const safeName = (student.name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    const safeCode = (student.sr_code || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    const safePassword = (student.password || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    const safeAvatar = (student.avatar_url || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
     const currentStatus = student.enrollment_status || 'Not Enrolled';
 
     const receiptLink = student.enrollment_receipt_url
@@ -921,7 +922,7 @@ window.openStudentDetails = function (id) {
         : '';
 
     content.innerHTML = `
-        <img src="${avatar}" style="width:100px; height:100px; border-radius:50%; border:3px solid #000; margin-bottom:15px; object-fit:cover;">
+        <img src="${escapeHTML(avatar)}" style="width:100px; height:100px; border-radius:50%; border:3px solid #000; margin-bottom:15px; object-fit:cover;">
         <h2 style="margin:0;">${escapeHTML(student.name)}</h2>
         <p style="color:#d63031; font-weight:bold; margin-top:0;">Real Name: ${escapeHTML(student.full_name || 'NOT SET')}</p>
         <p style="color:#666; margin-top:5px;">${escapeHTML(student.email) || 'No Email'}</p>
@@ -929,13 +930,13 @@ window.openStudentDetails = function (id) {
         <div style="background:#f1f2f6; padding:15px; border-radius:10px; border:2px dashed #ccc; margin:15px 0; text-align:left;">
             <div style="margin-bottom:10px;">
                 <strong>SR Code:</strong> 
-                <span style="font-family:monospace; font-size:1.2rem; background:#fff; padding:2px 5px; border:1px solid #999;">${student.sr_code}</span>
+                <span style="font-family:monospace; font-size:1.2rem; background:#fff; padding:2px 5px; border:1px solid #999;">${escapeHTML(student.sr_code)}</span>
                 <i class="fas fa-copy" onclick="copyToClipboard('${safeCode}')" style="cursor:pointer; color:#0984e3; margin-left:5px;" title="Copy"></i>
             </div>
             <div>
                 <strong>Password:</strong> 
-                <span style="font-family:monospace; font-size:1.2rem; background:#fff; padding:2px 5px; border:1px solid #999;">${student.password}</span>
-                <i class="fas fa-copy" onclick="copyToClipboard('${student.password}')" style="cursor:pointer; color:#0984e3; margin-left:5px;" title="Copy"></i>
+                <span style="font-family:monospace; font-size:1.2rem; background:#fff; padding:2px 5px; border:1px solid #999;">${escapeHTML(student.password)}</span>
+                <i class="fas fa-copy" onclick="copyToClipboard('${safePassword}')" style="cursor:pointer; color:#0984e3; margin-left:5px;" title="Copy"></i>
             </div>
         </div>
 
@@ -956,7 +957,7 @@ window.openStudentDetails = function (id) {
 
 
         <div style="display:flex; gap:10px; flex-direction:column;">
-            <button onclick="openPortalWithHelper('${safeCode}', '${student.password}', '${student.name}')" class="sketch-btn" style="background:#00b894; color:#fff;">
+            <button onclick="openPortalWithHelper('${safeCode}', '${safePassword}', '${safeName}')" class="sketch-btn" style="background:#00b894; color:#fff;">
                 <i class="fas fa-external-link-alt"></i> Login to Portal (Turbo Fill)
             </button>
             <button onclick="loginAsUser('${safeName}', '${safeCode}', '${safeAvatar}', '${student.id}')" class="sketch-btn" style="background:#0984e3; color:#fff;">

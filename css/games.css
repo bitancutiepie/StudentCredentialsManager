@@ -32,7 +32,11 @@
     font-weight: bold;
     text-transform: uppercase;
     background: #fff;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition:
+        background 200ms var(--ease-out),
+        border-color 200ms var(--ease-out),
+        color 200ms var(--ease-out),
+        transform 200ms var(--ease-out);
     font-family: 'Permanent Marker', cursive;
     box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.1);
     border-radius: 4px 12px 6px 10px / 10px 6px 12px 4px;
@@ -110,7 +114,10 @@
     font-size: 1.2rem;
     text-transform: uppercase;
     user-select: none;
-    transition: all 0.1s;
+    transition:
+        transform 100ms var(--ease-out),
+        background 100ms var(--ease-out),
+        box-shadow 100ms var(--ease-out);
     box-shadow: 2px 2px 0 #000;
 }
 
@@ -120,7 +127,7 @@
 }
 
 .key:active {
-    transform: translateY(2px);
+    transform: translateY(2px) scale(0.97);
     box-shadow: 0 0 0 #000;
 }
 
@@ -190,13 +197,20 @@
     cursor: pointer;
     margin-top: 20px;
     font-size: 1.2rem;
-    transition: all 0.2s;
+    transition:
+        transform 160ms var(--ease-out),
+        background 160ms var(--ease-out),
+        color 160ms var(--ease-out);
 }
 
 .status-btn:hover {
     transform: scale(1.1) rotate(2deg);
     background: #f1c40f;
     color: #000;
+}
+
+.status-btn:active {
+    transform: scale(0.97);
 }
 
 /* Minesweeper Styles */
@@ -251,7 +265,10 @@
     justify-content: center;
     cursor: pointer;
     box-shadow: 3px 3px 0 #000;
-    transition: all 0.1s;
+    transition:
+        transform 120ms var(--ease-out),
+        background 120ms var(--ease-out),
+        box-shadow 120ms var(--ease-out);
     border-radius: 50%;
     color: #000;
 }
@@ -329,10 +346,12 @@
 
 @keyframes bombPop {
     from {
-        transform: scale(0);
+        opacity: 0;
+        transform: scale(0.85);
     }
 
     to {
+        opacity: 1;
         transform: scale(1.4);
     }
 }
@@ -410,7 +429,10 @@
     padding: 14px 40px !important;
     width: auto !important;
     box-shadow: 6px 6px 0 #000 !important;
-    transition: all 0.2s !important;
+    transition:
+        transform 160ms var(--ease-out),
+        box-shadow 160ms var(--ease-out),
+        background 160ms var(--ease-out) !important;
     display: inline-flex !important;
     align-items: center;
     gap: 10px;
@@ -420,6 +442,10 @@
     transform: scale(1.05) rotate(1deg) !important;
     box-shadow: 8px 8px 0 #000 !important;
     background: #5b4cdb !important;
+}
+
+.battle-start-btn:active {
+    transform: scale(0.97) rotate(0deg) !important;
 }
 
 .battle-creature-showcase {
@@ -630,7 +656,10 @@
     border: 2px solid #eee;
     border-radius: 8px;
     cursor: pointer;
-    transition: all 0.15s;
+    transition:
+        border-color 150ms var(--ease-out),
+        background 150ms var(--ease-out),
+        transform 150ms var(--ease-out);
     font-family: 'Patrick Hand', cursive;
 }
 
@@ -638,6 +667,10 @@
     border-color: #6c5ce7;
     background: #f8f7ff;
     transform: translateX(3px);
+}
+
+.battle-opponent-row:active {
+    transform: translateX(1px) scale(0.98);
 }
 
 .battle-opponent-avatar {
@@ -818,7 +851,10 @@
     padding: 12px 8px;
     text-align: center;
     cursor: pointer;
-    transition: all 0.25s;
+    transition:
+        border-color 180ms var(--ease-out),
+        transform 180ms var(--ease-out),
+        box-shadow 180ms var(--ease-out);
     border-radius: 10px;
     position: relative;
     box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
@@ -828,6 +864,10 @@
     border-color: #7c6cf0;
     transform: translateY(-4px);
     box-shadow: 0 6px 20px rgba(108, 92, 231, 0.4);
+}
+
+.battle-creature-card:active {
+    transform: translateY(-1px) scale(0.97);
 }
 
 .battle-creature-card.selected {
@@ -1216,7 +1256,7 @@
 
 @keyframes creatureReveal {
     0% {
-        transform: scale(0) rotateY(90deg);
+        transform: scale(0.92) rotateY(90deg);
         opacity: 0;
     }
 
@@ -1294,15 +1334,18 @@
 
 @keyframes resultTextBounce {
     0% {
-        transform: scale(0);
+        transform: scale(0.92);
+        opacity: 0;
     }
 
     50% {
-        transform: scale(1.2);
+        transform: scale(1.08);
+        opacity: 1;
     }
 
     100% {
         transform: scale(1);
+        opacity: 1;
     }
 }
 
@@ -1891,7 +1934,7 @@
 
 @keyframes participantPop {
     0% {
-        transform: scale(0);
+        transform: scale(0.92);
         opacity: 0;
     }
 
@@ -2142,12 +2185,12 @@
 
 @keyframes championReveal {
     0% {
-        transform: scale(0) rotate(-10deg);
+        transform: scale(0.92) rotate(-6deg);
         opacity: 0;
     }
 
     70% {
-        transform: scale(1.05) rotate(2deg);
+        transform: scale(1.03) rotate(1deg);
         opacity: 1;
     }
 
@@ -2278,13 +2321,21 @@
     justify-content: center;
     gap: 3px;
     font-family: 'Patrick Hand', cursive;
-    transition: all 0.2s;
+    transition:
+        transform 160ms var(--ease-out),
+        box-shadow 160ms var(--ease-out),
+        background 160ms var(--ease-out),
+        border-color 160ms var(--ease-out);
     box-shadow: 3px 3px 0 #000;
 }
 
 .tourney-size-btn:hover {
     transform: translateY(-3px);
     box-shadow: 5px 5px 0 #000;
+}
+
+.tourney-size-btn:active {
+    transform: scale(0.97);
 }
 
 .tourney-size-btn.selected {

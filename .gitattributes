@@ -1,0 +1,9 @@
+# Normalize line endings (repo edited on Windows + GitHub)
+* text=auto
+
+# Keep binaries untouched
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.wav binary
+*.pdf binary

@@ -163,17 +163,29 @@ function showToast(message, type = 'info') {
 
     // Apply styling based on type
     if (type === 'error') {
-        toast.style.background = '#ffadad';
         toast.classList.add('error');
     }
 
     container.appendChild(toast);
 
-    // Auto-remove
-    setTimeout(() => {
-        toast.style.animation = 'toastOut 0.5s forwards';
-        setTimeout(() => toast.remove(), 500);
-    }, 3000);
+    let dismissed = false;
+    const dismiss = () => {
+        if (dismissed) return;
+        dismissed = true;
+        toast.classList.add('exiting');
+        setTimeout(() => {
+            if (toast.parentNode) toast.remove();
+        }, 180);
+    };
+
+    // Auto-remove after 3.2s
+    const timer = setTimeout(dismiss, 3200);
+
+    // Tap or click to immediately dismiss
+    toast.addEventListener('click', () => {
+        clearTimeout(timer);
+        dismiss();
+    });
 }
 
 /**
@@ -203,7 +215,7 @@ function showWimpyConfirm(message) {
 
         box.innerHTML = `
             <h2 style="margin:0 0 10px 0; font-size:2rem;">WAIT!</h2>
-            <p style="font-size:1.3rem; margin-bottom:20px;">${message}</p>
+            <p style="font-size:1.3rem; margin-bottom:20px;">${escapeHTML(message)}</p>
             <div style="display:flex; gap:10px; justify-content:center;">
                 <button id="wimpy-no" class="sketch-btn" style="flex:1; background:#fff; color:#000;">NAH</button>
                 <button id="wimpy-yes" class="sketch-btn" style="flex:1; background:#000; color:#fff;">YEAH</button>
@@ -213,14 +225,30 @@ function showWimpyConfirm(message) {
         overlay.appendChild(box);
         document.body.appendChild(overlay);
 
-        document.getElementById('wimpy-no').onclick = () => {
-            overlay.remove();
-            resolve(false);
+        let resolved = false;
+        const cleanup = (result) => {
+            if (resolved) return;
+            resolved = true;
+            window.removeEventListener('keydown', handleKey);
+            overlay.classList.add('exiting');
+            setTimeout(() => {
+                if (overlay.parentNode) overlay.remove();
+                resolve(result);
+            }, 180);
         };
 
-        document.getElementById('wimpy-yes').onclick = () => {
-            overlay.remove();
-            resolve(true);
+        const handleKey = (e) => {
+            if (e.key === 'Escape') cleanup(false);
+        };
+        window.addEventListener('keydown', handleKey);
+
+        const noBtn = document.getElementById('wimpy-no');
+        const yesBtn = document.getElementById('wimpy-yes');
+        if (noBtn) noBtn.onclick = () => cleanup(false);
+        if (yesBtn) yesBtn.onclick = () => cleanup(true);
+
+        overlay.onclick = (e) => {
+            if (e.target === overlay) cleanup(false);
         };
     });
 }

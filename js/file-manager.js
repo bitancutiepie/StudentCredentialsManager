@@ -225,6 +225,7 @@ window.renderFileList = function (files) {
                       ? window.subjectMapping[subjectCode] || subjectCode
                       : subjectCode;
             const displayTitle = typeof escapeHTML === 'function' ? escapeHTML(file.title) : safeTitle;
+            const displaySubject = typeof escapeHTML === 'function' ? escapeHTML(subject) : subject;
 
             const createdAt = new Date(file.created_at);
             const isNew = createdAt > dateLimit && subject !== 'General';
@@ -262,7 +263,7 @@ window.renderFileList = function (files) {
                     <div class="file-card-top" style="background:${iconColor}15; border-bottom: 2px dashed ${iconColor}40; padding:8px 12px; margin:-12px -12px 10px -12px; border-radius:9px 9px 0 0; display:flex; align-items:center; justify-content:space-between;">
                         <div style="display:flex; align-items:center; gap:6px;">
                             <i class="fas ${iconClass}" style="color:${iconColor}; font-size:0.85rem;"></i>
-                            <span style="color:${iconColor}; font-weight:bold; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.5px;">${subject}</span>
+                            <span style="color:${iconColor}; font-weight:bold; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.5px;">${displaySubject}</span>
                             ${badgeHtml}
                         </div>
                         <span style="font-size:0.7rem; color:#999;"><i class="fas fa-clock"></i> ${timeAgo ? timeAgo(file.created_at) : createdAt.toLocaleDateString()}</span>

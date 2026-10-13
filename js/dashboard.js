@@ -17,6 +17,10 @@ function formatTime12h(time24) {
 }
 window.formatTime12h = formatTime12h;
 
+function isSafeHttpUrl(url) {
+    return typeof url === 'string' && /^https:\/\//i.test(url.trim());
+}
+
 // State
 let user = null;
 window.user = null;
@@ -433,12 +437,13 @@ async function loadSchedule(dayFilter, sectionFilter) {
                 : '';
 
             // Copy button for Meet link
-            const copyBtn = cls.meet_link
-                ? `<button onclick="event.stopPropagation(); navigator.clipboard.writeText('${cls.meet_link}').then(()=>showToast('Link Copied!'))" 
+            const copyBtn =
+                isSafeHttpUrl(cls.meet_link) && typeof navigator !== 'undefined' && navigator.clipboard
+                    ? `<button data-meet-link="${escapeHTML(cls.meet_link)}" onclick="event.stopPropagation(); navigator.clipboard.writeText(this.dataset.meetLink).then(()=>showToast('Link Copied!'))"
              class="sketch-btn" style="border-color:#555; color:#555; padding: 8px 12px;" title="Copy Link">
              <i class="fas fa-copy"></i>
              </button>`
-                : '';
+                    : '';
 
             return `
             <div class="class-card" style="animation-delay: ${index * 0.1}s; ${isAdmin ? 'border-style: solid; border-width: 2px;' : ''}">
@@ -450,8 +455,8 @@ async function loadSchedule(dayFilter, sectionFilter) {
                 <h3>${escapeHTML(cls.subject_name)}</h3>
                 <p><b>Teacher:</b> ${escapeHTML(cls.instructor || 'TBA')} | <b>Room:</b> ${escapeHTML(cls.room || 'TBA')}</p>
                 <div style="margin-top:10px; display:flex; flex-wrap:wrap; gap:8px;">
-                    ${cls.meet_link ? `<a href="${cls.meet_link}" target="_blank" class="sketch-btn meet"><i class="fas fa-video"></i> Meet</a>` : ''}
-                    ${cls.classroom_link ? `<a href="${cls.classroom_link}" target="_blank" class="sketch-btn classroom"><i class="fas fa-chalkboard"></i> Class</a>` : ''}
+                    ${isSafeHttpUrl(cls.meet_link) ? `<a href="${escapeHTML(cls.meet_link)}" target="_blank" rel="noopener" class="sketch-btn meet"><i class="fas fa-video"></i> Meet</a>` : ''}
+                    ${isSafeHttpUrl(cls.classroom_link) ? `<a href="${escapeHTML(cls.classroom_link)}" target="_blank" rel="noopener" class="sketch-btn classroom"><i class="fas fa-chalkboard"></i> Class</a>` : ''}
                     ${copyBtn}
                     ${
                         isAdmin
@@ -1055,8 +1060,12 @@ function updateCountdownPill() {
         const endVal = eh * 60 + em;
         const diffMins = endVal - currentTimeVal;
 
-        pillText.innerHTML = `<span style="color:#fab1a0; font-weight:bold;">${activeClass.subject_code}</span> ends in ${diffMins}m`;
-        currentLiveClassLink = activeClass.meet_link || activeClass.classroom_link;
+        pillText.innerHTML = `<span style="color:#fab1a0; font-weight:bold;">${escapeHTML(activeClass.subject_code)}</span> ends in ${diffMins}m`;
+        currentLiveClassLink = isSafeHttpUrl(activeClass.meet_link)
+            ? activeClass.meet_link
+            : isSafeHttpUrl(activeClass.classroom_link)
+              ? activeClass.classroom_link
+              : null;
         pill.classList.remove('hidden');
         return;
     }
@@ -1077,8 +1086,12 @@ function updateCountdownPill() {
         const diffMins = startVal - currentTimeVal;
 
         if (diffMins <= 60) {
-            pillText.innerHTML = `Next: <span style="color:#74b9ff; font-weight:bold;">${nextClass.subject_code}</span> in ${diffMins}m`;
-            currentLiveClassLink = nextClass.meet_link || nextClass.classroom_link;
+            pillText.innerHTML = `Next: <span style="color:#74b9ff; font-weight:bold;">${escapeHTML(nextClass.subject_code)}</span> in ${diffMins}m`;
+            currentLiveClassLink = isSafeHttpUrl(nextClass.meet_link)
+                ? nextClass.meet_link
+                : isSafeHttpUrl(nextClass.classroom_link)
+                  ? nextClass.classroom_link
+                  : null;
             pill.classList.remove('hidden');
             return;
         }
@@ -1088,8 +1101,8 @@ function updateCountdownPill() {
 }
 
 window.openLiveClassLink = function () {
-    if (currentLiveClassLink) {
-        window.open(currentLiveClassLink, '_blank');
+    if (isSafeHttpUrl(currentLiveClassLink)) {
+        window.open(currentLiveClassLink, '_blank', 'noopener');
     } else {
         showToast('No link available for this class!');
     }
@@ -1324,7 +1337,7 @@ function renderActiveUsers(presenceState) {
         div.setAttribute('data-name', isMe ? `${escapeHTML(u.name)} (You)` : escapeHTML(u.name));
         div.style.cssText = borderStyle;
 
-        div.innerHTML = `<img src="${u.avatar}" alt="${u.name}" loading="lazy">`;
+        div.innerHTML = `<img src="${escapeHTML(u.avatar)}" alt="${escapeHTML(u.name)}" loading="lazy">`;
         // Change: Show Action Menu instead of instant chat
         div.onclick = () => window.showUserActionMenu(u.user_id, u.name);
 
@@ -2326,7 +2339,7 @@ async function showHighlightsModal() {
 
         // Helper for subject name
         const getSubjectName = (code) =>
-            window.subjectMapping && window.subjectMapping[code] ? window.subjectMapping[code] : code;
+            escapeHTML(window.subjectMapping && window.subjectMapping[code] ? window.subjectMapping[code] : code || '');
 
         const hwHtml =
             homework.length > 0

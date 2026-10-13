@@ -218,7 +218,7 @@ window.groupChat = {
 
         const avatarUrl = data.a || `https://ui-avatars.com/api/?name=${encodeURIComponent(data.u)}&background=random`;
         const avatarHtml = !isMe
-            ? `<img src="${avatarUrl}" class="gc-avatar" title="${this.escapeHTML(data.u)}" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(data.u)}&background=random'">`
+            ? `<img src="${this.escapeHTML(avatarUrl)}" class="gc-avatar" title="${this.escapeHTML(data.u)}" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(data.u)}&background=random'">`
             : '';
         const nameHtml = !isMe ? `<div class="gc-name">${this.escapeHTML(data.u)}</div>` : '';
 
