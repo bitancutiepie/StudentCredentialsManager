@@ -190,6 +190,21 @@ window.midtermView = function (mode, btn) {
 };
 
 // Reviewer = files already in DB under this subject > Midterms term. Admin sets it by uploading in the Files tab.
+// Preview sits at z-9999 under this popup (z-10000) — lift it above while keeping this popup beneath.
+// openFilePreview is async (view logging first), so wait for the modal to exist.
+window.openMidtermFile = function (url, title, fileId) {
+    window.openFilePreview(url, title, fileId);
+    let tries = 0;
+    const lift = setInterval(() => {
+        const prev = document.getElementById('filePreviewModal');
+        if (prev) {
+            prev.style.zIndex = '10001';
+            clearInterval(lift);
+        } else if (++tries > 30) {
+            clearInterval(lift);
+        }
+    }, 100);
+};
 window.openMidtermReviewer = async function (code, btn) {
     window.midtermView('rev', btn);
     const box = document.querySelector('#mt-detail .mt-rev');
@@ -228,7 +243,7 @@ window.openMidtermReviewer = async function (code, btn) {
             .map((f) => {
                 const t = (f.file_type || '').toLowerCase();
                 const ic = t.includes('pdf') ? 'fa-file-pdf' : t.includes('image') ? 'fa-file-image' : 'fa-file';
-                return `<button onclick="openFilePreview('${esc(f.file_url)}','${esc(f.title)}','${f.id}')" class="sketch-btn" style="width:100%;justify-content:flex-start;font-size:1rem;margin-bottom:6px;"><i class="fas ${ic}"></i> ${f.title || 'Untitled'}</button>`;
+                return `<button onclick="openMidtermFile('${esc(f.file_url)}','${esc(f.title)}','${f.id}')" class="sketch-btn" style="width:100%;justify-content:flex-start;font-size:1rem;margin-bottom:6px;"><i class="fas ${ic}"></i> ${f.title || 'Untitled'}</button>`;
             })
             .join('');
     } catch (err) {
