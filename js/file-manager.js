@@ -7,7 +7,7 @@ let globalFiles = [];
 
 // --- 1. PREVIEW MODAL ---
 window.openFilePreview = async function (url, title, fileId) {
-    if (!url) return alert('No file link available.');
+    if (!url) return showToast('No file link available.', 'error');
 
     // --- TRACKING (Persistent Mode) ---
     try {
@@ -56,10 +56,10 @@ window.openFilePreview = async function (url, title, fileId) {
     let contentHtml = '';
 
     if (isPdf) {
-        contentHtml = `${loaderHtml}<iframe src="${url}" style="width:100%; height:100%; border:none; display:none;" onload="this.style.display='block'; document.getElementById('previewLoader').style.display='none';" title="${title}"></iframe>`;
+        contentHtml = `${loaderHtml}<iframe src="${url}" style="width:100%; height:100%; border:none; display:none;" onload="this.style.display='block'; var l=document.getElementById('previewLoader'); if(l) l.style.display='none';" title="${escapeHTML(title)}"></iframe>`;
     } else if (isImg) {
         contentHtml = `${loaderHtml}<div style="display:flex; justify-content:center; align-items:center; width:100%; height:100%;">
-                    <img src="${url}" style="max-width:100%; max-height:100%; object-fit:contain; display:none;" onload="this.style.display='block'; document.getElementById('previewLoader').style.display='none';">
+                    <img src="${url}" alt="${escapeHTML(title)}" style="max-width:100%; max-height:100%; object-fit:contain; display:none;" onload="this.style.display='block'; var l=document.getElementById('previewLoader'); if(l) l.style.display='none';" onerror="window.filePreviewError()">
                 </div>`;
     } else {
         contentHtml = `
@@ -75,7 +75,7 @@ window.openFilePreview = async function (url, title, fileId) {
                 <div id="filePreviewModal" class="file-preview-overlay">
                     <div class="file-preview-box">
                         <div class="preview-header">
-                            <h3><i class="fas fa-eye"></i> ${title}</h3>
+                            <h3><i class="fas fa-eye"></i> ${escapeHTML(title)}</h3>
                             <div class="preview-actions">
                                 <a href="${url}" target="_blank" download style="text-decoration:none;">
                                     <button class="sketch-btn" style="background:#0984e3; color:#fff; padding: 8px 15px; margin:0;" title="Download">
@@ -93,6 +93,21 @@ window.openFilePreview = async function (url, title, fileId) {
                     </div>
                 </div>`;
     document.body.insertAdjacentHTML('beforeend', modalHtml);
+    // Broken link = stuck loader otherwise (iframe HTTP errors don't fire onerror).
+    setTimeout(() => {
+        const loader = document.getElementById('previewLoader');
+        if (loader && loader.style.display !== 'none') window.filePreviewError();
+    }, 15000);
+};
+
+// Shared preview failure state (called from onerror + slow-load timeout).
+window.filePreviewError = function () {
+    const loader = document.getElementById('previewLoader');
+    if (loader) {
+        loader.innerHTML =
+            '<i class="fas fa-exclamation-triangle" style="font-size:2.5rem;"></i><p style="font-family:\'Patrick Hand\'; font-size:1.3rem; margin-top:10px;">Could not load preview. Try Download instead.</p>';
+    }
+    showToast('Preview failed to load.', 'error');
 };
 
 // --- NEW: VIEW FILE LOG (WHO CLICKED) ---
@@ -470,8 +485,7 @@ window.deleteFile = async function (id) {
 
     const { error } = await sb.from('shared_files').delete().eq('id', id);
     if (error) {
-        if (window.showToast) showToast('Error deleting file.');
-        else alert('Error deleting file.');
+        showToast('Error deleting file.', 'error');
     } else {
         if (window.showToast) showToast('File removed.');
         refreshFiles();
@@ -493,7 +507,7 @@ window.editUserStatus = function () {
     const currentUser = window.user || JSON.parse(localStorage.getItem('wimpy_user') || 'null');
 
     if (!currentUser) {
-        alert('Please log in to change your status.');
+        showToast('Please log in to change your status.', 'error');
         return;
     }
 
@@ -511,7 +525,7 @@ window.saveUserStatus = async function () {
     const current = el.innerText;
     const modal = document.getElementById('statusModal');
 
-    if (!newStatus) return alert('Status cannot be empty!');
+    if (!newStatus) return showToast('Status cannot be empty!', 'error');
 
     modal.classList.add('hidden');
 
@@ -528,7 +542,7 @@ window.saveUserStatus = async function () {
 
         if (error) {
             console.error('Status save failed:', error);
-            alert('Save failed: ' + (error.message || 'Permission denied'));
+            showToast('Save failed: ' + (error.message || 'Permission denied'), 'error');
             el.innerText = current; // Revert on error
         } else {
             showToast('Status updated!');
@@ -539,7 +553,7 @@ window.saveUserStatus = async function () {
 // --- NAME CHANGE LOGIC ---
 window.editUserName = function () {
     const currentUser = window.user || JSON.parse(localStorage.getItem('wimpy_user') || 'null');
-    if (!currentUser) return alert('Please log in first.');
+    if (!currentUser) return showToast('Please log in first.', 'error');
 
     document.getElementById('nameChangeInput').value = currentUser.name;
     document.getElementById('editNameModal').classList.remove('hidden');
@@ -551,7 +565,7 @@ window.saveUserName = async function () {
     const modal = document.getElementById('editNameModal');
     let currentUser = window.user || JSON.parse(localStorage.getItem('wimpy_user') || 'null');
 
-    if (!newName) return alert('Name cannot be empty!');
+    if (!newName) return showToast('Name cannot be empty!', 'error');
     if (!currentUser) return;
     if (newName === currentUser.name) return modal.classList.add('hidden');
 
@@ -567,7 +581,7 @@ window.saveUserName = async function () {
 
     if (error) {
         console.error('Name update failed:', error);
-        alert('Could not update name: ' + error.message);
+        showToast('Could not update name: ' + error.message, 'error');
         return;
     }
 
@@ -670,7 +684,7 @@ window.generateWallpaperFromSelect = function (e) {
         reader.readAsDataURL(fileInput.files[0]);
     } else {
         if (bgStyle === 'custom') {
-            alert('Please select an image file first!');
+            showToast('Please select an image file first!', 'error');
             return;
         }
         generateWallpaper(w, h, bgStyle, e);
@@ -719,10 +733,7 @@ window.showWallpaperPreview = function (dataUrl, filename) {
         link.click();
 
         // Success Toast
-        const toast = document.createElement('div');
-        toast.className = 'toast';
-        toast.innerText = 'Wallpaper Saved!';
-        document.getElementById('toast-container').appendChild(toast);
+        showToast('Wallpaper Saved!', 'success');
 
         document.getElementById('wp-preview-overlay').remove();
     };
@@ -1216,7 +1227,7 @@ window.generateWallpaper = async function (width, height, bgStyle, e, customBgDa
         showWallpaperPreview(dataUrl, filename);
     } catch (err) {
         console.error(err);
-        alert('Oops! Could not generate wallpaper.');
+        showToast('Oops! Could not generate wallpaper.', 'error');
     } finally {
         setTimeout(() => stage.remove(), 2000);
         btn.innerHTML = originalText;

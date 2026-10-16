@@ -183,7 +183,40 @@ function loadLandingPageContent() {
             // Toggle icon
             this.innerHTML = type === 'password' ? '<i class="fas fa-eye-slash"></i>' : '<i class="fas fa-eye"></i>';
         });
+        // Keyboard access for the span toggle (same action as click).
+        newToggle.setAttribute('tabindex', '0');
+        newToggle.setAttribute('role', 'button');
+        newToggle.setAttribute('aria-label', 'Show or hide password');
+        newToggle.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                this.click();
+            }
+        });
     }
+
+    // Keyboard access for auth-mode + color-picker spans/divs (same action as click).
+    if (toggleAuth && !toggleAuth.hasAttribute('tabindex')) {
+        toggleAuth.setAttribute('tabindex', '0');
+        toggleAuth.setAttribute('role', 'button');
+        toggleAuth.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                this.click();
+            }
+        });
+    }
+    document.querySelectorAll('.color-option').forEach((opt) => {
+        if (opt.hasAttribute('tabindex')) return;
+        opt.setAttribute('tabindex', '0');
+        opt.setAttribute('role', 'button');
+        opt.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                this.click();
+            }
+        });
+    });
 
     // Set initial text for toggleAuth based on isLoginMode
     if (toggleAuth && isLoginMode) {
@@ -897,6 +930,7 @@ window.updateStudentEnrollment = async function (id, status, file, btn) {
 window.openStudentDetails = function (id) {
     const student = allStudents.find((s) => s.id == id);
     if (!student) return;
+    if (window.rememberFocus) window.rememberFocus();
 
     const modal = document.getElementById('studentDetailsModal');
     const content = document.getElementById('studentDetailsContent');
@@ -1013,7 +1047,9 @@ window.deleteReceipt = async function (studentId) {
 
 window.closeStudentDetails = function () {
     document.getElementById('studentDetailsModal').classList.add('hidden');
+    if (window.restoreFocus) window.restoreFocus();
 };
+if (window.registerModal) window.registerModal('studentDetailsModal', window.closeStudentDetails);
 
 // --- PORTAL POP-UP LOGIC ---
 // --- PORTAL POP-UP LOGIC ---
@@ -2084,6 +2120,7 @@ async function updateNotePosition(id, x, y) {
 
 // --- FREEDOM WALL MODAL (Landing Page) ---
 window.openFreedomWall = function () {
+    if (window.rememberFocus) window.rememberFocus();
     document.getElementById('freedomWallModal').classList.remove('hidden');
 
     // Check for Admin to show controls
@@ -2106,7 +2143,9 @@ window.openFreedomWall = function () {
 };
 window.closeFreedomWall = function () {
     document.getElementById('freedomWallModal').classList.add('hidden');
+    if (window.restoreFocus) window.restoreFocus();
 };
+if (window.registerModal) window.registerModal('freedomWallModal', window.closeFreedomWall);
 
 // --- COLOR SELECTION ---
 window.selectColor = function (el, color) {
@@ -2161,9 +2200,11 @@ function returnToAdminChoice() {
     if (adminNav) adminNav.classList.add('hidden');
 }
 
+const WELCOME_SEEN_KEY = 'wimpy_update_seen_v3';
 function showWelcomeNote() {
-    // Check removed so it shows every time
-    // if (localStorage.getItem('wimpy_update_seen_v2')) return;
+    try {
+        if (localStorage.getItem(WELCOME_SEEN_KEY)) return;
+    } catch (e) {}
 
     const modal = document.createElement('div');
     modal.style.cssText =
@@ -2244,10 +2285,24 @@ function showWelcomeNote() {
         </div>
         <p style="font-size:1.3rem; margin: 15px 0; color: #d32f2f; font-weight: bold;">"Login na kayo para makita niyo!"</p>
         <button onclick="showCongratsMessage(this.parentElement.parentElement)" style="background: #000; color: #fff; border: 2px solid #000; font-family: 'Patrick Hand'; font-size: 1.2rem; cursor: pointer; width: 100%; border-radius: 5px; padding: 10px;">SHEESH!</button>
+        <button onclick="dismissWelcomeNote(this.parentElement.parentElement)" style="background: transparent; color: #555; border: none; font-family: 'Patrick Hand'; font-size: 1rem; cursor: pointer; width: 100%; padding: 8px; text-decoration: underline;">Skip, don't show again</button>
     `;
     modal.appendChild(note);
     document.body.appendChild(modal);
+    // Esc closes welcome too (marks seen so login is never blocked again)
+    modal.tabIndex = -1;
+    modal.focus();
+    modal.onkeydown = function (e) {
+        if (e.key === 'Escape') dismissWelcomeNote(modal);
+    };
 }
+// Marks welcome as seen without the congrats follow-up.
+window.dismissWelcomeNote = function (modal) {
+    try {
+        localStorage.setItem(WELCOME_SEEN_KEY, '1');
+    } catch (e) {}
+    if (modal) modal.remove();
+};
 // Click to Zoom
 window.viewFullImage = function (src) {
     const overlay = document.createElement('div');
@@ -2266,6 +2321,9 @@ window.viewFullImage = function (src) {
 
 // --- CONGRATS MESSAGE ---
 window.showCongratsMessage = function (prevModal) {
+    try {
+        localStorage.setItem(WELCOME_SEEN_KEY, '1');
+    } catch (e) {}
     if (prevModal) prevModal.remove();
 
     const overlay = document.createElement('div');
@@ -2857,12 +2915,15 @@ window.toggleMemberList = function () {
 
 // --- CLASS LIST MODAL ---
 window.openClassList = function () {
+    if (window.rememberFocus) window.rememberFocus();
     document.getElementById('classListModal').classList.remove('hidden');
     fetchMembers(); // Refresh data when opening
 };
 window.closeClassList = function () {
     document.getElementById('classListModal').classList.add('hidden');
+    if (window.restoreFocus) window.restoreFocus();
 };
+if (window.registerModal) window.registerModal('classListModal', window.closeClassList);
 
 // --- PUBLIC REQUEST MODAL ---
 window.openRequestModal = function () {
@@ -2871,12 +2932,15 @@ window.openRequestModal = function () {
     if (profileModal) profileModal.style.display = 'none';
 
     document.getElementById('requestModal').classList.remove('hidden');
+    if (window.rememberFocus) window.rememberFocus();
 };
 
 window.closeRequestModal = function () {
     document.getElementById('requestModal').classList.add('hidden');
     document.getElementById('req-content').value = '';
+    if (window.restoreFocus) window.restoreFocus();
 };
+if (window.registerModal) window.registerModal('requestModal', window.closeRequestModal);
 
 window.submitRequest = async function () {
     const content = document.getElementById('req-content').value;

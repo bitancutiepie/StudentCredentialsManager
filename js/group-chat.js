@@ -251,13 +251,13 @@ window.groupChat = {
             const stored = localStorage.getItem('wimpy_user');
             if (stored) window.user = JSON.parse(stored);
             else {
-                alert('You must be logged in to chat!');
+                showToast('You must be logged in to chat!', 'error');
                 return;
             }
         }
 
         if (!window.db) {
-            alert('Connection error — please refresh the page.');
+            showToast('Connection error — please refresh the page.', 'error');
             return;
         }
 

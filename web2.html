@@ -102,6 +102,9 @@
                 <button class="tab-btn" onclick="switchTab('games', event)" style="background: #f1c40f">
                     <i class="fas fa-gamepad"></i> Games
                 </button>
+                <button class="tab-btn" onclick="showMidtermsPopup()" style="background: #ff7675">
+                    <i class="fas fa-fire"></i> Midterms
+                </button>
                 <button
                     class="tab-btn admin-only hidden"
                     onclick="switchTab('admin-tools', event)"
@@ -471,9 +474,6 @@
                         <button class="sketch-btn" onclick="showAdminTool('admin-event-form', this)">
                             <i class="fas fa-calendar-alt"></i> Event
                         </button>
-                        <button class="sketch-btn" onclick="showAdminTool('admin-file-form', this)">
-                            <i class="fas fa-paperclip"></i> File
-                        </button>
                         <button class="sketch-btn" onclick="showAdminTool('admin-todo-form', this)">
                             <i class="fas fa-check-double"></i> To-Do
                         </button>
@@ -705,63 +705,6 @@
                                 <input type="text" id="e-desc" placeholder="Description" />
                                 <button type="submit" class="sketch-btn" style="background: #000; color: #fff">
                                     Save Event
-                                </button>
-                            </form>
-                        </div>
-
-                        <div class="admin-controls" id="admin-file-form">
-                            <button
-                                onclick="showAdminTool(null)"
-                                class="sketch-btn danger"
-                                style="
-                                    position: absolute;
-                                    top: 10px;
-                                    right: 10px;
-                                    width: auto;
-                                    margin: 0;
-                                    padding: 5px 10px;
-                                    font-size: 0.9rem;
-                                "
-                            >
-                                Close
-                            </button>
-                            <h3>Admin's Note: Upload Resource</h3>
-                            <form onsubmit="uploadFile(event)" autocomplete="off">
-                                <input
-                                    type="text"
-                                    id="f-title"
-                                    placeholder="File Title (e.g. Week 1 Reviewer)"
-                                    required
-                                />
-
-                                <!-- Subject Selection (Empty - JS will fill this) -->
-                                <select id="f-subject" required style="margin-bottom: 10px">
-                                    <option value="" disabled selected>Select Subject</option>
-                                    <option value="General">General / Other</option>
-                                    <!-- JavaScript will add your Schedule subjects here -->
-                                </select>
-
-                                <!-- Term Selection (Prelims / Midterms / Finals) -->
-                                <select id="f-term" required style="margin-bottom: 10px">
-                                    <option value="" disabled selected>Select Term (Prelims / Midterms / Finals)</option>
-                                    <option value="Prelims">Prelims</option>
-                                    <option value="Midterms">Midterms</option>
-                                    <option value="Finals">Finals</option>
-                                </select>
-
-                                <input
-                                    type="file"
-                                    id="f-file"
-                                    required
-                                    accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.jpg,.png,.jpeg"
-                                />
-                                <button
-                                    type="submit"
-                                    class="sketch-btn"
-                                    id="upload-btn"
-                                    style="background: #000; color: #fff"
-                                >
-                                    <i class="fas fa-paperclip"></i> Upload to Cabinet
                                 </button>
                             </form>
                         </div>
@@ -1217,30 +1160,6 @@
                                             <span>Events</span>
                                         </label>
                                         <label class="custom-checkbox-container">
-                                            <input type="checkbox" class="tool-perm" value="file" checked />
-                                            <div class="todo-checkbox small">
-                                                <div class="charcoal-x">
-                                                    <svg viewBox="0 0 100 100" style="width: 100%; height: 100%">
-                                                        <path
-                                                            d="M 20,20 L 80,80"
-                                                            fill="none"
-                                                            stroke="#000"
-                                                            stroke-width="12"
-                                                            stroke-linecap="round"
-                                                        />
-                                                        <path
-                                                            d="M 80,20 L 20,80"
-                                                            fill="none"
-                                                            stroke="#000"
-                                                            stroke-width="12"
-                                                            stroke-linecap="round"
-                                                        />
-                                                    </svg>
-                                                </div>
-                                            </div>
-                                            <span>Files</span>
-                                        </label>
-                                        <label class="custom-checkbox-container">
                                             <input type="checkbox" class="tool-perm" value="todo" checked />
                                             <div class="todo-checkbox small">
                                                 <div class="charcoal-x">
@@ -1570,6 +1489,64 @@
                 <!-- ================= LINKS & FILES TAB ================= -->
                 <div id="links" class="tab-content hidden">
                     <h2><i class="fas fa-folder-open"></i> Subject Files</h2>
+
+                    <!-- Upload (main admin only — unhidden in dashboard.js) -->
+                    <div id="file-upload-card" class="class-card hidden" style="margin-bottom: 25px">
+                        <h3 style="margin-top: 0"><i class="fas fa-paperclip"></i> Upload Resource</h3>
+                        <form onsubmit="uploadFile(event)" autocomplete="off">
+                            <input
+                                type="text"
+                                id="f-title"
+                                placeholder="File Title (e.g. Week 1 Reviewer)"
+                                required
+                            />
+
+                            <div class="upload-row">
+                                <!-- Subject Selection (Empty - JS will fill this) -->
+                                <select id="f-subject" required>
+                                    <option value="" disabled selected>Select Subject</option>
+                                    <option value="General">General / Other</option>
+                                    <!-- JavaScript will add your Schedule subjects here -->
+                                </select>
+
+                                <!-- Term Selection (Prelims / Midterms / Finals) -->
+                                <select id="f-term" required>
+                                    <option value="" disabled selected>Select Term (Prelims / Midterms / Finals)</option>
+                                    <option value="Prelims">Prelims</option>
+                                    <option value="Midterms">Midterms</option>
+                                    <option value="Finals">Finals</option>
+                                </select>
+                            </div>
+
+                            <div class="upload-file-row">
+                                <button
+                                    type="button"
+                                    onclick="document.getElementById('f-file').click()"
+                                    class="sketch-btn success"
+                                    style="font-size: var(--font-size-sm); padding: 6px 12px"
+                                >
+                                    <i class="fas fa-image"></i> CHOOSE FILE
+                                </button>
+                                <span id="f-file-name">No file chosen</span>
+                                <input
+                                    type="file"
+                                    id="f-file"
+                                    required
+                                    accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.jpg,.png,.jpeg"
+                                    class="hidden"
+                                    onchange="document.getElementById('f-file-name').textContent = this.files[0]?.name || 'No file chosen'"
+                                />
+                            </div>
+                            <button
+                                type="submit"
+                                class="sketch-btn"
+                                id="upload-btn"
+                                style="background: #000; color: #fff"
+                            >
+                                <i class="fas fa-paperclip"></i> Upload to Cabinet
+                            </button>
+                        </form>
+                    </div>
 
                     <!-- NEW: Meet Recordings Section -->
                     <div style="margin: 20px 0 35px 0">
@@ -3177,6 +3154,7 @@
         <script src="js/creature-battle.js?v=2.0"></script>
 
         <script src="js/file-manager.js?v=2.0"></script>
+        <script src="js/midterms.js?v=2.0"></script>
 
         <!-- GROUP CHAT MODAL -->
         <div id="groupChatModal" class="hidden">

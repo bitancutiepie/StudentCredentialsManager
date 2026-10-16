@@ -331,6 +331,52 @@ h2:hover {
     z-index: 10;
 }
 
+/* Files-tab upload card: no hover lift (it's a form), side-by-side selects */
+#file-upload-card:hover {
+    transform: none;
+    box-shadow:
+        3px 3px 0 #000,
+        0 4px 15px rgba(0, 0, 0, 0.08);
+}
+
+.upload-row {
+    display: flex;
+    gap: 10px;
+}
+
+.upload-row select {
+    flex: 1;
+    min-width: 0;
+}
+
+.upload-file-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: var(--space-sm);
+}
+
+.upload-file-row .sketch-btn {
+    width: auto;
+    margin: 0;
+    flex-shrink: 0;
+}
+
+#f-file-name {
+    font-family: var(--font-accent);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+    .upload-row {
+        flex-direction: column;
+    }
+}
+
 /* Professional Homework Notes Section */
 #assignment-list .class-card {
     background: #ffffff;

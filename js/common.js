@@ -146,7 +146,7 @@ function escapeHTML(str) {
 /**
  * Displays a toast notification.
  * @param {string} message - The message to display.
- * @param {string} type - 'info' or 'error'.
+ * @param {string} type - 'info', 'success', or 'error'.
  */
 function showToast(message, type = 'info') {
     let container = document.getElementById('toast-container');
@@ -154,7 +154,13 @@ function showToast(message, type = 'info') {
         // Create if missing (Self-healing)
         container = document.createElement('div');
         container.id = 'toast-container';
+        container.setAttribute('role', 'status');
+        container.setAttribute('aria-live', 'polite');
         document.body.appendChild(container);
+    } else {
+        // Upgrade existing containers for screen readers.
+        if (!container.hasAttribute('aria-live')) container.setAttribute('aria-live', 'polite');
+        if (!container.hasAttribute('role')) container.setAttribute('role', 'status');
     }
 
     const toast = document.createElement('div');
@@ -164,6 +170,8 @@ function showToast(message, type = 'info') {
     // Apply styling based on type
     if (type === 'error') {
         toast.classList.add('error');
+    } else if (type === 'success') {
+        toast.classList.add('success');
     }
 
     container.appendChild(toast);
@@ -252,6 +260,44 @@ function showWimpyConfirm(message) {
         };
     });
 }
+
+/**
+ * Generic modal close: Esc + overlay-click + focus return.
+ * Register hidden-class modals once: registerModal('freedomWallModal', closeFreedomWall).
+ * Close fns must be idempotent. Confirm owns Esc while open (wimpy-no guard).
+ */
+window._modalRegistry = window._modalRegistry || {};
+window._lastModalFocus = null;
+window.registerModal = function (id, closeFn) {
+    window._modalRegistry[id] = closeFn;
+};
+window.rememberFocus = function () {
+    window._lastModalFocus = document.activeElement;
+};
+window.restoreFocus = function () {
+    if (window._lastModalFocus && window._lastModalFocus.focus) window._lastModalFocus.focus();
+    window._lastModalFocus = null;
+};
+document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (document.getElementById('wimpy-no')) return;
+    const ids = Object.keys(window._modalRegistry);
+    for (let i = ids.length - 1; i >= 0; i--) {
+        const el = document.getElementById(ids[i]);
+        if (el && !el.classList.contains('hidden')) {
+            window._modalRegistry[ids[i]]();
+            return;
+        }
+    }
+    const fp = document.getElementById('filePreviewModal');
+    if (fp) fp.remove();
+});
+document.addEventListener('click', (e) => {
+    const t = e.target;
+    if (!t || !t.classList || !t.id || t.querySelector('#wimpy-no')) return;
+    if (t.id === 'filePreviewModal') return t.remove();
+    if (t.classList.contains('wimpy-modal-overlay') && window._modalRegistry[t.id]) window._modalRegistry[t.id]();
+});
 
 /**
  * Shared logout functionality.

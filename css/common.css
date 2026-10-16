@@ -462,6 +462,11 @@ textarea:focus {
     border-color: var(--color-danger);
 }
 
+.toast.success {
+    background: #b8e6b8;
+    border-color: #2d862d;
+}
+
 @media (hover: hover) and (pointer: fine) {
     .toast:hover {
         transform: translateY(-1px) scale(1.02);

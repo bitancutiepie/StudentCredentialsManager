@@ -122,6 +122,9 @@ function checkSession() {
             if (broadcastBtn) broadcastBtn.classList.remove('hidden');
             const forceUpdateBtn = document.getElementById('btn-force-update');
             if (forceUpdateBtn) forceUpdateBtn.classList.remove('hidden');
+            // Upload lives in the Files tab now, main admin only.
+            const uploadCard = document.getElementById('file-upload-card');
+            if (uploadCard) uploadCard.classList.remove('hidden');
         }
 
         // Populate Admin Data
@@ -172,7 +175,6 @@ async function refreshUserProfile() {
                 Class: 'schedule',
                 Homework: 'homework',
                 Event: 'event',
-                File: 'file',
                 'To-Do': 'todo',
                 Email: 'email',
                 Messages: 'messages',
@@ -524,7 +526,7 @@ window.confirmAddToCalendar = function () {
 
     const startVal = document.getElementById('cal-prompt-start').value; // YYYY-MM-DD
 
-    if (!startVal) return alert('Please select a start date.');
+    if (!startVal) return showToast('Please select a start date.', 'error');
 
     // Google Calendar All-Day Event Logic:
     // Format: YYYYMMDD / YYYYMMDD
@@ -2101,17 +2103,24 @@ window.showCongratsMessage = function (prevModal) {
 
 // --- GLOBAL PASTE LISTENER (Binder Uploads) ---
 document.addEventListener('paste', function (e) {
-    // 1. Admin Tools
+    // 1. Files-tab upload card (main admin only)
+    const uploadCard = document.getElementById('file-upload-card');
+    const linksTab = document.getElementById('links');
+    if (
+        uploadCard &&
+        !uploadCard.classList.contains('hidden') &&
+        linksTab &&
+        !linksTab.classList.contains('hidden')
+    ) {
+        const input = document.getElementById('f-file');
+        if (input) handleImagePaste(e, input);
+        return;
+    }
+
+    // 2. Admin Tools
     const adminTools = document.getElementById('admin-tools');
     if (adminTools && !adminTools.classList.contains('hidden')) {
         // Check which form is open
-        const fileForm = document.getElementById('admin-file-form');
-        if (fileForm && fileForm.style.display === 'block') {
-            const input = document.getElementById('f-file');
-            if (input) handleImagePaste(e, input);
-            return;
-        }
-
         const galleryForm = document.getElementById('admin-gallery-form');
         if (galleryForm && galleryForm.style.display === 'block') {
             const input = document.getElementById('g-file');

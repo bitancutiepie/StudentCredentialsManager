@@ -9,7 +9,6 @@ window.showAdminTool = function (toolId, btnElement) {
             'admin-schedule-form': 'schedule',
             'admin-assignment-form': 'homework',
             'admin-event-form': 'event',
-            'admin-file-form': 'file',
             'admin-todo-form': 'todo',
             'admin-email-form': 'email',
             'admin-message-manager': 'messages',
@@ -51,7 +50,6 @@ window.showAdminTool = function (toolId, btnElement) {
         'admin-schedule-form',
         'admin-assignment-form',
         'admin-event-form',
-        'admin-file-form',
         'admin-email-form',
         'admin-message-manager',
         'admin-gallery-form',
@@ -158,7 +156,7 @@ window.fetchStorageStats = async function () {
 // --- FILE UPLOAD (Admin Resources) ---
 window.uploadFile = async function (e) {
     e.preventDefault();
-    if (!window.isAdmin) return;
+    if (!window.user || window.user.sr_code !== 'ADMIN') return showToast('Only the BOSS can do this!', 'error');
 
     const fileInput = document.getElementById('f-file');
     const titleInput = document.getElementById('f-title');
@@ -172,7 +170,7 @@ window.uploadFile = async function (e) {
     if (!termInput || !termInput.value) return showToast('Please select a term (Prelims / Midterms / Finals).');
 
     btn.disabled = true;
-    btn.innerHTML = 'Uploading...';
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
 
     try {
         const compressedFile = await compressImage(file, 1500, 1500, 0.8);
@@ -209,6 +207,8 @@ window.uploadFile = async function (e) {
             // loadFiles already refreshes; keep drill position if possible
         }
         e.target.reset();
+        const nameEl = document.getElementById('f-file-name');
+        if (nameEl) nameEl.textContent = 'No file chosen';
     } catch (error) {
         console.error(error);
         showToast('Upload failed: ' + error.message);
