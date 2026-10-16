@@ -292,6 +292,7 @@ window.showMidtermsPopup = function () {
             <div style="position:absolute;top:0;left:0;right:0;height:6px;background:${color};border-radius:9px 9px 0 0;"></div>
             <span class="folder-emoji" style="color:${color};"><i class="fas ${icon}"></i></span>
             <span class="folder-name" title="${m.code} — ${m.name}">${m.code}</span>
+            <span title="${m.code} — ${m.name}" style="display:block;font-family:'Patrick Hand';font-size:0.8rem;color:#636e72;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m.name}</span>
             <span class="folder-count">${m.date}</span>
         </div>`;
     }).join('');
