@@ -2930,3 +2930,11 @@ h2:hover {
         max-width: 90%;
     }
 }
+/* UNSLOP POLISH - binder (second page) */
+body{font-variant-numeric:tabular-nums;letter-spacing:0!important}
+.tab-btn i{font-size:14px}
+#recent-announcements-panel h3{text-decoration:none!important;font-weight:600}
+#live-clock{font-weight:700;font-variant-numeric:tabular-nums}
+.online-label{font-size:12px;text-transform:none;color:var(--color-text-secondary);font-weight:600}
+button{transition:color 160ms cubic-bezier(.22,1,.36,1),background-color 160ms cubic-bezier(.22,1,.36,1),border-color 160ms cubic-bezier(.22,1,.36,1)!important}
+button:hover{transform:none!important}

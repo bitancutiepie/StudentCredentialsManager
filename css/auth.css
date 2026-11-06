@@ -1592,3 +1592,14 @@ input[type='checkbox'] {
 
 /* --- JUMPSCARE --- */
 /* @keyframes shake is in common.css */
+/* UNSLOP POLISH (first page) */
+body{font-variant-numeric:tabular-nums;letter-spacing:0!important}
+h2,h3{letter-spacing:0;font-weight:600}
+.member-list-title,.gallery-title,.fresh-drops-label{letter-spacing:0;text-transform:none!important}
+.member-list-title i,.admin-header i{font-size:16px;color:var(--color-text-secondary)}
+.admin-info-bar{background:var(--color-surface)!important;border:1px solid var(--color-border)!important;box-shadow:none!important}
+.member-count-badge{background:var(--color-surface);color:var(--color-text-secondary);border:1px solid var(--color-border)}
+.fresh-drops-label{background:var(--color-surface);color:var(--color-text)}
+.gallery-title{background:transparent}
+button,.sketch-btn{transition:color 160ms cubic-bezier(.22,1,.36,1),background-color 160ms cubic-bezier(.22,1,.36,1),border-color 160ms cubic-bezier(.22,1,.36,1),opacity 160ms cubic-bezier(.22,1,.36,1)!important}
+button:hover,.sketch-btn:hover{transform:none!important}

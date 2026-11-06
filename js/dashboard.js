@@ -44,6 +44,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Parallel init: non-blocking setup
     const day = new Date().toLocaleDateString('en-US', { weekday: 'long' });
     updateSectionBadge();
+    loadSectionVisibility();
     await Promise.all([
         initLiveTracking(),
         initMessaging(),
@@ -3209,3 +3210,88 @@ window.deleteFlashcard = async function (id) {
 document.addEventListener('DOMContentLoaded', () => {
     loadFlashcards();
 });
+
+// ============ ADMIN SECTION VISIBILITY (hide/show tabs) ============
+const BINDER_SECTIONS = ['schedule','assignments','calendar','links','flashcards','help','games','midterms'];
+const SECTION_LABELS = { schedule:'Schedule', assignments:'To Do List', calendar:'Events', links:'Files', flashcards:'Flashcards', help:'Help Guide', games:'Games', midterms:'Midterms' };
+
+async function loadSectionVisibility() {
+  let rows = [];
+  try {
+    const { data, error } = await window.db.from('admin_settings').select('section, hidden');
+    if (!error && data) rows = data;
+  } catch (e) { console.warn('admin_settings not ready:', e.message); }
+  const hidden = new Set(rows.filter(r => r.hidden).map(r => r.section));
+  applyHiddenSections(hidden);
+  renderAdminVisibilityList(hidden);
+  // Realtime: hide/show live without refresh
+  try {
+    window.db.channel('admin-visibility')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'admin_settings' }, () => loadSectionVisibility())
+      .subscribe();
+  } catch (e) { /* realtime optional */ }
+}
+
+function applyHiddenSections(hiddenSet) {
+  document.querySelectorAll('[data-tab]').forEach(btn => {
+    const sec = btn.dataset.tab;
+    btn.classList.toggle('hidden', hiddenSet.has(sec));
+  });
+  // also hide corresponding content panes
+  document.querySelectorAll('.tab-content').forEach(pane => {
+    const id = pane.id;
+    const map = { schedule:'schedule', assignments:'assignments', calendar:'calendar', links:'links', flashcards:'flashcards', help:'help', games:'games' };
+    if (map[id] && hiddenSet.has(map[id])) pane.classList.add('hidden');
+  });
+  // Feature bar badge for admin: tells admin which sections are hidden (admin-only)
+  const isAdmin = window.user && (window.user.role === 'admin' || (window.user.role||'').startsWith('admin') || window.user.sr_code === 'ADMIN');
+  let badge = document.getElementById('hidden-sections-badge');
+  if (!badge) {
+    badge = document.createElement('div');
+    badge.id = 'hidden-sections-badge';
+    badge.style.cssText = 'margin:6px auto 0;text-align:center;font-family:Patrick Hand;font-size:1rem';
+    const tabs = document.querySelector('.nav-tabs');
+    if (tabs) tabs.after(badge);
+  }
+  if (isAdmin && hiddenSet.size) {
+    const names = [...hiddenSet].map(s => SECTION_LABELS[s] || s).join(', ');
+    badge.innerHTML = `<span style="background:#ff7675;color:#fff;border:2px solid #000;border-radius:999px;padding:2px 10px">Hidden from everyone: ${names}</span>`;
+  } else {
+    badge.innerHTML = '';
+  }
+}
+
+function renderAdminVisibilityList(hiddenSet) {
+  const host = document.getElementById('admin-visibility-list');
+  if (!host) return;
+  const isAdmin = window.user && (window.user.role === 'admin' || (window.user.role||'').startsWith('admin'));
+  host.innerHTML = BINDER_SECTIONS.map(sec => {
+    const isHidden = hiddenSet.has(sec);
+    const bg = isHidden ? '#fff' : 'var(--color-highlight)';
+    const angle = ((sec.charCodeAt(0) % 3) - 1); // -1/0/1 like the binder notes
+    return `
+    <div style="border:2px solid #000;border-radius:10px;padding:10px 12px;background:${bg};box-shadow:3px 3px 0 #000;transform:rotate(${angle}deg)">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <span style="font-family:'Patrick Hand';font-size:1.1rem">${SECTION_LABELS[sec]}</span>
+        <span style="font-size:1rem">${isHidden ? '<i class="fas fa-eye-slash"></i>' : '<i class="fas fa-eye"></i>'}</span>
+      </div>
+      <button data-sec="${sec}" ${isAdmin ? '' : 'disabled'} style="margin-top:8px;width:100%;padding:6px 10px;border:2px solid #000;border-radius:999px;font-family:'Patrick Hand';font-size:1rem;cursor:pointer;background:${isHidden ? '#ff7675' : '#2d3436'};color:#fff">
+        ${isHidden ? 'Hidden — tap to show' : 'Shown — tap to hide'}
+      </button>
+    </div>`;
+  }).join('');
+  host.querySelectorAll('button[data-sec]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const sec = btn.dataset.sec;
+      const currentlyHidden = btn.textContent.includes('Hidden');
+      const nextHidden = !currentlyHidden;
+      btn.disabled = true;
+      const { error } = await window.db.from('admin_settings').update({ hidden: nextHidden, updated_at: new Date().toISOString() }).eq('section', sec);
+      if (error) { showToast('Failed to update visibility', 'error'); btn.disabled = false; return; }
+      showToast(SECTION_LABELS[sec] + (nextHidden ? ' hidden' : ' shown'));
+      loadSectionVisibility();
+    });
+  });
+}
+window.loadSectionVisibility = loadSectionVisibility;
+window.applyHiddenSections = applyHiddenSections;

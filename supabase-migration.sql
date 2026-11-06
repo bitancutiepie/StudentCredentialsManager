@@ -92,3 +92,32 @@ CREATE INDEX IF NOT EXISTS idx_shared_files_term ON shared_files (term);
 CREATE INDEX IF NOT EXISTS idx_shared_files_subject_term ON shared_files (subject, term);
 UPDATE shared_files SET term = 'Prelims' WHERE term IS NULL;
 
+-- ============ ADMIN SECTION VISIBILITY (hide/show binder tabs) ============
+CREATE TABLE IF NOT EXISTS admin_settings (
+    section text PRIMARY KEY,
+    hidden boolean NOT NULL DEFAULT false,
+    updated_at timestamptz DEFAULT now()
+);
+INSERT INTO admin_settings (section, hidden) VALUES
+  ('schedule', false), ('assignments', false), ('calendar', false),
+  ('links', false), ('flashcards', false), ('help', false),
+  ('games', false), ('midterms', false)
+ON CONFLICT (section) DO NOTHING;
+ALTER TABLE admin_settings ENABLE ROW LEVEL SECURITY;
+-- Everyone can read settings; write open (app has no real auth RLS for students yet, matching existing tables)
+DROP POLICY IF EXISTS "admin_settings_select_public" ON admin_settings;
+CREATE POLICY "admin_settings_select_public" ON admin_settings FOR SELECT USING (true);
+DROP POLICY IF EXISTS "admin_settings_update_public" ON admin_settings;
+CREATE POLICY "admin_settings_update_public" ON admin_settings FOR UPDATE USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "admin_settings_insert_public" ON admin_settings;
+CREATE POLICY "admin_settings_insert_public" ON admin_settings FOR INSERT WITH CHECK (true);
+-- Realtime so tabs hide live without refresh
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'admin_settings'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE admin_settings;
+  END IF;
+END $$;
+

@@ -103,18 +103,18 @@
 
                 <!-- ADMIN CONTROLS (Hidden by default) -->
                 <div id="adminLandingControls" class="hidden admin-controls">
-                    <h3><i class="fas fa-user-shield"></i> ADMIN MODE</h3>
-                    <p>Welcome back, Boss! What's the plan?</p>
+                    <h3>Admin</h3>
+                    <p>What do you want to do?</p>
                     <div class="admin-controls-buttons">
                         <button onclick="showAdminPanel('Admin')" class="btn-primary">
-                            <i class="fas fa-users-cog"></i> Manage Users (Black List)
+                            <i class="fas fa-users-cog"></i> Manage users
                         </button>
                         <button
                             onclick="window.location.href = 'web2.html'"
                             class="btn-primary"
                             style="background: var(--color-accent); border-color: var(--color-accent)"
                         >
-                            <i class="fas fa-book"></i> Go to Binder
+                            <i class="fas fa-book"></i> Open binder
                         </button>
                         <button
                             onclick="logout()"
@@ -140,14 +140,14 @@
                         "
                     ></p>
                     <form id="authForm">
-                        <input type="text" id="name" placeholder="YOUR NAME (Full Name)" class="hidden" />
-                        <input type="text" id="srCode" placeholder="SR CODE" required class="input-accent" />
+                        <input type="text" id="name" placeholder="Full name" class="hidden" />
+                        <input type="text" id="srCode" placeholder="SR code" required class="input-accent" />
                         <!-- REPLACE the existing password input line with this block -->
                         <div style="position: relative; width: 100%">
                             <input
                                 type="password"
                                 id="password"
-                                placeholder="PASSWORD"
+                                placeholder="Password"
                                 required
                                 class="input-accent"
                                 style="padding-right: 40px"
@@ -165,9 +165,9 @@
                             >
                         </div>
 
-                        <button type="submit" id="submitBtn" class="btn-primary">ENTER &rarr;</button>
+                        <button type="submit" id="submitBtn" class="btn-primary">Log in</button>
                     </form>
-                    <span class="toggle-link" id="toggleAuth">Magpapalista? <b>Come here mga kosa click this</b></span>
+                    <span class="toggle-link" id="toggleAuth">New here? <b>Register</b></span>
                 </div>
 
                 <div id="adminSection" class="member-list-section hidden" style="border-top: 2px dashed #d63031">
@@ -177,7 +177,7 @@
                         style="color: #d63031"
                         title="Click to show/hide"
                     >
-                        <i class="fas fa-crown"></i> Main Admin
+                        <i class="fas fa-crown"></i> Admins
                         <i
                             class="fas fa-chevron-down"
                             id="adminToggleIcon"
@@ -194,7 +194,7 @@
                         style="color: #0984e3"
                         title="Click to show/hide"
                     >
-                        <i class="fas fa-user-shield"></i> Co-Admins
+                        <i class="fas fa-user-shield"></i> Co-admins
                         <i
                             class="fas fa-chevron-down"
                             id="coAdminToggleIcon"
@@ -206,7 +206,7 @@
 
                 <div class="member-list-section">
                     <div class="member-list-title" onclick="toggleMemberList()" title="Click to show/hide">
-                        <i class="fas fa-hand-sparkles"></i> Hi Classmates
+                        <i class="fas fa-hand-sparkles"></i> Classmates
                         <span id="memberCountBadge" class="member-count-badge">0</span>
                         <i
                             class="fas fa-chevron-down"
@@ -220,7 +220,7 @@
                 </div>
 
                 <div class="member-list-section">
-                    <div class="member-list-title"><i class="fas fa-eye"></i> Just Spotted:</div>
+                    <div class="member-list-title"><i class="fas fa-eye"></i> Recently logged in</div>
                     <div id="recentLoginsList" class="recent-logins-grid">
                         <span style="color: var(--color-text-secondary); font-style: italic">Finding our kosa...</span>
                     </div>
@@ -231,7 +231,7 @@
                             class="sketch-btn"
                             style="font-size: var(--font-size-sm); padding: 5px 15px"
                         >
-                            <i class="fas fa-history"></i> <span id="spottedBtnText">View Full History</span>
+                            <i class="fas fa-history"></i> <span id="spottedBtnText">View history</span>
                         </button>
                     </div>
 
@@ -241,7 +241,7 @@
                 </div>
 
                 <div id="newUpdatesSection" class="hidden fresh-drops-section">
-                    <div class="fresh-drops-label"><i class="fas fa-fire"></i> FRESH DROPS</div>
+                    <div class="fresh-drops-label"><i class="fas fa-fire"></i> Updates</div>
                     <div id="newUpdatesList" class="fresh-drops-list">
                         <!-- Javascript will put files here -->
                     </div>
@@ -272,10 +272,10 @@
 
             <div id="wimpyGallerySection" class="sketch-box hidden">
                 <div class="gallery-header">
-                    <div class="gallery-title"><i class="fas fa-camera-retro"></i> MEMORIES</div>
+                    <div class="gallery-title"><i class="fas fa-camera-retro"></i> Memories</div>
                     <div id="admin-gallery-add-trigger" class="hidden">
                         <button onclick="document.getElementById('instant-g-file').click()" class="sketch-btn success">
-                            <i class="fas fa-plus"></i> ADD PHOTO
+                            <i class="fas fa-plus"></i> Add photo
                         </button>
                         <input
                             type="file"
@@ -296,8 +296,8 @@
 
         <div class="sketch-box hidden" id="adminDashboard">
             <div class="admin-header">
-                <h2 class="admin-title"><i class="fas fa-clipboard-list"></i> THE BLACK LIST</h2>
-                <p class="admin-subtitle">"Admin's Secret Notebook"</p>
+                <h2 class="admin-title"><i class="fas fa-clipboard-list"></i> Black list</h2>
+                <p class="admin-subtitle">"Admin notes"</p>
             </div>
 
             <div class="admin-info-bar">
@@ -313,17 +313,17 @@
                         <i class="fas fa-expand"></i>
                     </button>
                     <button onclick="openPortalWindow()" class="sketch-btn primary">
-                        <i class="fas fa-globe"></i> PORTAL
+                        <i class="fas fa-globe"></i> Portal
                     </button>
                     <button
                         onclick="returnToAdminChoice()"
                         class="sketch-btn"
                         style="background: #6c757d; border-color: #5a6268; color: white"
                     >
-                        <i class="fas fa-undo"></i> MENU
+                        <i class="fas fa-undo"></i> Menu
                     </button>
                     <button onclick="logout()" class="sketch-btn danger">
-                        <i class="fas fa-sign-out-alt"></i> EXIT
+                        <i class="fas fa-sign-out-alt"></i> Exit
                     </button>
                 </div>
             </div>
@@ -375,7 +375,7 @@
                         <input type="text" id="idx-g-caption" placeholder="Caption" required class="input-accent" />
                         <div style="display: flex; gap: 8px; align-items: center;">
                             <button type="button" onclick="document.getElementById('idx-g-file').click()" class="sketch-btn success" style="font-size: var(--font-size-sm); padding: 6px 12px;">
-                                <i class="fas fa-image"></i> CHOOSE FILE
+                                <i class="fas fa-image"></i> Choose file
                             </button>
                             <span id="idx-g-file-name" style="font-family: var(--font-accent); font-size: var(--font-size-sm); color: var(--color-text-secondary);">No file chosen</span>
                             <input type="file" id="idx-g-file" required accept="image/*" class="hidden" onchange="document.getElementById('idx-g-file-name').textContent = this.files[0]?.name || 'No file chosen'" />
@@ -430,12 +430,12 @@
             </div>
 
             <div class="note-input-area">
-                <h3><i class="fas fa-sticky-note"></i> Leave a Sticky Note</h3>
+                <h3><i class="fas fa-sticky-note"></i> Leave a note</h3>
                 <div class="note-input-row">
-                    <input type="text" id="noteInput" placeholder="Write something..." maxlength="30" class="input-accent" />
+                    <input type="text" id="noteInput" placeholder="Write a note" maxlength="30" class="input-accent" />
                     <button onclick="postNote()" class="btn-primary" style="width: auto; margin-top: 0">POST</button>
                 </div>
-                <small><i>(Notes appear randomly on everyone's screen!)</i></small>
+                <small><i>Notes appear on everyone's screen</i></small>
             </div>
 
             <button onclick="logout()" class="btn-primary" style="margin-top: var(--space-md)">LOGOUT</button>
@@ -602,7 +602,7 @@
         <!-- MANDATORY FULL NAME COLLECTOR -->
         <div id="nameCollectorModal" class="wimpy-modal-overlay hidden" style="z-index: 200000">
             <div class="wimpy-modal-box" style="max-width: 400px; text-align: center">
-                <h2 style="margin-top: 0"><i class="fas fa-id-card"></i> IDENTIFICATION REQUIRED</h2>
+                <h2 style="margin-top: 0"><i class="fas fa-id-card"></i> Identification</h2>
                 <p>
                     Wait kosa! The admin needs to know who you really are. Please enter your
                     <b>Original Full Name</b> (Real Name).

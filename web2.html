@@ -49,7 +49,7 @@
         <!-- Class Countdown Pill -->
         <div id="class-countdown-pill" class="hidden" onclick="window.openLiveClassLink()">
             <span class="pill-pulse"></span>
-            <span id="pill-text">Checking schedule...</span>
+            <span id="pill-text">Checking schedule…</span>
             <i class="fas fa-chevron-right" style="font-size: 0.8rem; margin-left: 5px"></i>
         </div>
 
@@ -99,11 +99,11 @@
                     Flashcards
                 </button>
                 <button class="tab-btn" onclick="switchTab('help', event)">Help Guide</button>
-                <button class="tab-btn" onclick="switchTab('games', event)" style="background: #f1c40f">
-                    <i class="fas fa-gamepad"></i> Games
+                <button class="tab-btn" onclick="switchTab('games', event)" style="background: #f1c40f" data-tab="games">
+                    Games
                 </button>
-                <button class="tab-btn" onclick="showMidtermsPopup()" style="background: #ff7675">
-                    <i class="fas fa-fire"></i> Midterms
+                <button class="tab-btn" onclick="showMidtermsPopup()" style="background: #ff7675" data-tab="midterms">
+                    Midterms
                 </button>
                 <button
                     class="tab-btn admin-only hidden"
@@ -128,7 +128,7 @@
                 >
                     <div class="sticky-time" style="margin: 0">
                         <span class="pin"><i class="fas fa-thumbtack"></i></span>
-                        <small>TIME CHECK:</small>
+                        <small>Time</small>
                         <div id="live-clock">00:00</div>
                     </div>
 
@@ -176,7 +176,7 @@
                                 class="custom-scroll"
                             >
                                 <p style="text-align: center; color: #666; font-style: italic; font-size: 0.9rem">
-                                    Reading notes...
+                                    Loading notes…
                                 </p>
                             </div>
 
@@ -419,10 +419,10 @@
 
                 <!-- NEW: Modern Online Users Stack -->
                 <div id="active-users-panel" class="online-users-header">
-                    <p class="online-label">ONLINE CLASSMATES:</p>
+                    <p class="online-label">Online classmates</p>
                     <div id="active-users-list" class="avatar-stack">
                         <!-- Avatars move here -->
-                        <small style="color: #636e72">Scanning...</small>
+                        <small style="color: #636e72">Loading…</small>
                     </div>
                 </div>
 
@@ -453,7 +453,7 @@
                         class="sketch-btn danger"
                         style="border: none; text-decoration: underline"
                     >
-                        <i class="fas fa-door-open"></i> Go Home
+                        <i class="fas fa-door-open"></i> Log out
                     </button>
                 </div>
 
@@ -461,10 +461,21 @@
 
                 <!-- ================= ADMIN TOOLS TAB (NEW SECTION) ================= -->
                 <div id="admin-tools" class="tab-content hidden">
-                    <h2><i class="fas fa-user-shield"></i> Admin Control Panel</h2>
+                    <h2><i class="fas fa-user-shield"></i> Admin</h2>
+
+                    <!-- Section visibility toggles -->
+                    <div class="admin-controls" id="admin-visibility-panel" style="display: none; margin-bottom: 20px">
+                        <button onclick="showAdminTool(null)" class="sketch-btn danger" style="position: absolute; top: 10px; right: 10px; padding: 5px 10px; font-size: 0.9rem">Close</button>
+                        <h3 style="font-family: 'Patrick Hand'; font-size: 1.5rem; margin-top: 0">Section visibility <i class="fas fa-eye"></i></h3>
+                        <p style="font-family: 'Patrick Hand'; font-size: 1.1rem; color: #555; margin-bottom: 15px">Tap a section to hide it from everyone — they disappear from the tabs.</p>
+                        <div id="admin-visibility-list" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; text-align: left"></div>
+                    </div>
 
                     <!-- Admin Tool Navigation -->
                     <div class="filter-bar" style="justify-content: center; gap: 10px; margin-bottom: 20px">
+                        <button class="sketch-btn" onclick="showAdminTool('admin-visibility-panel', this)">
+                            <i class="fas fa-eye-slash"></i> Sections
+                        </button>
                         <button class="sketch-btn" onclick="showAdminTool('admin-schedule-form', this)">
                             <i class="fas fa-clock"></i> Class
                         </button>
@@ -549,7 +560,7 @@
                             >
                                 Close
                             </button>
-                            <h3>Admin's Note: Section & Block Manager <i class="fas fa-layer-group"></i></h3>
+                            <h3>Section & Block Manager <i class="fas fa-layer-group"></i></h3>
                             <p style="font-size: 0.9rem; margin-bottom: 15px;">(Assign students to different blocks or clone schedules between sections)</p>
 
                             <!-- Card 1: Assign Student Section -->
@@ -619,7 +630,7 @@
                             >
                                 Close
                             </button>
-                            <h3>Admin's Note: Add Class</h3>
+                            <h3>Add Class</h3>
                             <form onsubmit="addClass(event)" autocomplete="off">
                                 <div style="margin-bottom: 10px; text-align: left;">
                                     <label style="font-weight: bold; font-family: 'Patrick Hand'; font-size: 1.1rem; display: block;">Target Section / Block:</label>
@@ -670,7 +681,7 @@
                             >
                                 Close
                             </button>
-                            <h3>Admin's Note: Add Homework</h3>
+                            <h3>Add Homework</h3>
                             <form onsubmit="addAssignment(event)" autocomplete="off">
                                 <input type="text" id="a-title" placeholder="Title" required />
                                 <input type="text" id="a-subject" placeholder="Subject (e.g. Math)" required />
@@ -698,7 +709,7 @@
                             >
                                 Close
                             </button>
-                            <h3>Admin's Note: Add Event</h3>
+                            <h3>Add Event</h3>
                             <form onsubmit="addEvent(event)" autocomplete="off">
                                 <input type="text" id="e-title" placeholder="Event Name" required />
                                 <input type="date" id="e-date" required />
@@ -725,7 +736,7 @@
                             >
                                 Close
                             </button>
-                            <h3>Admin's Note: Global To-Do <i class="fas fa-check-double"></i></h3>
+                            <h3>Global To-Do <i class="fas fa-check-double"></i></h3>
                             <p style="font-size: 0.9rem; margin-bottom: 10px">(Post a task for everyone to complete)</p>
                             <form onsubmit="addGlobalTodo(event)" autocomplete="off">
                                 <input
@@ -756,7 +767,7 @@
                             >
                                 Close
                             </button>
-                            <h3>Admin's Note: Email Center <i class="fas fa-envelope"></i></h3>
+                            <h3>Email Center <i class="fas fa-envelope"></i></h3>
                             <p style="font-size: 0.9rem; margin-bottom: 10px">
                                 (Select a specific student or blast everyone)
                             </p>
@@ -776,7 +787,7 @@
                                         background: transparent;
                                     "
                                 >
-                                    <option value="ALL">Send to Everyone (Blast)</option>
+                                    <option value="ALL">Send to everyone</option>
                                     <!-- JavaScript will load student names here -->
                                 </select>
 
@@ -810,7 +821,7 @@
                                             z-index: 5;
                                         "
                                     >
-                                        <i class="fas fa-list-check"></i> IMPORT HOMEWORK
+                                        <i class="fas fa-list-check"></i> Import homework
                                     </button>
                                 </div>
 
@@ -841,7 +852,7 @@
                             >
                                 Close
                             </button>
-                            <h3>Admin's Note: Message Manager <i class="fas fa-comments"></i></h3>
+                            <h3>Message Manager <i class="fas fa-comments"></i></h3>
                             <p style="font-size: 0.9rem; margin-bottom: 10px">(Monitor and clear chat logs)</p>
 
                             <div style="display: flex; gap: 10px; margin-bottom: 15px">
@@ -849,7 +860,7 @@
                                     <i class="fas fa-sync"></i> Refresh
                                 </button>
                                 <button onclick="deleteOldMessages()" class="sketch-btn danger" style="flex: 1">
-                                    <i class="fas fa-trash-alt"></i> Clear Old (>30 days)
+                                    <i class="fas fa-trash-alt"></i> Clear older than 30 days
                                 </button>
                             </div>
 
@@ -884,7 +895,7 @@
                             >
                                 Close
                             </button>
-                            <h3>Admin's Note: Landing Page Gallery <i class="fas fa-images"></i></h3>
+                            <h3>Landing Page Gallery <i class="fas fa-images"></i></h3>
                             <p style="font-size: 0.9rem; margin-bottom: 10px">
                                 (Upload photos for the main login page)
                             </p>
@@ -929,7 +940,7 @@
                             >
                                 Close
                             </button>
-                            <h3>Admin's Note: Storage Monitor <i class="fas fa-hdd"></i></h3>
+                            <h3>Storage Monitor <i class="fas fa-hdd"></i></h3>
                             <p style="font-size: 0.9rem; margin-bottom: 10px">(Check file counts and usage)</p>
 
                             <button
@@ -959,7 +970,7 @@
                             >
                                 Close
                             </button>
-                            <h3>Admin's Note: Global Announcement <i class="fas fa-bullhorn"></i></h3>
+                            <h3>Global Announcement <i class="fas fa-bullhorn"></i></h3>
                             <p style="font-size: 0.9rem; margin-bottom: 10px">
                                 (Send a real-time popup to everyone online)
                             </p>
@@ -1054,7 +1065,7 @@
                             >
                                 Close
                             </button>
-                            <h3>Admin's Note: Grant Privileges <i class="fas fa-crown"></i></h3>
+                            <h3>Grant Privileges <i class="fas fa-crown"></i></h3>
                             <p style="font-size: 0.9rem; margin-bottom: 10px">(Give a user Admin access)</p>
 
                             <form onsubmit="promoteUser(event)" autocomplete="off">
@@ -1333,7 +1344,7 @@
                             >
                                 Close
                             </button>
-                            <h3>Admin's Note: Revoke Access <i class="fas fa-user-slash"></i></h3>
+                            <h3>Revoke Access <i class="fas fa-user-slash"></i></h3>
                             <p style="font-size: 0.9rem; margin-bottom: 10px">(Demote an Admin back to Student)</p>
 
                             <form onsubmit="revokeAdmin(event)" autocomplete="off">

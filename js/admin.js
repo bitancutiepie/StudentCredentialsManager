@@ -20,6 +20,7 @@ window.showAdminTool = function (toolId, btnElement) {
             'admin-announcement-form': 'announcement',
             'admin-birthday-view': 'birthday',
             'admin-section-form': 'section',
+            'admin-visibility-panel': 'announcement',
         };
 
         const permKey = toolIdToPerm[toolId];
@@ -60,6 +61,7 @@ window.showAdminTool = function (toolId, btnElement) {
         'admin-announcement-form',
         'admin-birthday-view',
         'admin-section-form',
+        'admin-visibility-panel',
     ];
     let isAlreadyOpen = false;
 
